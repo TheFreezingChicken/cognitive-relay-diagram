@@ -1,6 +1,7 @@
-const cognitiveFunctionInnerRadius = 80;
-const cognitiveFunctionStroke = cognitiveFunctionInnerRadius / 5;
+const cognitiveFunctionInnerRadius = 50;
+const cognitiveFunctionStroke = cognitiveFunctionInnerRadius / 7;
 const cognitiveFunctionTotalRadius = cognitiveFunctionInnerRadius + cognitiveFunctionStroke;
+const axisDistanceFactor = 8;
 
 
 function cogFunTextPlacement(coordinate) {
@@ -130,7 +131,7 @@ const diagramContainerWidth = diagramContainerElement.clientWidth;
 const stage = new Konva.Stage({
     container: diagramContainerId,
     width: diagramContainerWidth,
-    height: 400
+    height: 900
 });
 
 // Removed all the dp shit because we can use the "scale" function.
@@ -148,29 +149,30 @@ const stage = new Konva.Stage({
 // TODO Add listener for page resize.
 
 const layer = new Konva.Layer();
+const circleGroup = new Konva.Group();
+const textGroup = new Konva.Group();
 
 
-// Defining constants placed as a square. It's easier to think about and then we can just rotate them.
 // Function order is relative to the Grant stack.
-// Lead function is at the top left corner.
-const baseDistance = 50
-const leadFunctionXPosition = stage.width() / 2 - cognitiveFunctionTotalRadius - baseDistance;
-const leadFunctionYPosition = cognitiveFunctionTotalRadius;
+const firstFunctionXPosition = stage.width() / 2;
+const firstFunctionYPosition = cognitiveFunctionTotalRadius;
 
-// Second function is below the first function.
-const secondFunctionXPosition = leadFunctionXPosition;
-const secondFunctionYPosition = leadFunctionYPosition + cognitiveFunctionInnerRadius * 2 + baseDistance * 2;
+const lastFunctionXPosition = firstFunctionXPosition;
+const lastFunctionYPosition = cognitiveFunctionTotalRadius * axisDistanceFactor;
 
-const thirdFunctionXPosition = stage.width() / 2 + cognitiveFunctionInnerRadius + baseDistance;
-const thirdFunctionYPosition = leadFunctionYPosition;
+const axisDistance = lastFunctionYPosition - firstFunctionYPosition;
 
-const lastFunctionXPosition = thirdFunctionXPosition;
-const lastFunctionYPosition = secondFunctionYPosition;
+const secondFunctionXPosition = firstFunctionXPosition - (axisDistance / 2);
+const secondFunctionYPosition = axisDistance / 2 + firstFunctionYPosition;
+
+const thirdFunctionXPosition = secondFunctionXPosition + axisDistance;
+const thirdFunctionYPosition = secondFunctionYPosition;
+
 
 
 var firstFunctionCircle = new CognitiveFunctionCircle({
-    x: leadFunctionXPosition,
-    y: leadFunctionYPosition,
+    x: firstFunctionXPosition,
+    y: firstFunctionYPosition,
 });
 
 var secondFunctionCircle = new CognitiveFunctionCircle({
@@ -198,8 +200,9 @@ var leadFunctionText = new CognitiveFunctionText({
 
 
 
-layer.add(firstFunctionCircle, secondFunctionCircle, thirdFunctionCircle, lastFunctionCircle);
-layer.add(leadFunctionText);
+circleGroup.add(firstFunctionCircle, secondFunctionCircle, thirdFunctionCircle, lastFunctionCircle);
+textGroup.add(leadFunctionText);
+layer.add(circleGroup, textGroup);
 stage.add(layer);
 
 
