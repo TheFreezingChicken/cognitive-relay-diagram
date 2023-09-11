@@ -129,9 +129,9 @@ class CognitiveFunctionCircle extends Konva.Circle {
 class AnimalLine extends Konva.Line {
     constructor(circle1, circle2) {
         super({
-            points: [circle1.x, circle1.y, circle2.x, circle2.y],
-            fill: 'black',
-            width: '1',
+            points: [circle1.x(), circle1.y(), circle2.x(), circle2.y()],
+            stroke: 'black',
+            strokeWidth: '1'
         });
         
     }
@@ -140,7 +140,7 @@ class AnimalLine extends Konva.Line {
     animalOrder(order) {
         switch (order) {
             case 1:
-                this.width(3);
+                this.strokeWidth(3);
                 break;
             case 2:
                 break;
@@ -156,7 +156,10 @@ class AnimalLine extends Konva.Line {
 
 
 class Animal {
-    constructor(deciderFun, observerFun) {
+    letter;
+    
+    constructor(letter, deciderFun, observerFun) {
+        this.letter = letter;
         this.deciderFunction = deciderFun;
         this.observerFunction = observerFun;
     }
@@ -191,6 +194,7 @@ const stage = new Konva.Stage({
 const layer = new Konva.Layer();
 const circleGroup = new Konva.Group();
 const textGroup = new Konva.Group();
+const lineGroup = new Konva.Group();
 
 
 // Function order is relative to the Grant stack.
@@ -257,7 +261,11 @@ const lastFunText = new CognitiveFunctionText(lastFunCircle);
 
 circleGroup.add(firstFunCircle, secondFunCircle, thirdFunCircle, lastFunCircle);
 textGroup.add(firstFunText, secondFunText, thirdFunText, lastFunText);
-layer.add(circleGroup, textGroup);
+lineGroup.add(firstToSecondFunLine, firstToThirdFunLine, secondToLastFunLine, thirdToLastFunLine);
+layer.add(circleGroup, textGroup, lineGroup);
+
+lineGroup.moveToBottom();
+
 stage.add(layer);
 
 
@@ -272,10 +280,10 @@ function redrawCircles() {
     const quadraOi = quadra === "alpha" || quadra === "delta" ? "Si" : "Ni"
     const quadraOe = quadraDi === "Si" ? "Ne" : "Se"
     
-    let sleep = new Animal(quadraDi, quadraOi);
-    let consume = new Animal(quadraDi, quadraOe);
-    let blast = new Animal(quadraDe, quadraOi);
-    let play = new Animal(quadraDe, quadraOe);
+    let sleep = new Animal('S', quadraDi, quadraOi);
+    let consume = new Animal('C', quadraDi, quadraOe);
+    let blast = new Animal('B', quadraDe, quadraOi);
+    let play = new Animal('P', quadraDe, quadraOe);
     
     
     let isSingleDecider = observerDecider === "doo";
@@ -284,17 +292,18 @@ function redrawCircles() {
     let firstSaviorFun;
     let secondSaviorFun;
     
+    // Make this switch a function that given the letter returns the correct animal.
     switch (animals[0]) {
-        case 'S':
+        case sleep.letter:
             firstAnimal = sleep;
             break;
-        case 'C':
+        case consume.letter:
             firstAnimal = consume;
             break;
-        case 'B':
+        case blast.letter:
             firstAnimal = blast;
             break;
-        case 'P':
+        case play.letter:
             firstAnimal = play;
             break;
     }
@@ -328,6 +337,14 @@ function redrawCircles() {
     secondFunText.text(secondGrantFun);
     thirdFunText.text(thirdGrantFun);
     lastFunText.text(lastSaviorFun);
+    
+    if (firstAnimal === sleep || firstAnimal === play) {
+        firstToThirdFunLine.animalOrder(1);
+    } else {
+        firstToSecondFunLine.animalOrder(1);
+    }
+    
+    if (secoA)
     
     stage.draw();
 }
