@@ -1,11 +1,13 @@
 const cognitiveFunctionInnerRadius = 50;
-const cognitiveFunctionStroke = cognitiveFunctionInnerRadius / 7;
-const cognitiveFunctionTotalRadius = cognitiveFunctionInnerRadius + cognitiveFunctionStroke;
-const axisDistanceFactor = 8;
+const axisDistancePixels = 400;
 
 
-function cogFunTextPlacement(coordinate) {
-    return coordinate - cognitiveFunctionTotalRadius;
+function totalRadius(circle) {
+    return circle.radius() + circle.strokeWidth();
+}
+
+function cogFunTextPlacement(coordinate, circle) {
+    return coordinate - totalRadius(circle);
 }
 
 const feelingFill = '#c82323';
@@ -16,6 +18,9 @@ const sensingFill = '#f3ca24';
 const sensingStroke = '#c0912c';
 const intuitionFill = '#944cd2';
 const intuitionStroke = '#522c73';
+
+const tfcStyleValue = 'tfc';
+const opStyleValue = 'op';
 
 
 function fillColor(cognitiveFunction) {
@@ -64,7 +69,7 @@ function strokeColor(cognitiveFunction) {
 }
 
 
-function invertFunction(cognitiveFunction) {
+function invertFun(cognitiveFunction) {
     let funChar = cognitiveFunction[0];
     let introChar = cognitiveFunction[1];
     
@@ -89,36 +94,71 @@ function invertFunction(cognitiveFunction) {
 }
 
 class CognitiveFunctionText extends Konva.Text {
-    constructor(config) {
-        super(config);
-        
-        this.height(cognitiveFunctionTotalRadius * 2);
-        this.width(cognitiveFunctionTotalRadius * 2);
-        this.fontSize(100);
-        this.fontFamily('Arial');
-        this.fontStyle('bold');
-        this.fill('white');
-        this.stroke('black');
-        this.strokeWidth(2);
-        this.align('center');
-        this.verticalAlign('middle')
+    constructor(circle) {
+        super(
+            {
+                x: circle.x() - totalRadius(circle) + (1.3 * circle.scaleY()),
+                y: circle.y() - totalRadius(circle) + (4.5 * circle.scaleY()),
+                height: totalRadius(circle) * 2,
+                width: totalRadius(circle) * 2,
+                fontSize: 58 * circle.scaleY(),
+                fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+                fontStyle: 'bold',
+                fill: 'white',
+                stroke: 'black',
+                strokeWidth: 2,
+                align: 'center',
+                verticalAlign: 'middle'
+            }
+        );
     }
 }
 
 class CognitiveFunctionCircle extends Konva.Circle {
-    constructor(config) {
+    constructor(scaleFactor, config) {
         super(config);
         
         this.radius(cognitiveFunctionInnerRadius);
-        this.strokeWidth(cognitiveFunctionStroke);
+        this.strokeWidth(this.radius() / 7);
+        
+        this.scaleX(scaleFactor);
+        this.scaleY(scaleFactor);
+    }
+}
+
+class AnimalLine extends Konva.Line {
+    constructor(circle1, circle2) {
+        super({
+            points: [circle1.x, circle1.y, circle2.x, circle2.y],
+            fill: 'black',
+            width: '1',
+        });
+        
+    }
+    
+    
+    animalOrder(order) {
+        switch (order) {
+            case 1:
+                this.width(3);
+                break;
+            case 2:
+                break;
+            case 3:
+                this.dash = [5, 3];
+                break;
+            case 4:
+                this.dash = [2, 5];
+                break;
+        }
     }
 }
 
 
 class Animal {
-    constructor(deciderFun, osbserverFun) {
+    constructor(deciderFun, observerFun) {
         this.deciderFunction = deciderFun;
-        this.observerFunction = osbserverFun;
+        this.observerFunction = observerFun;
     }
 }
 
@@ -154,54 +194,69 @@ const textGroup = new Konva.Group();
 
 
 // Function order is relative to the Grant stack.
-const firstFunctionXPosition = stage.width() / 2;
-const firstFunctionYPosition = cognitiveFunctionTotalRadius;
+const firstFunXPos = stage.width() / 2;
+const firstFunYPos = cognitiveFunctionInnerRadius + 20;
 
-const lastFunctionXPosition = firstFunctionXPosition;
-const lastFunctionYPosition = cognitiveFunctionTotalRadius * axisDistanceFactor;
+const lastFunXPos = firstFunXPos;
+const lastFunYPos = firstFunYPos + axisDistancePixels;
 
-const axisDistance = lastFunctionYPosition - firstFunctionYPosition;
+const axisDistance = lastFunYPos - firstFunYPos;
 
-const secondFunctionXPosition = firstFunctionXPosition - (axisDistance / 2);
-const secondFunctionYPosition = axisDistance / 2 + firstFunctionYPosition;
+const secondFunXPos = firstFunXPos - (axisDistance / 2);
+const secondFunYPos = axisDistance / 2 + firstFunYPos;
 
-const thirdFunctionXPosition = secondFunctionXPosition + axisDistance;
-const thirdFunctionYPosition = secondFunctionYPosition;
-
-
-
-var firstFunctionCircle = new CognitiveFunctionCircle({
-    x: firstFunctionXPosition,
-    y: firstFunctionYPosition,
-});
-
-var secondFunctionCircle = new CognitiveFunctionCircle({
-    x: secondFunctionXPosition,
-    y: secondFunctionYPosition,
-});
-
-var thirdFunctionCircle = new CognitiveFunctionCircle({
-    x: thirdFunctionXPosition,
-    y: thirdFunctionYPosition,
-});
-
-var lastFunctionCircle = new CognitiveFunctionCircle({
-    x: lastFunctionXPosition,
-    y: lastFunctionYPosition,
-});
+const thirdFunXPos = secondFunXPos + axisDistance;
+const thirdFunYPos = secondFunYPos;
 
 
+const firstFunCircle = new CognitiveFunctionCircle(
+    1,
+    {
+        x: firstFunXPos,
+        y: firstFunYPos,
+    }
+);
 
-var leadFunctionText = new CognitiveFunctionText({
-    x: cogFunTextPlacement(firstFunctionCircle.x()),
-    y: cogFunTextPlacement(firstFunctionCircle.y()) + 5,
-});
+const secondFunCircle = new CognitiveFunctionCircle(
+    0.85,
+    {
+        x: secondFunXPos,
+        y: secondFunYPos,
+    }
+);
+
+const thirdFunCircle = new CognitiveFunctionCircle(
+    0.8,
+    {
+        x: thirdFunXPos,
+        y: thirdFunYPos,
+    }
+);
+
+const lastFunCircle = new CognitiveFunctionCircle(
+    0.7,
+    {
+        x: lastFunXPos,
+        y: lastFunYPos,
+    }
+);
 
 
 
+const firstToSecondFunLine = new AnimalLine(firstFunCircle, secondFunCircle);
+const firstToThirdFunLine = new AnimalLine(firstFunCircle, thirdFunCircle);
+const secondToLastFunLine = new AnimalLine(secondFunCircle, lastFunCircle);
+const thirdToLastFunLine = new AnimalLine(thirdFunCircle, lastFunCircle);
 
-circleGroup.add(firstFunctionCircle, secondFunctionCircle, thirdFunctionCircle, lastFunctionCircle);
-textGroup.add(leadFunctionText);
+
+const firstFunText = new CognitiveFunctionText(firstFunCircle);
+const secondFunText = new CognitiveFunctionText(secondFunCircle);
+const thirdFunText = new CognitiveFunctionText(thirdFunCircle);
+const lastFunText = new CognitiveFunctionText(lastFunCircle);
+
+
+circleGroup.add(firstFunCircle, secondFunCircle, thirdFunCircle, lastFunCircle);
+textGroup.add(firstFunText, secondFunText, thirdFunText, lastFunText);
 layer.add(circleGroup, textGroup);
 stage.add(layer);
 
@@ -223,13 +278,11 @@ function redrawCircles() {
     let play = new Animal(quadraDe, quadraOe);
     
     
-    let isSaviorDeciderIntroverted = animals.startsWith("S") || animals.startsWith("C");
-    let isSaviorObserverIntroverted = animals.startsWith("S") || animals.startsWith("B");
     let isSingleDecider = observerDecider === "doo";
     
     let firstAnimal;
-    let firstFunction;
-    let secondFunction;
+    let firstSaviorFun;
+    let secondSaviorFun;
     
     switch (animals[0]) {
         case 'S':
@@ -247,25 +300,34 @@ function redrawCircles() {
     }
     
     if (isSingleDecider) {
-        firstFunction = firstAnimal.deciderFunction;
-        secondFunction = firstAnimal.observerFunction;
+        firstSaviorFun = firstAnimal.deciderFunction;
+        secondSaviorFun = firstAnimal.observerFunction;
     } else {
-        firstFunction = firstAnimal.observerFunction;
-        secondFunction = firstAnimal.deciderFunction;
+        firstSaviorFun = firstAnimal.observerFunction;
+        secondSaviorFun = firstAnimal.deciderFunction;
     }
     
     
-    let thirdFunction = invertFunction(secondFunction);
-    let lastFunction = invertFunction(firstFunction);
+    let thirdSaviorFun = invertFun(secondSaviorFun);
+    let lastSaviorFun = invertFun(firstSaviorFun);
+    // If introversion/extroversion of first and second savior functions are matching, then the correct second Grant
+    // function is the opposite of the second savior function, otherwise it's the savior function itself.
+    let secondGrantFun = firstSaviorFun[1] === secondSaviorFun[1] ? invertFun(secondSaviorFun) : secondSaviorFun;
+    let thirdGrantFun = invertFun(secondGrantFun);
     
-    firstFunctionCircle.fill(fillColor(firstFunction));
-    firstFunctionCircle.stroke(strokeColor(firstFunction));
-    secondFunctionCircle.fill(fillColor(secondFunction));
-    secondFunctionCircle.stroke(strokeColor(secondFunction));
-    thirdFunctionCircle.fill(fillColor(thirdFunction));
-    thirdFunctionCircle.stroke(strokeColor(thirdFunction));
-    lastFunctionCircle.fill(fillColor(lastFunction));
-    lastFunctionCircle.stroke(strokeColor(lastFunction));
+    firstFunCircle.fill(fillColor(firstSaviorFun));
+    firstFunCircle.stroke(strokeColor(firstSaviorFun));
+    secondFunCircle.fill(fillColor(secondGrantFun));
+    secondFunCircle.stroke(strokeColor(secondGrantFun));
+    thirdFunCircle.fill(fillColor(thirdGrantFun));
+    thirdFunCircle.stroke(strokeColor(thirdGrantFun));
+    lastFunCircle.fill(fillColor(lastSaviorFun));
+    lastFunCircle.stroke(strokeColor(lastSaviorFun));
+    
+    firstFunText.text(firstSaviorFun);
+    secondFunText.text(secondGrantFun);
+    thirdFunText.text(thirdGrantFun);
+    lastFunText.text(lastSaviorFun);
     
     stage.draw();
 }
