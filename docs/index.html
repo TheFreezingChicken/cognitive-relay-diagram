@@ -22,6 +22,7 @@
         }
 
         h2 {
+            margin-top: 0;
             margin-bottom: 5px;
         }
 
@@ -62,19 +63,18 @@
             padding: 20px;
         }
 
-        .settings-container {
+        .input-container {
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
-            align-content: start;
+            align-items: end;
         }
-
 
         .vertical-container {
             display: flex;
             flex-direction: column;
             align-items: start;
-            margin: 10px;
+            margin: 10px 20px 10px 10px;
         }
 
 
@@ -83,7 +83,7 @@
         /* Style for the boxed section containing the Konva circle */
         #cognitive-diagram-container {
             align-self: center;
-            width: 100%;
+            width: 90%;
             height: fit-content;
             border: 2px solid #000;
         }
@@ -101,23 +101,65 @@
 <div class="space"></div>
 
     <!-- Radio button groups -->
-<div class="settings-container">
+<div class="input-container">
 
-    <div class="vertical-container">
-        <h2>Graphic Settings</h2>
-        <label for="functionsStyle">Functions Style:</label>
-        <select id="functionsStyle">
+    <div class="vertical-container" style="margin-right: 50px">
+        <h2>Settings</h2>
+        <label for="functions-style">Functions Style:</label>
+        <select id="functions-style">
             <option value="tfc">The Freezing Chicken</option>
             <option value="op">OP ebook</option>
         </select>
     </div>
 
+
     <div class="vertical-container">
-        <h2>Group 2</h2>
-        <input type="radio" name="group2" value="option5"> Option 5
-        <input type="radio" name="group2" value="option6"> Option 6
-        <input type="radio" name="group2" value="option7"> Option 7
-        <input type="radio" name="group2" value="option8"> Option 8
+        <h2>Diagram</h2>
+        <label for="observer-decider">Observer/Decider:</label>
+        <select id="observer-decider">
+            <option value="doo">Single Decider (Double Observer)</option>
+            <option value="odd">Single Observer (Double Decider)</option>
+        </select>
+    </div>
+
+    <div class="vertical-container">
+        <label for="animals">Animal Stack:</label>
+        <select id="animals">
+            <optgroup label="Sleep">
+                <option value="SCB">SC/B(P)</option>
+                <option value="SCP">SC/P(B)</option>
+                <option value="SBC">SB/C(P)</option>
+                <option value="SBP">SB/P(C)</option>
+            </optgroup>
+            <optgroup label="Consume">
+            <option value="CSB">CS/B(P)</option>
+            <option value="CSP">CS/P(B)</option>
+            <option value="CPS">CP/S(B)</option>
+            <option value="CPB">CP/B(S)</option>
+            </optgroup>
+            <optgroup label="Blast">
+            <option value="BSC">BS/C(P)</option>
+            <option value="BSP">BS/P(C)</option>
+            <option value="BPS">BP/S(C)</option>
+            <option value="BPC">BP/C(S)</option>
+            </optgroup>
+            <optgroup label="Play">
+            <option value="PCS">PC/S(B)</option>
+            <option value="PCB">PC/B(S)</option>
+            <option value="PBS">PB/S(C)</option>
+            <option value="PBC">PB/C(S)</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <div class="vertical-container">
+        <label for="quadra">Quadra:</label>
+        <select id="quadra">
+            <option value="alpha">Alpha | (Fe-Ti) + (Ne-Si)</option>
+            <option value="beta">Beta | (Fe-Ti) + (Se-Ni)</option>
+            <option value="gamma">Gamma | (Te-Fi) + (Se-Ni)</option>
+            <option value="delta">Delta | (Te-Fi) + (Ne-Si)</option>
+        </select>
     </div>
 </div>
 
@@ -125,60 +167,8 @@
 <!-- Container for the diagram. Filled with JS. -->
 <div id="cognitive-diagram-container"></div>
 
+<script src="drawing.js"></script>
 
-<script>
-    const diagramContainerElement = document.getElementById('cognitive-diagram-container');
-    const diagramContainerId = diagramContainerElement.id
-    const diagramContainerWidth = diagramContainerElement.clientWidth;
-
-    var stage = new Konva.Stage({
-        container: diagramContainerId,
-        width: diagramContainerWidth,
-        height: 400
-    });
-
-    // TODO Add listener for page resize.
-
-    var layer = new Konva.Layer();
-
-    const feelingFill = '#c82323';
-    const feelingStroke = '#881a1a';
-    const thinkingFill = '#6c6c6c';
-    const thinkingStroke = '#292929';
-    const sensingFill = '#f3ca24';
-    const sensingStroke = '#c0912c';
-    const intuitionFill = '#944cd2';
-    const intuitionStroke = '#522c73';
-
-    const neutralX1 = stage.width() / 2 - 100;
-    const neutralX2 = stage.width() / 2 + 100;
-    const neutralX3 = stage.width() / 2 - 100;
-    const neutralX4 = stage.width() / 2 - 100;
-
-    var fText = new Konva.Text({
-        x: 20,
-        y: 60,
-        text: "COMPLEX TEXT\n\nAll the world's a stage, and all the men and women merely players. They have their exits and their entrances.",
-        fontSize: 18,
-        fontFamily: 'Calibri',
-        fill: '#555',
-        width: 300,
-        padding: 20,
-        align: 'center',
-    });
-
-    var fCircle = new Konva.Circle({
-        x: stage.width() / 2 + 100,
-        y: 80,
-        radius: 50,
-        fill: '#c82323',
-        stroke: '#881a1a',
-        strokeWidth: 7,
-    });
-
-    layer.add(fCircle);
-    stage.add(layer);
-</script>
 </body>
 
 
