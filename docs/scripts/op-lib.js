@@ -77,14 +77,17 @@ export class OpType {
     quadra;
     isSingleObserver;
     isSingleDecider;
-    animalStack;
-    modality;
-    socialType;
-    
     grantStack;
+    
     saviorFunctions;
+    animalStack;
+    
+    modality;
     masculineFunctions;
+    
+    socialType;
     socialStack;
+    
     
     
     constructor(quadraName, isSingleObserver, animalStack, modality, socialType) {
@@ -114,17 +117,47 @@ export class OpType {
         grantStack[1] = matchingSaviorsExtroversion ? invertFun(saviorFunctions[1]) : saviorFunctions[1];
         grantStack[2] = invertFun(grantStack[1]);
         
-        // HERE Figure out the next step.
+        const masculineFunctions = new Array(2);
+        masculineFunctions[0] = modality[0] === "M" ? quadra.Sensing : quadra.Intuition;
+        masculineFunctions[1] = modality[1] === "M" ? quadra.De : quadra.Di;
+        
+        let socialStack;
+        switch (socialType) {
+            case "#1":
+                socialStack = ["C", "S", "P", "B"];
+                break;
+            case "#2":
+                socialStack = ["P", "C", "B", "S"];
+                break;
+            case "#3":
+                socialStack = ["S", "B", "C", "P"];
+                break;
+            case "#4":
+                socialStack = ["B", "P", "S", "C"];
+                break;
+        }
         
         
-        
+        this.quadra = quadra
         this.isSingleObserver = isSingleObserver;
         this.isSingleDecider = !isSingleObserver;
-        
-        // TODO Add dynamic properties with function names.
+        this.animalStack = animalStack;
+        this.modality = modality;
+        this.socialType = socialType;
+        this.grantStack = grantStack;
+        this.saviorFunctions = saviorFunctions;
+        this.masculineFunctions = masculineFunctions;
+        this.socialStack = socialStack;
     }
     
-    animalStackString() {
+    
+    saviorFunctionsToString() {
+        const s1 = this.saviorFunctions[0];
+        const s2 = this.saviorFunctions[1];
+        return s1 + "/" + s2;
+    }
+    
+    animalStackToString() {
         const a1 = this.animalStack[0];
         const a2 = this.animalStack[1];
         const a3 = this.animalStack[2];
@@ -132,9 +165,12 @@ export class OpType {
         return a1 + a2 + "/" + a3 + "(" + a4 + ")";
     }
     
+    
     toString() {
-        // TODO Complete
-        return this.modalities + this.animalStackString()
+        const mod = this.modality;
+        const sav = this.saviorFunctionsToString();
+        const anim = this.animalStackToString();
+        return mod + "-" + sav + "-" + anim + "-" + this.socialType;
     }
 }
 

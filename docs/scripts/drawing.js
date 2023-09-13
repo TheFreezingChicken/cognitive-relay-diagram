@@ -1,3 +1,14 @@
+import {
+    AnimalLine,
+    axisDistancePixels,
+    CognitiveFunctionCircle,
+    cognitiveFunctionInnerRadius,
+    CognitiveFunctionText,
+    fillColor,
+    strokeColor
+} from "./drawing-utils.js";
+import {OpType} from "./op-lib.js";
+
 const diagramContainerElement = document.getElementById('cognitive-diagram-container');
 const diagramContainerId = diagramContainerElement.id
 const diagramContainerWidth = diagramContainerElement.clientWidth;
@@ -44,37 +55,39 @@ const thirdFunXPos = secondFunXPos + axisDistance;
 const thirdFunYPos = secondFunYPos;
 
 
-const firstFunCircle = new CognitiveFunctionCircle(
-    1,
-    {
-        x: firstFunXPos,
-        y: firstFunYPos,
-    }
-);
-
-const secondFunCircle = new CognitiveFunctionCircle(
-    0.85,
-    {
-        x: secondFunXPos,
-        y: secondFunYPos,
-    }
-);
-
-const thirdFunCircle = new CognitiveFunctionCircle(
-    0.8,
-    {
-        x: thirdFunXPos,
-        y: thirdFunYPos,
-    }
-);
-
-const lastFunCircle = new CognitiveFunctionCircle(
-    0.7,
-    {
-        x: lastFunXPos,
-        y: lastFunYPos,
-    }
-);
+const functionCircles = [
+    new CognitiveFunctionCircle(
+        1,
+        {
+            x: firstFunXPos,
+            y: firstFunYPos,
+        }
+    ),
+    
+    new CognitiveFunctionCircle(
+        0.85,
+        {
+            x: secondFunXPos,
+            y: secondFunYPos,
+        }
+    ),
+    
+    new CognitiveFunctionCircle(
+        0.8,
+        {
+            x: thirdFunXPos,
+            y: thirdFunYPos,
+        }
+    ),
+    
+    new CognitiveFunctionCircle(
+        0.7,
+        {
+            x: lastFunXPos,
+            y: lastFunYPos,
+        }
+    )
+]
 
 
 
@@ -109,7 +122,7 @@ function redrawCircles() {
     
     const isSingleObserver = observerDecider === 'odd';
     
-    const opType = new OpType(quadra, isSingleObserver, animals)
+    const opType = new OpType(quadra, isSingleObserver, animals, "MM", "#1");
     
     firstFunCircle.fill(fillColor(opType.grantStack[0]));
     firstFunCircle.stroke(strokeColor(opType.grantStack[0]));
@@ -124,6 +137,11 @@ function redrawCircles() {
     secondFunText.text(opType.grantStack[1]);
     thirdFunText.text(opType.grantStack[2]);
     lastFunText.text(opType.grantStack[3]);
+    
+    // Because of the positiong conventions I chose, Sleep or Play are always on the right side as a first segment.
+    if (opType.animalStack[0].match("[S|P]")) firstToThirdFunLine.setAnimalOrder(1);
+    else firstToSecondFunLine.setAnimalOrder(1);
+    
     
     
     stage.draw();

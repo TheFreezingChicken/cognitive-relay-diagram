@@ -101,6 +101,10 @@ export class CognitiveFunctionCircle extends Konva.Circle {
         this.scaleX(scaleFactor);
         this.scaleY(scaleFactor);
     }
+    
+    // HERE Add a method or property (or both) to set the function that the circle is representing.
+    //      Also, consider extending Konva.Group and actually merging the circle with the text.
+    //      And maaaaaybe associate the 2 lines to the group as well.
 }
 
 export class AnimalLine extends Konva.Line {
@@ -114,7 +118,7 @@ export class AnimalLine extends Konva.Line {
     }
     
     
-    animalOrder(order) {
+    setAnimalOrder(order) {
         switch (order) {
             case 1:
                 this.strokeWidth(3);
