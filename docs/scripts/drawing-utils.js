@@ -1,79 +1,45 @@
 // Convention: every index follows the Grant stack positioning.
+import {OpType} from "./op-lib.js";
+
+export const CIRCLE_BASE_RADIUS = 60;
+export const CIRCLE_STROKE_FACTOR = 0.15;
+export const OPPOSITE_CIRCLE_DISTANCE = 350;
 
 
-export const cognitiveFunctionInnerRadius = 50;
-export const axisDistance = 400;
+const FIRST_GRANT_FUNCTION_SCALE_FACTOR = 1;
+const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
+const THIRD_GRANT_FUNCTION_SCALE_FACTOR = 0.68;
+const LAST_GRANT_FUNCTION_SCALE_FACTOR = 0.53;
 
 
-export function totalRadius(circle) {
+const FIRST_ANIMAL_STROKE_WIDTH = 17;
+const SECOND_ANIMAL_STROKE_WIDTH = 5;
+const THIRD_ANIMAL_STROKE_WIDTH = 5;
+const THIRD_ANIMAL_DASH_PATTERN = [10, 5];
+const LAST_ANIMAL_STROKE_WIDTH = 1;
+const LAST_ANIMAL_DASH_PATTERN = [6, 16];
+
+
+const TFCStyleColors = {
+    FEELING_FILL: '#c82323',
+    FEELING_STROKE: '#881a1a',
+    THINKING_FILL: '#6c6c6c',
+    THINKING_STROKE: '#292929',
+    SENSING_FILL: '#f3ca24',
+    SENSING_STROKE: '#c0912c',
+    INTUITION_FILL: '#944cd2',
+    INTUITION_STROKE: '#522c73',
+}
+
+
+function totalRadius(circle) {
     return circle.radius() + circle.strokeWidth();
 }
 
-export function cogFunTextPlacement(coordinate, circle) {
-    return coordinate - totalRadius(circle);
-}
-
-export const feelingFill = '#c82323';
-export const feelingStroke = '#881a1a';
-export const thinkingFill = '#6c6c6c';
-export const thinkingStroke = '#292929';
-export const sensingFill = '#f3ca24';
-export const sensingStroke = '#c0912c';
-export const intuitionFill = '#944cd2';
-export const intuitionStroke = '#522c73';
-
-export const tfcStyleValue = 'tfc';
-export const opStyleValue = 'op';
-
-
-export function fillColor(cognitiveFunction) {
-    let funChar = cognitiveFunction[0];
-    
-    let color;
-    switch (funChar) {
-        case 'F':
-            color = feelingFill;
-            break;
-        case 'T':
-            color = thinkingFill;
-            break;
-        case 'S':
-            color = sensingFill;
-            break;
-        case 'N':
-            color = intuitionFill;
-            break;
-    }
-    
-    return color;
-}
-
-
-export function strokeColor(cognitiveFunction) {
-    let funChar = cognitiveFunction[0];
-    
-    let color;
-    switch (funChar) {
-        case 'F':
-            color = feelingStroke;
-            break;
-        case 'T':
-            color = thinkingStroke;
-            break;
-        case 'S':
-            color = sensingStroke;
-            break;
-        case 'N':
-            color = intuitionStroke;
-            break;
-    }
-    
-    return color;
-}
 
 
 
-export class CognitiveFunctionText extends Konva.Text {
+class CognitiveFunctionText extends Konva.Text {
     constructor(circle) {
         super(
             {
@@ -92,47 +58,161 @@ export class CognitiveFunctionText extends Konva.Text {
             }
         );
     }
+    
+    
+    _cognitiveFunction;
+    get cognitiveFunction() {
+        return this._cognitiveFunction;
+    }
+    set cognitiveFunction(cognitiveFunction) {
+        this.text(cognitiveFunction)
+        this._cognitiveFunction = cognitiveFunction;
+    }
 }
 
-export class CognitiveFunctionCircle extends Konva.Circle {
-    constructor(scaleFactor, config) {
-        super(config);
+class CognitiveFunctionCircle extends Konva.Circle {
+    constructor(x, y, scaleFactor) {
+        super({x: x, y: y});
         
-        this.radius(cognitiveFunctionInnerRadius);
-        this.strokeWidth(this.radius() / 7);
+        this.radius(CIRCLE_BASE_RADIUS);
+        this.strokeWidth(this.radius() * CIRCLE_STROKE_FACTOR);
         
         this.scaleX(scaleFactor);
         this.scaleY(scaleFactor);
     }
     
-    // HERE Add a method or property (or both) to set the function that the circle is representing.
-    //      Also, consider extending Konva.Group and actually merging the circle with the text.
-    //      And maaaaaybe associate the 2 lines to the group as well.
+    
+    getFillColor(cognitiveFunction) {
+        let funChar = cognitiveFunction[0];
+        
+        let color;
+        switch (funChar) {
+            case 'F':
+                color = TFCStyleColors.FEELING_FILL;
+                break;
+            case 'T':
+                color = TFCStyleColors.THINKING_FILL;
+                break;
+            case 'S':
+                color = TFCStyleColors.SENSING_FILL;
+                break;
+            case 'N':
+                color = TFCStyleColors.INTUITION_FILL;
+                break;
+        }
+        
+        return color;
+    }
+    
+    
+    getStrokeColor(cognitiveFunction) {
+        let funChar = cognitiveFunction[0];
+        
+        let color;
+        switch (funChar) {
+            case 'F':
+                color = TFCStyleColors.FEELING_STROKE;
+                break;
+            case 'T':
+                color = TFCStyleColors.THINKING_STROKE;
+                break;
+            case 'S':
+                color = TFCStyleColors.SENSING_STROKE;
+                break;
+            case 'N':
+                color = TFCStyleColors.INTUITION_STROKE;
+                break;
+        }
+        
+        return color;
+    }
+    
+    
+    
+    
+    _cognitiveFunction;
+    get cognitiveFunction() {
+        return this._cognitiveFunction;
+    }
+    set cognitiveFunction(cognitiveFunction) {
+        this.fill(this.getFillColor(cognitiveFunction));
+        this.stroke(this.getStrokeColor(cognitiveFunction));
+        this._cognitiveFunction = cognitiveFunction;
+    }
 }
 
-export class AnimalLine extends Konva.Line {
-    constructor(circle1, circle2) {
+
+
+class AnimalLine extends Konva.Line {
+    cognitiveFunctionGroup1;
+    cognitiveFunctionGroup2;
+    
+    constructor(group1, group2) {
         super({
-            points: [circle1.x(), circle1.y(), circle2.x(), circle2.y()],
+            points: [
+                group1.circle.x(), group1.circle.y(),
+                group2.circle.x(), group2.circle.y()
+            ],
             stroke: 'black',
             strokeWidth: '1'
         });
         
+        this.cognitiveFunctionGroup1 = group1;
+        this.cognitiveFunctionGroup2 = group2;
     }
     
     
-    setAnimalOrder(order) {
+    updateAnimalOrder(animalStack) {
+        let animal;
+        
+        const g1 = this.cognitiveFunctionGroup1;
+        const g2 = this.cognitiveFunctionGroup2;
+        const isFirstGroupDecider = g1.cognitiveFunction[0].match(["F|T"]);
+        
+        
+        // Using introversion/extroversion letters to identify animal.
+        switch (g1.cognitiveFunction[1] + g2.cognitiveFunction[1]) {
+            case "ii":
+                animal = "S";
+                break;
+            case "ee":
+                animal = "P";
+                break;
+            // For the next two cases we need to check the first letter as well.
+            case "ie":
+                if (isFirstGroupDecider) animal = "C";
+                else animal = "B";
+                break;
+            case "ei":
+                if (isFirstGroupDecider) animal = "B";
+                else animal = "C";
+                break;
+        }
+    
+        const order = animalStack.indexOf(animal);
+        
         switch (order) {
+            case 0:
+                this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
+                this.dashEnabled(false);
+                this.opacity(1);
+                break;
             case 1:
-                this.strokeWidth(3);
+                this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
+                this.dashEnabled(false);
+                this.opacity(1);
                 break;
             case 2:
+                this.strokeWidth(THIRD_ANIMAL_STROKE_WIDTH);
+                this.dash(THIRD_ANIMAL_DASH_PATTERN);
+                this.dashEnabled(true);
+                this.opacity(1);
                 break;
             case 3:
-                this.dash = [5, 3];
-                break;
-            case 4:
-                this.dash = [2, 5];
+                this.strokeWidth(LAST_ANIMAL_STROKE_WIDTH);
+                this.dash(LAST_ANIMAL_DASH_PATTERN);
+                this.dashEnabled(true);
+                this.opacity(0.3);
                 break;
         }
     }
@@ -140,19 +220,45 @@ export class AnimalLine extends Konva.Line {
 
 
 class CognitiveFunctionGroup extends Konva.Group {
-    circleXPos;
-    circleYPos;
+    circle;
+    text;
+    grantOrder;
     
-    constructor(circleXPos, circleYPos) {
+    constructor(circleXPos, circleYPos, scaleFactor, grantOrder) {
         super();
     
-        this.circleXPos = circleXPos;
-        this.circleYPos = circleYPos;
+        const circle = new CognitiveFunctionCircle(
+            circleXPos, circleYPos, scaleFactor
+        );
+        
+        const text = new CognitiveFunctionText(circle);
+        this.grantOrder = grantOrder;
+        
+        this.add(circle);
+        this.add(text);
+        
+        this.circle = circle;
+        this.text = text;
+    }
+    
+    
+    _cognitiveFunction;
+    get cognitiveFunction() {
+        return this._cognitiveFunction;
+    }
+    set cognitiveFunction(cognitiveFunction) {
+        this.circle.cognitiveFunction = cognitiveFunction;
+        this.text.cognitiveFunction = cognitiveFunction;
+        this._cognitiveFunction = cognitiveFunction;
     }
 }
 
 
 export class DiagramStage extends Konva.Stage {
+    cognitiveFunctionGroups;
+    animalLines;
+    
+    
     constructor(htmlElement) {
         super({
             container: htmlElement.id,
@@ -161,19 +267,79 @@ export class DiagramStage extends Konva.Stage {
         });
         
         const cfGroups = new Array(4);
-        cfGroups[0] = new CognitiveFunctionGroup(this.width() / 2, cognitiveFunctionInnerRadius + 20);
+        cfGroups[0] = new CognitiveFunctionGroup(
+            this.width() / 2,
+            CIRCLE_BASE_RADIUS + 20,
+            FIRST_GRANT_FUNCTION_SCALE_FACTOR,
+            0
+        );
         cfGroups[3] = new CognitiveFunctionGroup(
-            cfGroups[0].circleXPos,
-            cfGroups[0].circleYPos + axisDistance
+            cfGroups[0].circle.x(),
+            cfGroups[0].circle.y() + OPPOSITE_CIRCLE_DISTANCE,
+            LAST_GRANT_FUNCTION_SCALE_FACTOR,
+            3
         );
         
         cfGroups[1] = new CognitiveFunctionGroup(
-            cfGroups[0].circleXPos - axisDistance / 2,
-            cfGroups[0].circleYPos + axisDistance / 2
+            cfGroups[0].circle.x() - OPPOSITE_CIRCLE_DISTANCE / 2,
+            cfGroups[0].circle.y() + OPPOSITE_CIRCLE_DISTANCE / 2,
+            SECOND_GRANT_FUNCTION_SCALE_FACTOR,
+            1
         );
         cfGroups[2] = new CognitiveFunctionGroup(
-            cfGroups[1].circleXPos + axisDistance,
-            cfGroups[1].circleYPos
+            cfGroups[1].circle.x() + OPPOSITE_CIRCLE_DISTANCE,
+            cfGroups[1].circle.y(),
+            THIRD_GRANT_FUNCTION_SCALE_FACTOR,
+            2
         );
+        
+        // Lines are stored following Grant stack;
+        const animalLines = new Array(4);
+        animalLines[0] = new AnimalLine(cfGroups[0], cfGroups[1]);
+        animalLines[1] = new AnimalLine(cfGroups[0], cfGroups[2]);
+        animalLines[2] = new AnimalLine(cfGroups[1], cfGroups[3]);
+        animalLines[3] = new AnimalLine(cfGroups[2], cfGroups[3]);
+        
+        const linesGroup = new Konva.Group();
+        for (const line of animalLines) {
+            linesGroup.add(line);
+        };
+        
+        const functionsGroup = new Konva.Group();
+        for (const g of cfGroups) {
+            functionsGroup.add(g);
+        };
+        
+        const layer = new Konva.Layer();
+        layer.add(linesGroup);
+        layer.add(functionsGroup);
+        
+        this.add(layer);
+        
+        this.cognitiveFunctionGroups = cfGroups;
+        this.animalLines = animalLines;
+    }
+    
+    
+    redraw(
+        functionsStyle,
+        observerDecider,
+        animals,
+        quadra
+    ) {
+        const isSingleObserver = observerDecider === 'odd';
+        
+        const opType = new OpType(quadra, isSingleObserver, animals, "MM", "#1");
+    
+        this.cognitiveFunctionGroups[0].cognitiveFunction = opType.grantStack[0];
+        this.cognitiveFunctionGroups[1].cognitiveFunction = opType.grantStack[1];
+        this.cognitiveFunctionGroups[2].cognitiveFunction = opType.grantStack[2];
+        this.cognitiveFunctionGroups[3].cognitiveFunction = opType.grantStack[3];
+    
+        for (const line of this.animalLines) {
+            line.updateAnimalOrder(opType.animalStack);
+        }
+        
+        this.draw();
     }
 }
