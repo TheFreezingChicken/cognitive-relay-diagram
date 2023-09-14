@@ -1,5 +1,8 @@
+// Convention: every index follows the Grant stack positioning.
+
+
 export const cognitiveFunctionInnerRadius = 50;
-export const axisDistancePixels = 400;
+export const axisDistance = 400;
 
 
 export function totalRadius(circle) {
@@ -132,5 +135,45 @@ export class AnimalLine extends Konva.Line {
                 this.dash = [2, 5];
                 break;
         }
+    }
+}
+
+
+class CognitiveFunctionGroup extends Konva.Group {
+    circleXPos;
+    circleYPos;
+    
+    constructor(circleXPos, circleYPos) {
+        super();
+    
+        this.circleXPos = circleXPos;
+        this.circleYPos = circleYPos;
+    }
+}
+
+
+export class DiagramStage extends Konva.Stage {
+    constructor(htmlElement) {
+        super({
+            container: htmlElement.id,
+            width: htmlElement.clientWidth,
+            height: 900
+        });
+        
+        const cfGroups = new Array(4);
+        cfGroups[0] = new CognitiveFunctionGroup(this.width() / 2, cognitiveFunctionInnerRadius + 20);
+        cfGroups[3] = new CognitiveFunctionGroup(
+            cfGroups[0].circleXPos,
+            cfGroups[0].circleYPos + axisDistance
+        );
+        
+        cfGroups[1] = new CognitiveFunctionGroup(
+            cfGroups[0].circleXPos - axisDistance / 2,
+            cfGroups[0].circleYPos + axisDistance / 2
+        );
+        cfGroups[2] = new CognitiveFunctionGroup(
+            cfGroups[1].circleXPos + axisDistance,
+            cfGroups[1].circleYPos
+        );
     }
 }

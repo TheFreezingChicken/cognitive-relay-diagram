@@ -1,35 +1,17 @@
 import {
     AnimalLine,
-    axisDistancePixels,
     CognitiveFunctionCircle,
-    cognitiveFunctionInnerRadius,
     CognitiveFunctionText,
+    DiagramStage,
     fillColor,
     strokeColor
 } from "./drawing-utils.js";
 import {OpType} from "./op-lib.js";
 
+
 const diagramContainerElement = document.getElementById('cognitive-diagram-container');
-const diagramContainerId = diagramContainerElement.id
-const diagramContainerWidth = diagramContainerElement.clientWidth;
 
-const stage = new Konva.Stage({
-    container: diagramContainerId,
-    width: diagramContainerWidth,
-    height: 900
-});
-
-// Removed all the dp shit because we can use the "scale" function.
-//const dpFactor = 1 / 900;
-
-// Function to scale pixels according to the size of the container.
-//
-// function dp(pixels) {
-//     console.log("pixels:", pixels);
-//     console.log("dpFactor:", dpFactor);
-//     console.log("stage width:", stage.width());
-//     return Math.round(pixels * dpFactor * stage.width());
-// }
+const stage = new DiagramStage(diagramContainerElement);
 
 // TODO Add listener for page resize.
 
@@ -39,20 +21,7 @@ const textGroup = new Konva.Group();
 const lineGroup = new Konva.Group();
 
 
-// Function order is relative to the Grant stack.
-const firstFunXPos = stage.width() / 2;
-const firstFunYPos = cognitiveFunctionInnerRadius + 20;
 
-const lastFunXPos = firstFunXPos;
-const lastFunYPos = firstFunYPos + axisDistancePixels;
-
-const axisDistance = lastFunYPos - firstFunYPos;
-
-const secondFunXPos = firstFunXPos - (axisDistance / 2);
-const secondFunYPos = axisDistance / 2 + firstFunYPos;
-
-const thirdFunXPos = secondFunXPos + axisDistance;
-const thirdFunYPos = secondFunYPos;
 
 
 const functionCircles = [
