@@ -40,12 +40,16 @@ function totalRadius(circle) {
 
 
 class CognitiveFunctionCircle extends Konva.Circle {
-    constructor(x, y, scaleFactor) {
+    constructor(x, y, grantOrder, stubFunction) {
         super({x: x, y: y});
         
         this.radius(CIRCLE_BASE_RADIUS);
         this.strokeWidth(this.radius() * CIRCLE_STROKE_FACTOR);
         
+        this.fill(this.getFillColor(stubFunction));
+        this.stroke(this.getStrokeColor(stubFunction));
+        
+        // HERE Switch scale based on grant order and stub function
         this.scaleX(scaleFactor);
         this.scaleY(scaleFactor);
     }
@@ -99,14 +103,14 @@ class CognitiveFunctionCircle extends Konva.Circle {
     
     
     
-    _cognitiveFunction;
-    get cognitiveFunction() {
-        return this._cognitiveFunction;
+    _cogFun;
+    get cogFun() {
+        return this._cogFun;
     }
-    set cognitiveFunction(cognitiveFunction) {
-        this.fill(this.getFillColor(cognitiveFunction));
-        this.stroke(this.getStrokeColor(cognitiveFunction));
-        this._cognitiveFunction = cognitiveFunction;
+    set cogFun(cogFun) {
+        this.fill(this.getFillColor(cogFun));
+        this.stroke(this.getStrokeColor(cogFun));
+        this._cogFun = cogFun;
     }
 }
 
@@ -114,7 +118,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
 
 
 class CognitiveFunctionText extends Konva.Text {
-    constructor(circle) {
+    constructor(circle, stubFunction) {
         super(
             {
                 x: circle.x() - totalRadius(circle) + (1.3 * circle.scaleY()),
@@ -128,7 +132,8 @@ class CognitiveFunctionText extends Konva.Text {
                 stroke: 'black',
                 strokeWidth: 2,
                 align: 'center',
-                verticalAlign: 'middle'
+                verticalAlign: 'middle',
+                text: stubFunction,
             }
         );
     }
@@ -151,14 +156,30 @@ class CognitiveFunctionGroup extends Konva.Group {
     text;
     grantOrder;
     
-    constructor(circleXPos, circleYPos, scaleFactor, grantOrder) {
+    constructor(circleXPos, circleYPos, grantOrder) {
         super();
         
+        let stubFunction;
+        switch (grantOrder) {
+            case 0:
+                stubFunction = "N";
+                break;
+            case 1:
+                stubFunction = "T";
+                break;
+            case 2:
+                stubFunction = "F";
+                break;
+            case 3:
+                stubFunction = "S";
+                break;
+        }
+        
         const circle = new CognitiveFunctionCircle(
-            circleXPos, circleYPos, scaleFactor
+            circleXPos, circleYPos, grantOrder, stubFunction
         );
         
-        const text = new CognitiveFunctionText(circle);
+        const text = new CognitiveFunctionText(circle, stubFunction);
         this.grantOrder = grantOrder;
         
         this.add(circle);
@@ -197,7 +218,7 @@ class AnimalLine extends Konva.Line {
                 group2.circle.x(), group2.circle.y()
             ],
             stroke: 'black',
-            strokeWidth: '1'
+            strokeWidth: '5'
         });
         
         this.cogFun1Group = group1;
@@ -338,26 +359,22 @@ export class DiagramStage extends Konva.Stage {
         cogFunGroups[0] = new CognitiveFunctionGroup(
             this.width() / 2,
             CIRCLE_BASE_RADIUS + 20,
-            FIRST_GRANT_FUNCTION_SCALE_FACTOR,
             0
         );
         cogFunGroups[3] = new CognitiveFunctionGroup(
             cogFunGroups[0].circle.x(),
             cogFunGroups[0].circle.y() + OPPOSITE_CIRCLE_DISTANCE,
-            LAST_GRANT_FUNCTION_SCALE_FACTOR,
             3
         );
         
         cogFunGroups[1] = new CognitiveFunctionGroup(
             cogFunGroups[0].circle.x() - OPPOSITE_CIRCLE_DISTANCE / 2,
             cogFunGroups[0].circle.y() + OPPOSITE_CIRCLE_DISTANCE / 2,
-            SECOND_GRANT_FUNCTION_SCALE_FACTOR,
             1
         );
         cogFunGroups[2] = new CognitiveFunctionGroup(
             cogFunGroups[1].circle.x() + OPPOSITE_CIRCLE_DISTANCE,
             cogFunGroups[1].circle.y(),
-            THIRD_GRANT_FUNCTION_SCALE_FACTOR,
             2
         );
         
