@@ -30,7 +30,7 @@ function selectionChangeHandler() {
             animalStackSelectionElement.value,
             quadraSelectionElement.value
         )
-    }
+    } else stage.resetToHint();
 }
 
 

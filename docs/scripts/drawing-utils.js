@@ -542,4 +542,10 @@ export class DiagramStage extends Konva.Stage {
         this._fillHintLayer.visible(false);
         this.draw();
     }
+    
+    resetToHint() {
+        this._diagramLayer.visible(false);
+        this._fillHintLayer.visible(true);
+        this.draw();
+    }
 }
