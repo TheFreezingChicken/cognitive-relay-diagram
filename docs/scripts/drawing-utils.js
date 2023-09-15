@@ -120,7 +120,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         
         let scaleFactor;
         if (cogFun === this._stubCogFun) {
-            scaleFactor = 1;
+            scaleFactor = 0.9;
         } else switch (this._grantOrder) {
             case 0:
                 scaleFactor = FIRST_GRANT_FUNCTION_SCALE_FACTOR;
@@ -152,21 +152,24 @@ class CognitiveFunctionCircle extends Konva.Circle {
 
 
 class CognitiveFunctionText extends Konva.Text {
+    _circle;
+    
     constructor(circle, stubFunction) {
         super(
             {
-                // HERE Use getClientRect and move offset to cofFun method.
-                x: circle.x() - totalRadius(circle),// + (1.3 * circle.scaleY()),
-                y: circle.y() - totalRadius(circle) + (4.5 * circle.scaleY()),
-                height: totalRadius(circle) * 2,
-                width: totalRadius(circle) * 2,
+                x: circle.getClientRect().x,
+                y: circle.getClientRect().y,
+                height: circle.getClientRect().height,
+                width: circle.getClientRect().width,
+                
+                align: 'center',
+                verticalAlign: 'middle',
+                
                 fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
                 fontStyle: 'bold',
                 fill: 'white',
                 stroke: 'black',
                 strokeWidth: 2,
-                align: 'center',
-                verticalAlign: 'middle'
             }
         );
         
@@ -179,10 +182,21 @@ class CognitiveFunctionText extends Konva.Text {
     get cogFun() {
         return this._cogFun;
     }
-    set cogFun(cognitiveFunction) {
-        this.text(cognitiveFunction.replaceAll("?",""));
-        this.fontSize(BASE_COGFUN_FONT_SIZE * this._circle.scaleY());
-        this._cogFun = cognitiveFunction;
+    set cogFun(partialCogFun) {
+        this.text(partialCogFun.replaceAll("?",""));
+        
+        // Horizontal offset and font size based on neutral diagram or specific type diagram.
+        if (this.text().length === 1) {
+            this.offsetX(1);
+            this.fontSize(BASE_COGFUN_FONT_SIZE);
+        }
+        else {
+            this.offsetX(-2 * this._circle.scaleY());
+            this.fontSize(BASE_COGFUN_FONT_SIZE * this._circle.scaleY());
+        }
+        
+        this.offsetY(-4 * this._circle.scaleY());
+        this._cogFun = partialCogFun;
     }
 }
 
@@ -298,8 +312,9 @@ class AnimalLine extends Konva.Line {
 
 
 class AnimalText extends Konva.Text {
-    constructor(cogFun1Group, cogFun2Group) {
+    constructor(cogFun1Circle, cogFun2Circle) {
         super(
+            // HERE The smaller X is always the leftmost one. Good to find the x,y point.
             // {
             //     x: circle.x() - totalRadius(circle) + (1.3 * circle.scaleY()),
             //     y: circle.y() - totalRadius(circle) + (4.5 * circle.scaleY()),
