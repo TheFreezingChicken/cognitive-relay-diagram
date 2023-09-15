@@ -10,7 +10,7 @@ const observerDeciderSelectionElement = document.getElementById('observer-decide
 const animalStackSelectionElement = document.getElementById('animals');
 const quadraSelectionElement = document.getElementById('quadra');
 
-// TODO Explore the possibility of saving elements for current session only.
+// TODO Explore the possibility of saving elements for current session only. (copy the code generated in ChatGPT)
 
 
 const selectionElements = document.querySelectorAll('.type-selection');
