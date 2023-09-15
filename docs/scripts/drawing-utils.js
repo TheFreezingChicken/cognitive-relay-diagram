@@ -5,6 +5,7 @@ export const CIRCLE_BASE_RADIUS = 60;
 export const CIRCLE_STROKE_FACTOR = 0.15;
 export const OPPOSITE_CIRCLE_DISTANCE = 350;
 
+const BASE_COGFUN_FONT_SIZE = 58;
 
 const FIRST_GRANT_FUNCTION_SCALE_FACTOR = 1;
 const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
@@ -40,23 +41,25 @@ function totalRadius(circle) {
 
 
 class CognitiveFunctionCircle extends Konva.Circle {
-    constructor(x, y, grantOrder, stubFunction) {
-        super({x: x, y: y});
+    _stubCogFun;
+    _grantOrder;
+    
+    constructor(x, y, grantOrder, stubCogFun) {
+        super({x: x, y: y, scaleX: 1, scaleY: 1});
         
         this.radius(CIRCLE_BASE_RADIUS);
         this.strokeWidth(this.radius() * CIRCLE_STROKE_FACTOR);
         
-        this.fill(this.getFillColor(stubFunction));
-        this.stroke(this.getStrokeColor(stubFunction));
+        this._stubCogFun = stubCogFun;
+        this._grantOrder = grantOrder;
         
-        // HERE Switch scale based on grant order and stub function
-        this.scaleX(scaleFactor);
-        this.scaleY(scaleFactor);
+        
+        this.cogFun = stubCogFun;
     }
     
     
-    getFillColor(cognitiveFunction) {
-        let funChar = cognitiveFunction[0];
+    getFillColor(cogFun) {
+        let funChar = cogFun[0];
         
         let color;
         switch (funChar) {
@@ -78,8 +81,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
     }
     
     
-    getStrokeColor(cognitiveFunction) {
-        let funChar = cognitiveFunction[0];
+    getStrokeColor(cogFun) {
+        let funChar = cogFun[0];
         
         let color;
         switch (funChar) {
@@ -102,6 +105,10 @@ class CognitiveFunctionCircle extends Konva.Circle {
     
     
     
+    reset() {
+        this.cogFun = this._stubCogFun;
+    }
+    
     
     _cogFun;
     get cogFun() {
@@ -110,10 +117,37 @@ class CognitiveFunctionCircle extends Konva.Circle {
     set cogFun(cogFun) {
         this.fill(this.getFillColor(cogFun));
         this.stroke(this.getStrokeColor(cogFun));
+        
+        let scaleFactor;
+        if (cogFun === this._stubCogFun) {
+            scaleFactor = 1;
+        } else switch (this._grantOrder) {
+            case 0:
+                scaleFactor = FIRST_GRANT_FUNCTION_SCALE_FACTOR;
+                break;
+            case 1:
+                scaleFactor = SECOND_GRANT_FUNCTION_SCALE_FACTOR;
+                break;
+            case 2:
+                scaleFactor = THIRD_GRANT_FUNCTION_SCALE_FACTOR;
+                break;
+            case 3:
+                scaleFactor = LAST_GRANT_FUNCTION_SCALE_FACTOR;
+                break;
+        }
+        this.scaleX(scaleFactor);
+        this.scaleY(scaleFactor);
+        
         this._cogFun = cogFun;
+    
+    
+        console.log(
+            `Circle ${this._grantOrder + 1}:\n`,
+            "Width: ", this.getClientRect().width,
+            "Height: ", this.getClientRect().height,
+        )
     }
 }
-
 
 
 
@@ -121,31 +155,34 @@ class CognitiveFunctionText extends Konva.Text {
     constructor(circle, stubFunction) {
         super(
             {
-                x: circle.x() - totalRadius(circle) + (1.3 * circle.scaleY()),
+                // HERE Use getClientRect and move offset to cofFun method.
+                x: circle.x() - totalRadius(circle),// + (1.3 * circle.scaleY()),
                 y: circle.y() - totalRadius(circle) + (4.5 * circle.scaleY()),
                 height: totalRadius(circle) * 2,
                 width: totalRadius(circle) * 2,
-                fontSize: 58 * circle.scaleY(),
                 fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
                 fontStyle: 'bold',
                 fill: 'white',
                 stroke: 'black',
                 strokeWidth: 2,
                 align: 'center',
-                verticalAlign: 'middle',
-                text: stubFunction,
+                verticalAlign: 'middle'
             }
         );
+        
+        this._circle = circle;
+        this.cogFun = stubFunction;
     }
     
     
-    _cognitiveFunction;
-    get cognitiveFunction() {
-        return this._cognitiveFunction;
+    _cogFun;
+    get cogFun() {
+        return this._cogFun;
     }
-    set cognitiveFunction(cognitiveFunction) {
-        this.text(cognitiveFunction)
-        this._cognitiveFunction = cognitiveFunction;
+    set cogFun(cognitiveFunction) {
+        this.text(cognitiveFunction.replaceAll("?",""));
+        this.fontSize(BASE_COGFUN_FONT_SIZE * this._circle.scaleY());
+        this._cogFun = cognitiveFunction;
     }
 }
 
@@ -154,7 +191,7 @@ class CognitiveFunctionText extends Konva.Text {
 class CognitiveFunctionGroup extends Konva.Group {
     circle;
     text;
-    grantOrder;
+    _grantOrder;
     
     constructor(circleXPos, circleYPos, grantOrder) {
         super();
@@ -162,16 +199,16 @@ class CognitiveFunctionGroup extends Konva.Group {
         let stubFunction;
         switch (grantOrder) {
             case 0:
-                stubFunction = "N";
+                stubFunction = "N?";
                 break;
             case 1:
-                stubFunction = "T";
+                stubFunction = "T?";
                 break;
             case 2:
-                stubFunction = "F";
+                stubFunction = "F?";
                 break;
             case 3:
-                stubFunction = "S";
+                stubFunction = "S?";
                 break;
         }
         
@@ -180,7 +217,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         );
         
         const text = new CognitiveFunctionText(circle, stubFunction);
-        this.grantOrder = grantOrder;
+        this._grantOrder = grantOrder;
         
         this.add(circle);
         this.add(text);
@@ -194,14 +231,20 @@ class CognitiveFunctionGroup extends Konva.Group {
     get cogFun() {
         return this._cogFun;
     }
-    set cogFun(cognitiveFunction) {
-        this.circle.cognitiveFunction = cognitiveFunction;
-        this.text.cognitiveFunction = cognitiveFunction;
-        this._cogFun = cognitiveFunction;
+    set cogFun(cogFun) {
+        this.circle.cogFun = cogFun;
+        this.text.cogFun = cogFun;
+        this._cogFun = cogFun;
     }
     
     setOpType(opType) {
-        this.cogFun = opType.grantStack[this.grantOrder];
+        this.cogFun = opType.grantStack[this._grantOrder];
+    
+        // console.log(
+        //     `Group ${this._grantOrder + 1}:\n`,
+        //     "Width: ", this.getClientRect().width,
+        //     "Height: ", this.getClientRect().height,
+        // )
     }
 }
 
