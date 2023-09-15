@@ -10,12 +10,31 @@ const observerDeciderSelectionElement = document.getElementById('observer-decide
 const animalStackSelectionElement = document.getElementById('animals');
 const quadraSelectionElement = document.getElementById('quadra');
 
-stage.redraw(
-    functionsStyleSelectionElement.value,
-    observerDeciderSelectionElement.value,
-    animalStackSelectionElement.value,
-    quadraSelectionElement.value
-)
+const selectionElements = document.querySelectorAll('.type-selection');
+
+function selectionChangeHandler() {
+    
+    let areAllSelected = true;
+    
+    for (const e of selectionElements) {
+        if (e.value.toUpperCase() === "NONE") {
+            areAllSelected = false;
+            break;
+        }
+    }
+    
+    if (areAllSelected) {
+        stage.redraw(
+            functionsStyleSelectionElement.value,
+            observerDeciderSelectionElement.value,
+            animalStackSelectionElement.value,
+            quadraSelectionElement.value
+        )
+    }
+}
+
+
+for (const e of selectionElements) e.addEventListener('change', selectionChangeHandler);
 
 // TODO Add listener for page resize.
 // TODO Add listener for selection change events.

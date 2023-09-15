@@ -83,7 +83,7 @@
         /* Style for the boxed section containing the Konva circle */
         #cognitive-diagram-container {
             align-self: center;
-            width: 90%;
+            width: fit-content;
             height: fit-content;
             border: 2px solid #000;
         }
@@ -119,7 +119,8 @@
     <div class="vertical-container">
         <h2>Diagram</h2>
         <label for="observer-decider">Observer/Decider:</label>
-        <select id="observer-decider">
+        <select id="observer-decider" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
             <option value="doo">Single Decider (Double Observer)</option>
             <option value="odd">Single Observer (Double Decider)</option>
         </select>
@@ -127,7 +128,8 @@
 
     <div class="vertical-container">
         <label for="animals">Animal Stack:</label>
-        <select id="animals">
+        <select id="animals" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
             <optgroup label="Sleep">
                 <option value="SCBP">SC/B(P)</option>
                 <option value="SCPB">SC/P(B)</option>
@@ -157,7 +159,8 @@
 
     <div class="vertical-container">
         <label for="quadra">Quadra:</label>
-        <select id="quadra">
+        <select id="quadra" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
             <option value="alpha">Alpha | (Fe-Ti) + (Ne-Si)</option>
             <option value="beta">Beta | (Fe-Ti) + (Se-Ni)</option>
             <option value="gamma">Gamma | (Te-Fi) + (Se-Ni)</option>

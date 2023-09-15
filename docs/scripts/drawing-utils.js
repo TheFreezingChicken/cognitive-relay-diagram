@@ -5,7 +5,9 @@ export const CIRCLE_BASE_RADIUS = 60;
 export const CIRCLE_STROKE_FACTOR = 0.15;
 export const OPPOSITE_CIRCLE_DISTANCE = 350;
 
-const BASE_COGFUN_FONT_SIZE = 58;
+const COGFUN_BASE_FONT_SIZE = 58;
+const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
+const ANIMAL_LETTER_OFFSET_FROM_LINE = -15;
 
 const FIRST_GRANT_FUNCTION_SCALE_FACTOR = 1;
 const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
@@ -188,11 +190,11 @@ class CognitiveFunctionText extends Konva.Text {
         // Horizontal offset and font size based on neutral diagram or specific type diagram.
         if (this.text().length === 1) {
             this.offsetX(1);
-            this.fontSize(BASE_COGFUN_FONT_SIZE);
+            this.fontSize(COGFUN_BASE_FONT_SIZE);
         }
         else {
             this.offsetX(-2 * this._circle.scaleY());
-            this.fontSize(BASE_COGFUN_FONT_SIZE * this._circle.scaleY());
+            this.fontSize(COGFUN_BASE_FONT_SIZE * this._circle.scaleY());
         }
         
         this.offsetY(-4 * this._circle.scaleY());
@@ -312,32 +314,52 @@ class AnimalLine extends Konva.Line {
 
 
 class AnimalText extends Konva.Text {
-    constructor(cogFun1Circle, cogFun2Circle) {
+    static get _INVISIBLE_TEXT_BOX_SIZE() { return 50; }
+    static get _INVISIBLE_TEXT_BOX_BASE_OFFSET() { return AnimalText._INVISIBLE_TEXT_BOX_SIZE / 2; }
+    
+    _diagramCenter;
+    
+    constructor(cogFun1Group, cogFun2Group, diagramCenter) {
+        const c1 = cogFun1Group.circle;
+        const c2 = cogFun2Group.circle;
+        
+        const x = (c1.x() + c2.x()) / 2;
+        const y = (c1.y() + c2.y()) / 2;
+    
+        
         super(
-            // HERE The smaller X is always the leftmost one. Good to find the x,y point.
-            // {
-            //     x: circle.x() - totalRadius(circle) + (1.3 * circle.scaleY()),
-            //     y: circle.y() - totalRadius(circle) + (4.5 * circle.scaleY()),
-            //     height: totalRadius(cogFun1Group.circle),
-            //     width: this.width(Math.sqrt(OPPOSITE_CIRCLE_DISTANCE / 2 * 2)),
-            //     fontSize: 58 * circle.scaleY(),
-            //     fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
-            //     fontStyle: 'bold',
-            //     fill: 'white',
-            //     stroke: 'black',
-            //     strokeWidth: 2,
-            //     align: 'center',
-            //     verticalAlign: 'middle'
-            // }
+            {
+                x: x,
+                y: y,
+                width: AnimalText._INVISIBLE_TEXT_BOX_SIZE,
+                height: AnimalText._INVISIBLE_TEXT_BOX_SIZE,
+                offsetX: AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET,
+                offsetY: AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET,
+                
+                fontSize: ANIMAL_LETTER_BASE_FONT_SIZE,
+                fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+                fontStyle: 'bold',
+                fill: 'black',
+                
+                align: 'center',
+                verticalAlign: 'middle'
+            }
         );
         
-        
+        this._diagramCenter = diagramCenter;
     }
     
     
     
     updateText(animal, order) {
         this.text(animal);
+        const bOff = AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET;
+        this.offsetX(
+            bOff + (this._diagramCenter.x > this.x() ? ANIMAL_LETTER_OFFSET_FROM_LINE : -ANIMAL_LETTER_OFFSET_FROM_LINE)
+        );
+        this.offsetY(
+            bOff + (this._diagramCenter.y > this.y() ? ANIMAL_LETTER_OFFSET_FROM_LINE -15 : -ANIMAL_LETTER_OFFSET_FROM_LINE -5)
+        );
     }
 }
 
@@ -348,11 +370,11 @@ class AnimalGroup extends Konva.Group {
     cogFun1Group;
     cogFun2Group;
     
-    constructor(cogFun1Group, cogFun2Group) {
+    constructor(cogFun1Group, cogFun2Group, diagramCenter) {
         super();
     
         const line = new AnimalLine(cogFun1Group, cogFun2Group);
-        const text = new AnimalText(cogFun1Group, cogFun2Group);
+        const text = new AnimalText(cogFun1Group, cogFun2Group, diagramCenter);
         
         this.add(line, text);
         
@@ -409,17 +431,17 @@ export class DiagramStage extends Konva.Stage {
     constructor(htmlElement) {
         super({
             container: htmlElement.id,
-            width: htmlElement.clientWidth,
-            height: 900
+            width: OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4 + 30,
+            height: OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4
         });
         
         const cogFunGroups = new Array(4);
-        cogFunGroups[0] = new CognitiveFunctionGroup(
+        const c1 = cogFunGroups[0] = new CognitiveFunctionGroup(
             this.width() / 2,
             CIRCLE_BASE_RADIUS + 20,
             0
         );
-        cogFunGroups[3] = new CognitiveFunctionGroup(
+        const c4 = cogFunGroups[3] = new CognitiveFunctionGroup(
             cogFunGroups[0].circle.x(),
             cogFunGroups[0].circle.y() + OPPOSITE_CIRCLE_DISTANCE,
             3
@@ -436,13 +458,19 @@ export class DiagramStage extends Konva.Stage {
             2
         );
         
+        
+        const diagramCenter = {
+            x: (c1.circle.x() + c4.circle.x()) / 2,
+            y: (c1.circle.y() + c4.circle.y()) / 2,
+        }
+        
         // Lines are stored following Grant stack;
         const animalGroups = new Array(4);
         // The order of groups in the constructors is important for animal text rotation.
-        animalGroups[0] = new AnimalGroup(cogFunGroups[0], cogFunGroups[1]);
-        animalGroups[1] = new AnimalGroup(cogFunGroups[2], cogFunGroups[0]);
-        animalGroups[2] = new AnimalGroup(cogFunGroups[1], cogFunGroups[3]);
-        animalGroups[3] = new AnimalGroup(cogFunGroups[3], cogFunGroups[2]);
+        animalGroups[0] = new AnimalGroup(cogFunGroups[0], cogFunGroups[1], diagramCenter);
+        animalGroups[1] = new AnimalGroup(cogFunGroups[2], cogFunGroups[0], diagramCenter);
+        animalGroups[2] = new AnimalGroup(cogFunGroups[1], cogFunGroups[3], diagramCenter);
+        animalGroups[3] = new AnimalGroup(cogFunGroups[3], cogFunGroups[2], diagramCenter);
         
         const linesGroup = new Konva.Group();
         for (const line of animalGroups) {
@@ -454,14 +482,41 @@ export class DiagramStage extends Konva.Stage {
             functionsGroup.add(g);
         };
         
-        const layer = new Konva.Layer();
-        layer.add(linesGroup);
-        layer.add(functionsGroup);
+        const diagramLayer = new Konva.Layer();
+        diagramLayer.add(linesGroup);
+        diagramLayer.add(functionsGroup);
+        diagramLayer.visible(false);
+    
+    
+        const fillHintLayer = new Konva.Layer();
+        fillHintLayer.add(
+            new Konva.Text({
+                x: 0,
+                y: 50,
+                width: this.width(),
+            
+                fontSize: 25,
+                fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+                fontStyle: 'bold',
+                fill: 'black',
+                stroke: 'white',
+                strokeWidth: 1,
+            
+                align: 'center',
+                verticalAlign: 'middle',
+            
+                text: "Fill all the dropdown menus...",
+            })
+        )
         
-        this.add(layer);
+        
+        
+        this.add(diagramLayer, fillHintLayer);
         
         this.cogFunGroups = cogFunGroups;
         this.animalGroups = animalGroups;
+        this._diagramLayer = diagramLayer;
+        this._fillHintLayer = fillHintLayer;
     }
     
     
@@ -483,6 +538,8 @@ export class DiagramStage extends Konva.Stage {
             g.setOpType(opType);
         }
         
+        this._diagramLayer.visible(true);
+        this._fillHintLayer.visible(false);
         this.draw();
     }
 }
