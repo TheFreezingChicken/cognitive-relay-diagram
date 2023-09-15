@@ -22,9 +22,55 @@ export function invertFun(cognitiveFunction) {
     return funChar + introChar;
 }
 
+// String must be either a single uppercase letter or a full name with first letter uppercase.
+export function invertAnimal(animal) {
+    let result;
+    const error = new Error("Invalid animal.");
+    
+    
+    // Blast is the opposite of Consume, and Sleep is the opposite of Play.
+    switch (animal[0]) {
+        case "S":
+            if (animal.length > 1) {
+                if (animal === "Sleep") result = "Play";
+                else throw error;
+            } else {
+                result = "P";
+            }
+            break;
+        case "C":
+            if (animal.length > 1) {
+                if (animal === "Consume") result = "Blast";
+                else throw error;
+            } else {
+                result = "B";
+            }
+            break;
+        case "B":
+            if (animal.length > 1) {
+                if (animal === "Blast") result = "Consume";
+                else throw error;
+            } else {
+                result = "C";
+            }
+            break;
+        case "P":
+            if (animal.length > 1) {
+                if (animal === "Play") result = "Sleep";
+                else throw error;
+            } else {
+                result = "S";
+            }
+            break;
+        default:
+            throw error; // Invalid input if the first character doesn't match any case.
+    }
+    
+    return result;
+}
 
 
-export class Quadra {
+class Quadra {
     Di;
     De;
     Oi;
@@ -55,7 +101,7 @@ export const Quadras = {
 };
 
 
-export class Animal {
+class Animal {
     decidingFunction;
     observingFunction;
     
@@ -81,6 +127,7 @@ export class OpType {
     
     saviorFunctions;
     animalStack;
+    doubleActivatedAnimal;
     
     modality;
     masculineFunctions;
@@ -142,6 +189,7 @@ export class OpType {
         this.isSingleObserver = isSingleObserver;
         this.isSingleDecider = !isSingleObserver;
         this.animalStack = animalStack;
+        this.doubleActivatedAnimal = invertAnimal(animalStack[3]);
         this.modality = modality;
         this.socialType = socialType;
         this.grantStack = grantStack;

@@ -10,6 +10,9 @@ const observerDeciderSelectionElement = document.getElementById('observer-decide
 const animalStackSelectionElement = document.getElementById('animals');
 const quadraSelectionElement = document.getElementById('quadra');
 
+// TODO Explore the possibility of saving elements for current session only.
+
+
 const selectionElements = document.querySelectorAll('.type-selection');
 
 function selectionChangeHandler() {
@@ -22,6 +25,9 @@ function selectionChangeHandler() {
             break;
         }
     }
+    
+    // TODO Take opType creation out of the DiagramStage and put it here.
+    // TODO Add double activation numeric hints and masculinity.
     
     if (areAllSelected) {
         stage.redraw(

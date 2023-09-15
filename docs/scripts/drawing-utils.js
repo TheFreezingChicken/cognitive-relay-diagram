@@ -2,7 +2,7 @@
 import {OpType} from "./op-lib.js";
 
 export const CIRCLE_BASE_RADIUS = 60;
-export const CIRCLE_STROKE_FACTOR = 0.15;
+export const CIRCLE_STROKE_FACTOR = 0.2;
 export const OPPOSITE_CIRCLE_DISTANCE = 350;
 
 const COGFUN_BASE_FONT_SIZE = 58;
@@ -15,13 +15,14 @@ const THIRD_GRANT_FUNCTION_SCALE_FACTOR = 0.68;
 const LAST_GRANT_FUNCTION_SCALE_FACTOR = 0.53;
 
 
-const FIRST_ANIMAL_STROKE_WIDTH = 17;
-const SECOND_ANIMAL_STROKE_WIDTH = 5;
-const THIRD_ANIMAL_STROKE_WIDTH = 3;
+const FIRST_ANIMAL_STROKE_WIDTH = 15;
+const SECOND_ANIMAL_STROKE_WIDTH = 4;
+const THIRD_ANIMAL_STROKE_WIDTH = 2;
 const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_STROKE_WIDTH = 1;
 const LAST_ANIMAL_DASH_PATTERN = [6, 16];
 
+const FIRST_SAVIOR_ANIMAL_LINE_STROKE_COLOR = "#6cb3df";
 
 const TFCStyleColors = {
     FEELING_FILL: '#c82323',
@@ -287,22 +288,26 @@ class AnimalLine extends Konva.Line {
     updateAnimalOrder(order) {
         switch (order) {
             case 0:
+                this.stroke(FIRST_SAVIOR_ANIMAL_LINE_STROKE_COLOR);
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
                 this.dashEnabled(false);
                 this.opacity(1);
                 break;
             case 1:
+                this.stroke('black');
                 this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
                 this.dashEnabled(false);
                 this.opacity(1);
                 break;
             case 2:
+                this.stroke('black');
                 this.strokeWidth(THIRD_ANIMAL_STROKE_WIDTH);
                 this.dash(THIRD_ANIMAL_DASH_PATTERN);
                 this.dashEnabled(true);
                 this.opacity(1);
                 break;
             case 3:
+                this.stroke('black');
                 this.strokeWidth(LAST_ANIMAL_STROKE_WIDTH);
                 this.dash(LAST_ANIMAL_DASH_PATTERN);
                 this.dashEnabled(true);
@@ -323,14 +328,10 @@ class AnimalText extends Konva.Text {
         const c1 = cogFun1Group.circle;
         const c2 = cogFun2Group.circle;
         
-        const x = (c1.x() + c2.x()) / 2;
-        const y = (c1.y() + c2.y()) / 2;
-    
-        
         super(
             {
-                x: x,
-                y: y,
+                x: (c1.x() + c2.x()) / 2,
+                y: (c1.y() + c2.y()) / 2,
                 width: AnimalText._INVISIBLE_TEXT_BOX_SIZE,
                 height: AnimalText._INVISIBLE_TEXT_BOX_SIZE,
                 offsetX: AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET,
@@ -338,8 +339,11 @@ class AnimalText extends Konva.Text {
                 
                 fontSize: ANIMAL_LETTER_BASE_FONT_SIZE,
                 fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
-                fontStyle: 'bold',
+                //fontStyle: 'bold',
                 fill: 'black',
+                stroke: 'black',
+                strokeWidth: '2',
+                strokeEnabled: false,
                 
                 align: 'center',
                 verticalAlign: 'middle'
@@ -351,15 +355,43 @@ class AnimalText extends Konva.Text {
     
     
     
-    updateText(animal, order) {
-        this.text(animal);
-        const bOff = AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET;
-        this.offsetX(
-            bOff + (this._diagramCenter.x > this.x() ? ANIMAL_LETTER_OFFSET_FROM_LINE : -ANIMAL_LETTER_OFFSET_FROM_LINE)
-        );
-        this.offsetY(
-            bOff + (this._diagramCenter.y > this.y() ? ANIMAL_LETTER_OFFSET_FROM_LINE -15 : -ANIMAL_LETTER_OFFSET_FROM_LINE -5)
-        );
+    updateText(animal, order, isDoubleActivated) {
+        this.text(order === 3 ? `(${animal})` : animal);
+        this.fontStyle(isDoubleActivated ? "bold" : "normal");
+        this.strokeEnabled(isDoubleActivated);
+        const baseOffset = AnimalText._INVISIBLE_TEXT_BOX_BASE_OFFSET;
+        const cX = this._diagramCenter.x;
+        const cY = this._diagramCenter.y;
+        const tX = this.x();
+        const tY = this.y();
+        
+        let addedXOffset;
+        let addedYOffset;
+        switch (true) {
+            // Top left
+            case cX > tX && cY > tY:
+                addedXOffset = -17;
+                addedYOffset = -25;
+                break;
+            // Top right
+            case cX < tX && cY > tY:
+                addedXOffset = 17;
+                addedYOffset = -25;
+                break;
+            // Bottom left
+            case cX > tX && cY < tY:
+                addedXOffset = -17;
+                addedYOffset = 17;
+                break;
+            // Bottom right
+            case cX < tX && cY < tY:
+                addedXOffset = 17;
+                addedYOffset = 17;
+                break;
+        }
+        
+        this.offsetX(baseOffset + addedXOffset);
+        this.offsetY(baseOffset + addedYOffset);
     }
 }
 
@@ -412,9 +444,10 @@ class AnimalGroup extends Konva.Group {
                 break;
         }
         
+        const isDoubleActivated = opType.doubleActivatedAnimal === animal;
         const order = opType.animalStack.indexOf(animal);
         this.line.updateAnimalOrder(order);
-        this.text.updateText(animal, order);
+        this.text.updateText(animal, order, isDoubleActivated);
     }
 }
 
