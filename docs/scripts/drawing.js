@@ -1,5 +1,4 @@
 // Convention: every index follows the Grant stack positioning.
-import {OpType} from "./op-lib.js";
 
 export const CIRCLE_BASE_RADIUS = 60;
 export const CIRCLE_STROKE_FACTOR = 0.2;
@@ -22,7 +21,7 @@ const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_STROKE_WIDTH = 1;
 const LAST_ANIMAL_DASH_PATTERN = [6, 16];
 
-const FIRST_SAVIOR_ANIMAL_LINE_STROKE_COLOR = "#6cb3df";
+const FIRST_SAVIOR_ANIMAL_LINE_STROKE_COLOR = "#55c076";
 
 const TFCStyleColors = {
     FEELING_FILL: '#c82323',
@@ -254,7 +253,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         this._cogFun = cogFun;
     }
     
-    setOpType(opType) {
+    updateCogFun(/*OpType*/opType) {
         this.cogFun = opType.grantStack[this._grantOrder];
     
         // console.log(
@@ -266,6 +265,41 @@ class CognitiveFunctionGroup extends Konva.Group {
 }
 
 
+
+class DemonAnimalBackgroundTriangle extends Konva.Line {
+    constructor(
+        /*CognitiveFunctionGroup*/
+        cogFun1Group,
+        /*CognitiveFunctionGroup*/
+        cogFun2Group,
+        /*{x,y}*/
+        diagramCenter
+    ) {
+        const c1 = cogFun1Group.circle;
+        const c2 = cogFun2Group.circle;
+        
+        super({
+            points: [
+                c1.x(), c1.y(),
+                c2.x(), c2.y(),
+                diagramCenter.x, diagramCenter.y
+            ],
+            closed: true,
+            fill: 'red',
+            opacity: 0.4,
+            visible: false
+        });
+    }
+    
+    
+    
+    updateDemonState(/*Boolean*/isDemon) {
+        this.visible(isDemon);
+        
+        let offset;
+        // switch ()
+    }
+}
 
 class AnimalLine extends Konva.Line {
     cogFun1Group;
@@ -342,7 +376,7 @@ class AnimalText extends Konva.Text {
                 //fontStyle: 'bold',
                 fill: 'black',
                 stroke: 'black',
-                strokeWidth: '2',
+                strokeWidth: '1',
                 strokeEnabled: false,
                 
                 align: 'center',
@@ -397,6 +431,8 @@ class AnimalText extends Konva.Text {
 
 
 class AnimalGroup extends Konva.Group {
+    /*DemonAnimalBackgroundTriangle*/
+    backgroundTriangle;
     line;
     text;
     cogFun1Group;
@@ -405,19 +441,22 @@ class AnimalGroup extends Konva.Group {
     constructor(cogFun1Group, cogFun2Group, diagramCenter) {
         super();
     
+        const bgTriangle = new DemonAnimalBackgroundTriangle(cogFun1Group, cogFun2Group, diagramCenter);
         const line = new AnimalLine(cogFun1Group, cogFun2Group);
         const text = new AnimalText(cogFun1Group, cogFun2Group, diagramCenter);
         
-        this.add(line, text);
+        this.add(bgTriangle, line, text);
         
         this.cogFun1Group = cogFun1Group;
         this.cogFun2Group = cogFun2Group;
+    
+        this.backgroundTriangle = bgTriangle;
         this.line = line;
         this.text = text;
     }
     
     
-    setOpType(opType) {
+    updateAnimal(opType) {
         let animal;
         
         const cogFun1 = this.cogFun1Group.cogFun;
@@ -446,6 +485,7 @@ class AnimalGroup extends Konva.Group {
         
         const isDoubleActivated = opType.doubleActivatedAnimal === animal;
         const order = opType.animalStack.indexOf(animal);
+        this.backgroundTriangle.updateDemonState(order > 1);
         this.line.updateAnimalOrder(order);
         this.text.updateText(animal, order, isDoubleActivated);
     }
@@ -508,12 +548,12 @@ export class DiagramStage extends Konva.Stage {
         const linesGroup = new Konva.Group();
         for (const line of animalGroups) {
             linesGroup.add(line);
-        };
+        }
         
         const functionsGroup = new Konva.Group();
         for (const g of cogFunGroups) {
             functionsGroup.add(g);
-        };
+        }
         
         const diagramLayer = new Konva.Layer();
         diagramLayer.add(linesGroup);
@@ -554,21 +594,15 @@ export class DiagramStage extends Konva.Stage {
     
     
     redraw(
-        functionsStyle,
-        observerDecider,
-        animals,
-        quadra
+        /* OpType */
+        opType
     ) {
-        const isSingleObserver = observerDecider === 'odd';
-        
-        const opType = new OpType(quadra, isSingleObserver, animals, "MM", "#1");
-    
         for (const g of this.cogFunGroups) {
-            g.setOpType(opType)
+            g.updateCogFun(opType)
         }
     
         for (const g of this.animalGroups) {
-            g.setOpType(opType);
+            g.updateAnimal(opType);
         }
         
         this._diagramLayer.visible(true);
