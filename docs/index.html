@@ -117,13 +117,25 @@
     </div>
 
 
+
     <div class="vertical-container">
         <h2>Diagram</h2>
+        <label for="quadra">Quadra:</label>
+        <select id="quadra" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
+            <option value="alpha">Alpha | (Fe-Ti) + (Ne-Si)</option>
+            <option value="beta">Beta | (Fe-Ti) + (Se-Ni)</option>
+            <option value="gamma">Gamma | (Te-Fi) + (Se-Ni)</option>
+            <option value="delta">Delta | (Te-Fi) + (Ne-Si)</option>
+        </select>
+    </div>
+
+    <div class="vertical-container">
         <label for="observer-decider">Observer/Decider:</label>
         <select id="observer-decider" class="type-selection">
             <option value="NONE">-- CHOOSE --</option>
-            <option value="doo">Single Decider (Double Observer)</option>
-            <option value="odd">Single Observer (Double Decider)</option>
+            <option value="DOO">Single Decider (Double Observer)</option>
+            <option value="ODD">Single Observer (Double Decider)</option>
         </select>
     </div>
 
@@ -159,13 +171,25 @@
     </div>
 
     <div class="vertical-container">
-        <label for="quadra">Quadra:</label>
-        <select id="quadra" class="type-selection">
+        <label for="modality">Modality:</label>
+        <select id="modality" class="type-selection">
             <option value="NONE">-- CHOOSE --</option>
-            <option value="alpha">Alpha | (Fe-Ti) + (Ne-Si)</option>
-            <option value="beta">Beta | (Fe-Ti) + (Se-Ni)</option>
-            <option value="gamma">Gamma | (Te-Fi) + (Se-Ni)</option>
-            <option value="delta">Delta | (Te-Fi) + (Ne-Si)</option>
+            <option value="FF">FF - Tester</option>
+            <option value="FM">FM - Visual</option>
+            <option value="MF">MF - Audio</option>
+            <option value="MM">MM - Kinesthetic</option>
+        </select>
+    </div>
+
+
+    <div class="vertical-container">
+        <label for="social">Social Type:</label>
+        <select id="social" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
+            <option value="#1">#1 - Flex</option>
+            <option value="#2">#2 - Responsibility</option>
+            <option value="#3">#3 - Specialize</option>
+            <option value="#4">#4 - Friends</option>
         </select>
     </div>
 </div>

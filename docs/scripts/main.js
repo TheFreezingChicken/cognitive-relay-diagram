@@ -1,9 +1,10 @@
-import {DiagramStage} from './drawing.js';
+import {DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
 import {OpType} from "./op-lib.js";
 
 
 const APPEARANCE_SETTING_HTML_CLASS_NAME = '.appearance-setting';
 const TYPE_SELECTION_HTML_CLASS_NAME = '.type-selection';
+
 
 // sessionStorage.clear();
 // localStorage.clear();
@@ -38,11 +39,100 @@ if (typeSelection !== null) {
 }
 
 
+
+class DiagramStage extends Konva.Stage {
+    /**
+     *
+     * @private
+     * @type {Konva.Layer}
+     */
+    _diagramLayer;
+    
+    /**
+     *
+     * @private
+     * @type {DiagramGroup}
+     */
+    _diagramGroup;
+    
+    /**
+     *
+     * @private
+     * @type {LegendGroup}
+     */
+    _legendGroup;
+    
+    
+    constructor(htmlElement) {
+        super({
+            container: htmlElement.id,
+            width: DIAGRAM_SIZE,
+            height: DIAGRAM_SIZE
+        });
+    
+        const diagramLayer = new Konva.Layer();
+        diagramLayer.add(new DiagramGroup());
+        this._diagramLayer = diagramLayer;
+    
+    
+        const fillHintLayer = new Konva.Layer();
+        fillHintLayer.add(
+            new Konva.Text({
+                x: 0,
+                y: 50,
+                width: this.width(),
+            
+                fontSize: 25,
+                fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+                fontStyle: 'bold',
+                fill: 'black',
+                stroke: 'white',
+                strokeWidth: 1,
+            
+                align: 'center',
+                verticalAlign: 'middle',
+            
+                text: "Fill all the dropdown menus...",
+            })
+        )
+        this._fillHintLayer = fillHintLayer;
+    
+    
+        this.add(diagramLayer, fillHintLayer);
+    }
+    
+    
+    /**
+     *
+     * @param {OpType} opType
+     */
+    redraw(
+        opType
+    ) {
+        this._diagramGroup.updateType(opType);
+        
+        this._diagramLayer.visible(true);
+        this._fillHintLayer.visible(false);
+        this.draw();
+    }
+    
+    resetToHint() {
+        this._diagramLayer.visible(false);
+        this._fillHintLayer.visible(true);
+        this.draw();
+    }
+}
+
+
+// MAIN START (everything is loaded above) =============================================================
+
 const diagramContainerElement = document.getElementById('cognitive-diagram-container');
-const stage = new DiagramStage(diagramContainerElement);
+
+const diagramStage = new DiagramStage(diagramContainerElement);
 
 
-function redraw() {
+
+function updateDiagram() {
     let areAllSelected = true;
     
     for (const e of allSelectionElements) {
@@ -58,16 +148,17 @@ function redraw() {
         const observerDecider = document.getElementById('observer-decider').value;
         const animals = document.getElementById('animals').value;
         const quadra = document.getElementById('quadra').value;
+        const modality = document.getElementById('modality').value;
+        const socialType = document.getElementById('social').value;
         
-        const isSingleObserver = observerDecider === 'odd';
+        const isSingleObserver = observerDecider === 'ODD';
         
-        const opType = new OpType(quadra, isSingleObserver, animals, "MM", "#1");
-        // TODO Add background triangle to quickly tell apart demon animals.
+        const opType = new OpType(quadra, isSingleObserver, animals, modality, socialType);
         // TODO Add double activation numeric hints and masculinity.
         
-        stage.redraw(opType)
+        diagramStage.redraw(opType)
     } else {
-        stage.resetToHint();
+        diagramStage.resetToHint();
     }
 }
 
@@ -108,7 +199,7 @@ function storeChangedUserInput(isStoringAppearance) {
 function selectionChangeHandler(event) {
     const isChangeInAppearance = event?.target?.id === 'functions-style';
     
-    redraw();
+    updateDiagram();
     
     storeChangedUserInput(isChangeInAppearance);
 }
