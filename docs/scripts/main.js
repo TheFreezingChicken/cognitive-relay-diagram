@@ -46,21 +46,21 @@ class DiagramStage extends Konva.Stage {
      * @private
      * @type {Konva.Layer}
      */
-    _diagramLayer;
+    #diagramLayer;
     
     /**
      *
      * @private
      * @type {DiagramGroup}
      */
-    _diagramGroup;
+    #diagramGroup;
     
     /**
      *
      * @private
      * @type {LegendGroup}
      */
-    _legendGroup;
+    #legendGroup;
     
     
     constructor(htmlElement) {
@@ -69,10 +69,13 @@ class DiagramStage extends Konva.Stage {
             width: DIAGRAM_SIZE,
             height: DIAGRAM_SIZE
         });
-    
+        
+        const diagramGroup = new DiagramGroup();
+        this.#diagramGroup = diagramGroup;
+        
         const diagramLayer = new Konva.Layer();
-        diagramLayer.add(new DiagramGroup());
-        this._diagramLayer = diagramLayer;
+        diagramLayer.add(diagramGroup);
+        this.#diagramLayer = diagramLayer;
     
     
         const fillHintLayer = new Konva.Layer();
@@ -109,15 +112,15 @@ class DiagramStage extends Konva.Stage {
     redraw(
         opType
     ) {
-        this._diagramGroup.updateType(opType);
+        this.#diagramGroup.updateType(opType);
         
-        this._diagramLayer.visible(true);
+        this.#diagramLayer.visible(true);
         this._fillHintLayer.visible(false);
         this.draw();
     }
     
     resetToHint() {
-        this._diagramLayer.visible(false);
+        this.#diagramLayer.visible(false);
         this._fillHintLayer.visible(true);
         this.draw();
     }

@@ -138,6 +138,15 @@ export class OpType {
     
     
     constructor(quadraName, isSingleObserver, animalStack, modality, socialType) {
+        console.log(
+            'Constructing OP type...\n',
+            `Quadra: ${quadraName}\n`,
+            `Is single observer: ${isSingleObserver}\n`,
+            `Animal Stack: ${animalStack}\n`,
+            `Modality: ${modality}\n`,
+            `Social Type: ${socialType}\n`
+        )
+        
         const quadra = Quadras[quadraName.toLowerCase()];
         
         const saviorFunctions = new Array(2);
