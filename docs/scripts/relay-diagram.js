@@ -60,6 +60,17 @@ const TFCStyleColors = {
     INTUITION_STROKE: '#522c73',
 }
 
+const DEMON_FUNCTION_BG_IMG = new Image();
+DEMON_FUNCTION_BG_IMG.src = './img/DemonFunction.png';
+
+/**
+ *
+ * @param {function(): void} listener
+ */
+export function addOnDemonImgLoadListener(listener) {
+    DEMON_FUNCTION_BG_IMG.addEventListener('load', listener)
+}
+
 
 
 class CognitiveFunctionCircle extends Konva.Circle {
@@ -68,11 +79,11 @@ class CognitiveFunctionCircle extends Konva.Circle {
      * @private
      * @type {number}
      */
-    _grantOrder;
+    #grantOrder;
     
     
     /**
-     * @param grantOrder
+     * @param {number} grantOrder
      */
     constructor(grantOrder) {
         let position;
@@ -123,68 +134,105 @@ class CognitiveFunctionCircle extends Konva.Circle {
         });
         
         
-        this._grantOrder = grantOrder;
+        this.#grantOrder = grantOrder;
     }
     
     
-    getFillColor(cogFun) {
-        let funChar = cogFun[0];
-        
-        let color;
-        switch (funChar) {
-            case 'F':
-                color = TFCStyleColors.FEELING_FILL;
-                break;
-            case 'T':
-                color = TFCStyleColors.THINKING_FILL;
-                break;
-            case 'S':
-                color = TFCStyleColors.SENSING_FILL;
-                break;
-            case 'N':
-                color = TFCStyleColors.INTUITION_FILL;
-                break;
-        }
-        
-        return color;
-    }
-    
-    
-    getStrokeColor(cogFun) {
-        let funChar = cogFun[0];
-        
-        let color;
-        switch (funChar) {
-            case 'F':
-                color = TFCStyleColors.FEELING_STROKE;
-                break;
-            case 'T':
-                color = TFCStyleColors.THINKING_STROKE;
-                break;
-            case 'S':
-                color = TFCStyleColors.SENSING_STROKE;
-                break;
-            case 'N':
-                color = TFCStyleColors.INTUITION_STROKE;
-                break;
-        }
-        
-        return color;
-    }
-    
-    
-    
+    /**
+     *
+     * @param {string} cogFun
+     */
     updateCogFun(cogFun) {
-        this.fill(this.getFillColor(cogFun));
-        this.stroke(this.getStrokeColor(cogFun));
+    
+        let fillColor;
+        let strokeColor;
+        switch (cogFun[0]) {
+            case 'F':
+                fillColor = TFCStyleColors.FEELING_FILL;
+                strokeColor = TFCStyleColors.FEELING_STROKE;
+                break;
+            case 'T':
+                fillColor = TFCStyleColors.THINKING_FILL;
+                strokeColor = TFCStyleColors.THINKING_STROKE;
+                break;
+            case 'S':
+                fillColor = TFCStyleColors.SENSING_FILL;
+                strokeColor = TFCStyleColors.SENSING_STROKE;
+                break;
+            case 'N':
+                fillColor = TFCStyleColors.INTUITION_FILL;
+                strokeColor = TFCStyleColors.INTUITION_STROKE;
+                break;
+        }
+        
+        this.fill(fillColor);
+        this.stroke(strokeColor);
     }
 }
 
 
+class CognitiveFunctionOutline extends CognitiveFunctionCircle {
+    /**
+     *
+     * @param {number} grantOrder
+     */
+    constructor(grantOrder) {
+        super(grantOrder);
+        
+        this.radius(CIRCLE_BASE_RADIUS + 15);
+        this.fill('limegreen');
+    }
+    
+    /**
+     *
+     * @param {Boolean} isSavior
+     */
+    updateSaviorState(isSavior) {
+        this.visible(isSavior);
+    }
+}
+
+
+class DemonBackgroundImage extends Konva.Image {
+    /**
+     * @type {CognitiveFunctionCircle}
+     */
+    #circle;
+    
+    /**
+     *
+     * @param {CognitiveFunctionCircle} circle
+     */
+    constructor(circle) {
+        super({
+            position: {
+                x: circle.getClientRect().x,
+                y: circle.getClientRect().y,
+                // HERE Set the correct offset and then figure out the resize problem (maybe scaling?).
+            },
+        });
+        
+        this.#circle = circle;
+        
+        DEMON_FUNCTION_BG_IMG.addEventListener('load', () => {
+            this.image(DEMON_FUNCTION_BG_IMG);
+        });
+    }
+    
+    
+    updateDemonState(isDemon) {
+        this.visible(isDemon);
+    }
+}
+
 
 class CognitiveFunctionText extends Konva.Text {
-    _circle;
+    #circle;
     
+    /**
+     *
+     * @param {CognitiveFunctionCircle} circle
+     */
     constructor(circle) {
         super(
             {
@@ -211,7 +259,7 @@ class CognitiveFunctionText extends Konva.Text {
             }
         );
         
-        this._circle = circle;
+        this.#circle = circle;
     }
     
     
@@ -225,22 +273,30 @@ class CognitiveFunctionText extends Konva.Text {
 
 class CognitiveFunctionGroup extends Konva.Group {
     /**
-     * @private
      * @type {CognitiveFunctionCircle}
      */
     #circle;
     get circle() { return this.#circle; }
     
     /**
-     * @private
+     * @type {CognitiveFunctionOutline}
+     */
+    #outline;
+    get outline() { return this.#outline; }
+    
+    /**
+     * @type {DemonBackgroundImage}
+     */
+    #demonBgImg;
+    get demonBgImg() { return this.#demonBgImg; }
+    
+    /**
      * @type {CognitiveFunctionText}
      */
     #text;
     get text () { return this.#text; }
     
     /**
-     *
-     * @private
      * @type {number}
      */
     #grantOrder;
@@ -248,15 +304,12 @@ class CognitiveFunctionGroup extends Konva.Group {
     
     
     /**
-     *
-     * @private
      * @type {string}
      */
     #cogFun;
     get cogFun() { return this.#cogFun; }
     
     /**
-     *
      * @param {DiagramGroup} rootDiagramGroup
      * @param {number} grantOrder
      */
@@ -266,14 +319,22 @@ class CognitiveFunctionGroup extends Konva.Group {
         this.#grantOrder = grantOrder;
         // TODO Add background circle for savior-demon
         
+        
         const circle = new CognitiveFunctionCircle(grantOrder);
         this.#circle = circle;
+        
+        const outline = new CognitiveFunctionOutline(grantOrder);
+        this.#outline = outline;
+        
+        const demonBgImg = new DemonBackgroundImage(circle);
+        this.#demonBgImg = demonBgImg;
+        
         
         const text = new CognitiveFunctionText(circle);
         this.#text = text;
         
         
-        this.add(circle, text);
+        this.add(demonBgImg, outline, circle, text);
     }
     
     
@@ -286,6 +347,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         const cogFun = opType.grantStack[this.#grantOrder];
         this.#cogFun = cogFun;
         
+        this.#outline.updateSaviorState(opType.saviorFunctions.includes(cogFun));
         this.#circle.updateCogFun(cogFun);
         this.#text.updateCogFun(cogFun);
     }

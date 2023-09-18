@@ -1,4 +1,4 @@
-import {DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
+import {addOnDemonImgLoadListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
 import {OpType} from "./op-lib.js";
 
 
@@ -199,16 +199,24 @@ function storeChangedUserInput(isStoringAppearance) {
     }
 }
 
+/**
+ *
+ * @param {Event | string | null} event - Is either an event, null, or a 'skipStoring' string.
+ */
 function selectionChangeHandler(event) {
     const isChangeInAppearance = event?.target?.id === 'functions-style';
     
     updateDiagram();
     
-    storeChangedUserInput(isChangeInAppearance);
+    // noinspection EqualityComparisonWithCoercionJS
+    if (event != 'skipStoring') storeChangedUserInput(isChangeInAppearance);
 }
 
 for (const e of allAppearanceElements) e.addEventListener('change', selectionChangeHandler);
 for (const e of allSelectionElements) e.addEventListener('change', selectionChangeHandler);
+addOnDemonImgLoadListener(() => {
+    selectionChangeHandler('skipStoring');
+});
 
 selectionChangeHandler(null);
 // TODO Add listener for page resize.
