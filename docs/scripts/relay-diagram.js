@@ -19,16 +19,15 @@ const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
 const THIRD_GRANT_FUNCTION_SCALE_FACTOR = 0.68;
 const LAST_GRANT_FUNCTION_SCALE_FACTOR = 0.53;
 
-const ANIMAL_BG_TRIANGLE_OFFSET = 20;
+const ANIMAL_BG_TRIANGLE_OFFSET = 17;
 
-const FIRST_ANIMAL_STROKE_WIDTH = 15;
-const SECOND_ANIMAL_STROKE_WIDTH = 4;
+const FIRST_ANIMAL_STROKE_WIDTH = 5;
+const SECOND_ANIMAL_STROKE_WIDTH = 3;
 const THIRD_ANIMAL_STROKE_WIDTH = 2;
 const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_STROKE_WIDTH = 1;
 const LAST_ANIMAL_DASH_PATTERN = [6, 17];
 
-const FIRST_SAVIOR_ANIMAL_LINE_STROKE_COLOR = "#55c076";
 const SAVIOR_ANIMAL_TRIANGLE_COLOR = "green";
 const DEMON_ANIMAL_TRIANGLE_COLOR = "red";
 
@@ -38,6 +37,17 @@ const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.03;
 const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
 
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
+
+/**
+ * @enum {number}
+ */
+const AnimalPosition = {
+    UPPER_LEFT: 0,
+    UPPER_RIGHT: 1,
+    LOWER_LEFT: 2,
+    LOWER_RIGHT: 3
+}
+
 
 const TFCStyleColors = {
     FEELING_FILL: '#c82323',
@@ -236,6 +246,7 @@ class CognitiveFunctionGroup extends Konva.Group {
     #grantOrder;
     get grantOrder () { return this.#grantOrder; }
     
+    
     /**
      *
      * @private
@@ -406,29 +417,25 @@ class AnimalLine extends Konva.Line {
 }
 
 
+
 class AnimalText extends Konva.Text {
-    static get #INVISIBLE_TEXT_BOX_SIZE() { return 50; }
+    // noinspection JSMethodCanBeStatic
     /**
-     * @type {number}
+     *
+     * @returns {number}
+     * @constructor
      */
-    static get #INVISIBLE_TEXT_BOX_BASE_OFFSET() { return AnimalText.#INVISIBLE_TEXT_BOX_SIZE / 2; }
+    get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
     
     
-    constructor(cogFun1Group, cogFun2Group) {
+    constructor(cogFun1Group, cogFun2Group, animalPosition) {
         const c1 = cogFun1Group.circle;
         const c2 = cogFun2Group.circle;
         
-        // HERE Change to the "overlapping squares" method, where the invisible text box of all 4 animals overlapps
-        //      and what changes is simply the alignment of the text to the right corner.
-        
         super(
             {
-                x: (c1.x() + c2.x()) / 2,
-                y: (c1.y() + c2.y()) / 2,
-                width: AnimalText.#INVISIBLE_TEXT_BOX_SIZE,
-                height: AnimalText.#INVISIBLE_TEXT_BOX_SIZE,
-                offsetX: AnimalText.#INVISIBLE_TEXT_BOX_BASE_OFFSET,
-                offsetY: AnimalText.#INVISIBLE_TEXT_BOX_BASE_OFFSET,
+                x: DIAGRAM_CENTER,
+                y: DIAGRAM_CENTER,
                 
                 fontSize: ANIMAL_LETTER_BASE_FONT_SIZE,
                 fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
@@ -436,55 +443,84 @@ class AnimalText extends Konva.Text {
                 fill: 'black',
                 stroke: 'black',
                 strokeWidth: '1',
-                strokeEnabled: false,
-                
-                align: 'center',
-                verticalAlign: 'middle'
+                strokeEnabled: false
             }
         );
-    }
-    
-    
-    
-    updateText(animal, order, isDoubleActivated) {
-        this.text(order === 3 ? `(${animal})` : animal);
-        this.fontStyle(isDoubleActivated ? "bold" : "normal");
-        this.strokeEnabled(isDoubleActivated);
-        const baseOffset = AnimalText.#INVISIBLE_TEXT_BOX_BASE_OFFSET;
-        const cX = DIAGRAM_CENTER;
-        const cY = DIAGRAM_CENTER;
-        const tX = this.x();
-        const tY = this.y();
         
-        let addedXOffset;
-        let addedYOffset;
-        switch (true) {
-            // Top left
-            case cX > tX && cY > tY:
-                addedXOffset = -17;
-                addedYOffset = -25;
+        const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
+        // The text is placed using an invisible text box and based on the position of the animal we align the text
+        // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
+        // look.
+        switch (animalPosition) {
+            case AnimalPosition.UPPER_LEFT:
+                // baseWidth = baseSize - baseOff;
+                // baseHeight = baseSize - baseOff;
+                this.align('left');
+                this.verticalAlign('top');
                 break;
-            // Top right
-            case cX < tX && cY > tY:
-                addedXOffset = 17;
-                addedYOffset = -25;
+            case AnimalPosition.UPPER_RIGHT:
+                // baseWidth = baseSize - baseOff;
+                // baseHeight = baseSize - baseOff;
+                this.align('right');
+                this.verticalAlign('top');
                 break;
-            // Bottom left
-            case cX > tX && cY < tY:
-                addedXOffset = -17;
-                addedYOffset = 17;
+            case AnimalPosition.LOWER_LEFT:
+                // baseWidth = baseSize - baseOff;
+                // baseHeight = baseSize - baseOff;
+                this.align('left');
+                this.verticalAlign('bottom');
                 break;
-            // Bottom right
-            case cX < tX && cY < tY:
-                addedXOffset = 17;
-                addedYOffset = 17;
+            case AnimalPosition.LOWER_RIGHT:
+                // baseWidth = baseSize - baseOff;
+                // baseHeight = baseSize - baseOff;
+                this.align('right');
+                this.verticalAlign('bottom');
                 break;
         }
+        this.width(baseSize);
+        this.height(baseSize + 12);
         
-        this.offsetX(baseOffset + addedXOffset);
-        this.offsetY(baseOffset + addedYOffset);
+        this.offsetX(this.width() / 2);
+        this.offsetY(this.height() / 2);
+    }
+    
+    
+    /**
+     *
+     * @param {string} text
+     * @param {number} stackOrder
+     * @param {Boolean} isDoubleActivated
+     */
+    updateText(text, stackOrder, isDoubleActivated) {
+        this.text(text);
+        this.fontStyle(isDoubleActivated ? "bold" : "normal");
+        this.strokeEnabled(isDoubleActivated);
+    
+        this.offsetX(this.width() / 2);
+        this.offsetY(this.height() / 2);
     }
 }
+
+class AnimalLetter extends AnimalText {
+    get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
+    
+    updateText(animal, stackOrder, isDoubleActivated) {
+        const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
+    
+        if (stackOrder === 3) {
+            animal = `(${animal})`;
+            this.width(baseSize + 20);
+        } else {
+            this.width(baseSize);
+        }
+        
+        super.updateText(animal, stackOrder, isDoubleActivated);
+    }
+}
+
+
+class AnimalOrderNumber extends AnimalText {}
+
 
 
 class AnimalGroup extends Konva.Group {
@@ -498,6 +534,11 @@ class AnimalGroup extends Konva.Group {
      */
     #cogFun2Group;
     
+    /**
+     * @type {AnimalPosition}
+     */
+    #animalPosition;
+    
     
     /**
      * @type {AnimalBackgroundTriangle}
@@ -510,9 +551,17 @@ class AnimalGroup extends Konva.Group {
     #line;
     
     /**
-     * @type {AnimalText}
+     * @type {AnimalLetter}
      */
-    #text;
+    #letterText;
+    
+    
+    /**
+     * @type {AnimalOrderNumber}
+     */
+    #stackOrderText;
+    
+    
     
     constructor(cogFun1Group, cogFun2Group) {
         super();
@@ -520,16 +569,43 @@ class AnimalGroup extends Konva.Group {
         this.#cogFun1Group = cogFun1Group;
         this.#cogFun2Group = cogFun2Group;
         
+        let animalPosition;
+        switch (`${cogFun1Group.grantOrder}${cogFun2Group.grantOrder}`) {
+            case '01':
+            case '10':
+                animalPosition = AnimalPosition.UPPER_LEFT;
+                break;
+            case '02':
+            case '20':
+                animalPosition = AnimalPosition.UPPER_RIGHT;
+                break
+            case '13':
+            case '31':
+                animalPosition = AnimalPosition.LOWER_LEFT;
+                break;
+            case '23':
+            case '32':
+                animalPosition = AnimalPosition.LOWER_RIGHT;
+                break
+            default:
+                throw new Error("Invalid group combinations or grant order.");
+        }
+        this.#animalPosition = animalPosition;
+        
         const bgTriangle = new AnimalBackgroundTriangle(cogFun1Group, cogFun2Group);
         this.#backgroundTriangle = bgTriangle;
         
         const line = new AnimalLine(cogFun1Group.circle, cogFun2Group.circle);
         this.#line = line;
+    
+        const letterText = new AnimalLetter(cogFun1Group, cogFun2Group, animalPosition);
+        this.#letterText = letterText;
         
-        const text = new AnimalText(cogFun1Group, cogFun2Group);
-        this.#text = text;
+        const orderText = new AnimalOrderNumber(cogFun1Group, cogFun2Group, animalPosition);
+        this.#stackOrderText = orderText;
         
-        this.add(bgTriangle, line, text);
+        
+        this.add(bgTriangle, line, letterText, orderText);
     }
     
     
@@ -538,7 +614,7 @@ class AnimalGroup extends Konva.Group {
         
         const cogFun1 = this.#cogFun1Group.cogFun;
         const cogFun2 = this.#cogFun2Group.cogFun;
-        const isFirstGroupDecider = cogFun1[0].match(["F|T"]);
+        const isFirstGroupDecider = cogFun1[0].match("F|T");
         
         
         // Using introversion/extroversion letters to identify animal.
@@ -561,10 +637,11 @@ class AnimalGroup extends Konva.Group {
         }
         
         const isDoubleActivated = opType.doubleActivatedAnimal === animal;
-        const order = opType.animalStack.indexOf(animal);
-        this.#backgroundTriangle.updateAnimalOrder(order);
-        this.#line.updateAnimalOrder(order);
-        this.#text.updateText(animal, order, isDoubleActivated);
+        const stackOrder = opType.animalStack.indexOf(animal);
+        this.#backgroundTriangle.updateAnimalOrder(stackOrder);
+        this.#line.updateAnimalOrder(stackOrder);
+        this.#letterText.updateText(animal, stackOrder, isDoubleActivated);
+        this.#stackOrderText.updateText(stackOrder + 1, stackOrder, isDoubleActivated);
     }
 }
 
