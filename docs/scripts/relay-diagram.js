@@ -49,7 +49,7 @@ const AnimalPosition = {
 }
 
 
-const TFCStyleColors = {
+const TFCStyleColor = {
     FEELING_FILL: '#c82323',
     FEELING_STROKE: '#881a1a',
     THINKING_FILL: '#6c6c6c',
@@ -67,8 +67,29 @@ DEMON_FUNCTION_BG_IMG.src = './img/DemonFunction.png';
  *
  * @param {function(): void} listener
  */
-export function addOnDemonImgLoadListener(listener) {
+export function addDemonImgLoadEventListener(listener) {
     DEMON_FUNCTION_BG_IMG.addEventListener('load', listener)
+}
+
+
+
+class DebugRect extends Konva.Rect {
+    
+    /**
+     *
+     * @param {{x: number, y: number, width: number, height: number}}rect
+     */
+    constructor(rect) {
+        super({
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            
+            fill: 'black',
+            opacity: 0.2
+        });
+    }
 }
 
 
@@ -148,20 +169,20 @@ class CognitiveFunctionCircle extends Konva.Circle {
         let strokeColor;
         switch (cogFun[0]) {
             case 'F':
-                fillColor = TFCStyleColors.FEELING_FILL;
-                strokeColor = TFCStyleColors.FEELING_STROKE;
+                fillColor = TFCStyleColor.FEELING_FILL;
+                strokeColor = TFCStyleColor.FEELING_STROKE;
                 break;
             case 'T':
-                fillColor = TFCStyleColors.THINKING_FILL;
-                strokeColor = TFCStyleColors.THINKING_STROKE;
+                fillColor = TFCStyleColor.THINKING_FILL;
+                strokeColor = TFCStyleColor.THINKING_STROKE;
                 break;
             case 'S':
-                fillColor = TFCStyleColors.SENSING_FILL;
-                strokeColor = TFCStyleColors.SENSING_STROKE;
+                fillColor = TFCStyleColor.SENSING_FILL;
+                strokeColor = TFCStyleColor.SENSING_STROKE;
                 break;
             case 'N':
-                fillColor = TFCStyleColors.INTUITION_FILL;
-                strokeColor = TFCStyleColors.INTUITION_STROKE;
+                fillColor = TFCStyleColor.INTUITION_FILL;
+                strokeColor = TFCStyleColor.INTUITION_STROKE;
                 break;
         }
         
@@ -194,6 +215,8 @@ class CognitiveFunctionOutline extends CognitiveFunctionCircle {
 
 
 class DemonBackgroundImage extends Konva.Image {
+    static get BASE_SCALE() { return 0.37; }
+    
     /**
      * @type {CognitiveFunctionCircle}
      */
@@ -202,20 +225,32 @@ class DemonBackgroundImage extends Konva.Image {
     /**
      *
      * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantOrder
      */
-    constructor(circle) {
-        super({
-            position: {
-                x: circle.getClientRect().x,
-                y: circle.getClientRect().y,
-                // HERE Set the correct offset and then figure out the resize problem (maybe scaling?).
-            },
-        });
+    constructor(circle, grantOrder) {
+        
+        super();
         
         this.#circle = circle;
         
-        DEMON_FUNCTION_BG_IMG.addEventListener('load', () => {
+        addDemonImgLoadEventListener(() => {
+            const baseScale = DemonBackgroundImage.BASE_SCALE;
+            const circleScale = this.#circle.scaleX();
+            
             this.image(DEMON_FUNCTION_BG_IMG);
+            // this.opacity(grantOrder !== 3 ? 0.3 : 1);
+            // This crop removes the black border around the image.
+            this.position(circle.position());
+            // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
+            this.offsetX(this.width() / 2);
+            this.offsetY(this.height() / 2 + 40);
+            
+            this.scaleX(baseScale * circleScale * (grantOrder !== 3 ? 0.98 : 1));
+            this.scaleY(baseScale * circleScale * (grantOrder !== 3 ? 0.85 : 1));
+            this.filters([Konva.Filters.HSL]);
+            this.cache();
+            this.saturation(grantOrder !== 3 ? -3 : -0.3);
+            this.luminance(grantOrder !== 3 ? 0 : 0);
         });
     }
     
@@ -276,30 +311,50 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @type {CognitiveFunctionCircle}
      */
     #circle;
+    /**
+     *
+     * @returns {CognitiveFunctionCircle}
+     */
     get circle() { return this.#circle; }
     
     /**
      * @type {CognitiveFunctionOutline}
      */
     #outline;
+    /**
+     *
+     * @returns {CognitiveFunctionOutline}
+     */
     get outline() { return this.#outline; }
     
     /**
      * @type {DemonBackgroundImage}
      */
     #demonBgImg;
+    /**
+     *
+     * @returns {DemonBackgroundImage}
+     */
     get demonBgImg() { return this.#demonBgImg; }
     
     /**
      * @type {CognitiveFunctionText}
      */
     #text;
+    /**
+     *
+     * @returns {CognitiveFunctionText}
+     */
     get text () { return this.#text; }
     
     /**
      * @type {number}
      */
     #grantOrder;
+    /**
+     *
+     * @returns {number}
+     */
     get grantOrder () { return this.#grantOrder; }
     
     
@@ -307,6 +362,10 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @type {string}
      */
     #cogFun;
+    /**
+     *
+     * @returns {string}
+     */
     get cogFun() { return this.#cogFun; }
     
     /**
@@ -317,7 +376,6 @@ class CognitiveFunctionGroup extends Konva.Group {
         super();
     
         this.#grantOrder = grantOrder;
-        // TODO Add background circle for savior-demon
         
         
         const circle = new CognitiveFunctionCircle(grantOrder);
@@ -326,12 +384,19 @@ class CognitiveFunctionGroup extends Konva.Group {
         const outline = new CognitiveFunctionOutline(grantOrder);
         this.#outline = outline;
         
-        const demonBgImg = new DemonBackgroundImage(circle);
+        const demonBgImg = new DemonBackgroundImage(circle, grantOrder);
         this.#demonBgImg = demonBgImg;
         
         
         const text = new CognitiveFunctionText(circle);
         this.#text = text;
+        
+        // addDemonImgLoadEventListener(() => {
+        //     const debugRect = new DebugRect(demonBgImg.getClientRect());
+        //     console.log(demonBgImg.getClientRect());
+        //
+        //     this.add(debugRect);
+        // });
         
         
         this.add(demonBgImg, outline, circle, text);
@@ -347,7 +412,9 @@ class CognitiveFunctionGroup extends Konva.Group {
         const cogFun = opType.grantStack[this.#grantOrder];
         this.#cogFun = cogFun;
         
-        this.#outline.updateSaviorState(opType.saviorFunctions.includes(cogFun));
+        const isSavior = opType.saviorFunctions.includes(cogFun);
+        this.#demonBgImg.updateDemonState(!isSavior);
+        this.#outline.updateSaviorState(isSavior);
         this.#circle.updateCogFun(cogFun);
         this.#text.updateCogFun(cogFun);
     }
@@ -425,7 +492,13 @@ class AnimalBackgroundTriangle extends Konva.Line {
 }
 
 class AnimalLine extends Konva.Line {
+    /**
+     * @type {CognitiveFunctionCircle}
+     */
     #circle1;
+    /**
+     * @type {CognitiveFunctionCircle}
+     */
     #circle2;
     
     /**
@@ -483,7 +556,6 @@ class AnimalLine extends Konva.Line {
 class AnimalText extends Konva.Text {
     // noinspection JSMethodCanBeStatic
     /**
-     *
      * @returns {number}
      * @constructor
      */
@@ -564,8 +636,19 @@ class AnimalText extends Konva.Text {
 }
 
 class AnimalLetter extends AnimalText {
+    /**
+     * @override
+     * @returns {number}
+     * @private
+     */
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
     
+    /**
+     * @override
+     * @param {string} animal
+     * @param {number} stackOrder
+     * @param {Boolean} isDoubleActivated
+     */
     updateText(animal, stackOrder, isDoubleActivated) {
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
     
@@ -716,7 +799,7 @@ class AnimalGroupsMatrix {
      * @private
      * @type {AnimalGroup[][]}
      */
-    _aCwIdxMatrix;
+    #aCwIdxMatrix;
     
     /**
      * Set containing all the animal groups instances.
@@ -724,7 +807,7 @@ class AnimalGroupsMatrix {
      * @private
      * @type {Set}
      */
-    _aSet;
+    #aSet;
     
     
     /**
@@ -763,14 +846,14 @@ class AnimalGroupsMatrix {
             }
         }
         
-        this._aCwIdxMatrix = cwIdxMatrix;
+        this.#aCwIdxMatrix = cwIdxMatrix;
         if (aSet.size > 4) throw new Error("Too many animal groups.");
-        this._aSet = aSet;
+        this.#aSet = aSet;
     }
     
     
     getGroup(index1, index2) {
-        const result = this._aCwIdxMatrix[index1][index2];
+        const result = this.#aCwIdxMatrix[index1][index2];
     }
     
     /**
@@ -778,7 +861,7 @@ class AnimalGroupsMatrix {
      */
     get all () {
         // noinspection JSValidateTypes
-        return this._aSet
+        return this.#aSet
     }
 }
 
@@ -789,13 +872,13 @@ export class DiagramGroup extends Konva.Group {
      * @private
      * @type {CognitiveFunctionGroup[]}
      */
-    _cogFunGroups;
+    #cogFunGroups;
     /**
      *
      * @private
      * @type {AnimalGroupsMatrix}
      */
-    _animalGroups;
+    #animalGroups;
     
     
     
@@ -806,10 +889,10 @@ export class DiagramGroup extends Konva.Group {
         for (let grantOrder = 0; grantOrder < 4; grantOrder++) {
             cogFunGroups[grantOrder] = new CognitiveFunctionGroup(this, grantOrder);
         }
-        this._cogFunGroups = cogFunGroups;
+        this.#cogFunGroups = cogFunGroups;
         
         const animalGroups = new AnimalGroupsMatrix(this);
-        this._animalGroups = animalGroups;
+        this.#animalGroups = animalGroups;
         
         
         // Adding all animal groups.
@@ -825,19 +908,19 @@ export class DiagramGroup extends Konva.Group {
     
     
     
-    getCogFunGroup(index) { return this._cogFunGroups[index]; }
+    getCogFunGroup(index) { return this.#cogFunGroups[index]; }
     
     
     getCogFunGroupClockwise(index) {
         switch (index) {
             case 0:
-                return this._cogFunGroups[0];
+                return this.#cogFunGroups[0];
             case 3:
-                return this._cogFunGroups[1];
+                return this.#cogFunGroups[1];
             case 1:
-                return this._cogFunGroups[2];
+                return this.#cogFunGroups[2];
             case 2:
-                return this._cogFunGroups[3];
+                return this.#cogFunGroups[3];
             default:
                 throw new Error("Invalid index.");
         }
@@ -849,11 +932,11 @@ export class DiagramGroup extends Konva.Group {
      * @param {OpType} opType
      */
     updateType(opType) {
-        for (const cfg of this._cogFunGroups) {
+        for (const cfg of this.#cogFunGroups) {
             cfg.updateCogFun(opType)
         }
         
-        for (const ag of this._animalGroups.all) {
+        for (const ag of this.#animalGroups.all) {
             ag.updateAnimal(opType)
         }
     }
