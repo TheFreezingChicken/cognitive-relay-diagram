@@ -60,15 +60,24 @@ const TFCStyleColor = {
     INTUITION_STROKE: '#522c73',
 }
 
-const DEMON_FUNCTION_BG_IMG = new Image();
-DEMON_FUNCTION_BG_IMG.src = './img/DemonFunction.png';
+const IMG_DIR_PATH = './img';
+
+const BIG_DEMON_BG_IMG = new Image();
+BIG_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon4.png`;
+
+const LITTLE_DEMON_BG_IMG = new Image();
+LITTLE_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon3.png`;
+
+const MASCULINE_FUNCTION_BG_IMG = new Image();
+MASCULINE_FUNCTION_BG_IMG.src = `${IMG_DIR_PATH}/Muscles.png`
 
 /**
  *
  * @param {function(): void} listener
  */
-export function addDemonImgLoadEventListener(listener) {
-    DEMON_FUNCTION_BG_IMG.addEventListener('load', listener)
+export function addAllImgLoadEventListener(listener) {
+    BIG_DEMON_BG_IMG.addEventListener('load', listener);
+    MASCULINE_FUNCTION_BG_IMG.addEventListener('load', listener);
 }
 
 
@@ -220,29 +229,35 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
      * @protected
      * @type {number}
      */
-    get _BASE_SCALE() { return 0.37; }
+    get _IMG_SCALE() { return 1; }
     
     /**
      * @protected
      * @type {number}
      */
-    _circleScale;
+    #circleScale;
     
+    /**
+     * @protected
+     * @returns {number}
+     */
+    get _BASE_SCALE() { return this._IMG_SCALE * this.#circleScale; }
     
     
     
     /**
      *
+     * @param {HTMLImageElement} img
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantOrder
      */
-    constructor(circle, grantOrder) {
+    constructor(img, circle, grantOrder) {
         super();
         
         this.#circleScale = circle.scaleX();
         
-        addDemonImgLoadEventListener(() => {
-            this.onImgLoad(circle, grantOrder);
+        img.addEventListener('load', () => {
+            this.#onImgLoad(img, circle, grantOrder);
         });
     }
     
@@ -252,40 +267,72 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
      *
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantOrder
+     * @protected
      */
-    applyCustomAttributes(circle, grantOrder) {
-        // HERE Keep fixing
-        const baseScale = 0.37;
-        this.scaleX(baseScale * circleScale * (grantOrder !== 3 ? 0.98 : 1));
-        this.scaleY(baseScale * circleScale * (grantOrder !== 3 ? 0.85 : 1));
-        this.filters([Konva.Filters.HSL]);
-        this.cache();
-        this.saturation(grantOrder !== 3 ? -3 : -0.3);
-        this.luminance(grantOrder !== 3 ? 0 : 0);
+    _applyCustomAttributes(circle, grantOrder) {
+        const baseScale = this._BASE_SCALE;
+        this.scaleX(baseScale);
+        this.scaleY(baseScale);
     }
+    
+    /**
+     *
+     * @param {HTMLImageElement} img
+     * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantOrder
+     */
+    #onImgLoad(img, circle, grantOrder) {
+        this.#circleScale = circle.scaleX();
+    
+        this.image(img);
+        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
+        // This crop removes the black border around the image.
+        this.position(circle.position());
+        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
+        this.offsetX(this.width() / 2);
+        this.offsetY(this.height() / 2);
+    
+        this._applyCustomAttributes(circle, grantOrder);
+    }
+    
+    
+}
+
+class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
+    get _IMG_SCALE() { return 0.4; }
+    
     
     /**
      *
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantOrder
      */
-    onImgLoad(circle, grantOrder) {
-        const circleScale = this.#circle.scaleX();
-    
-        this.image(DEMON_FUNCTION_BG_IMG);
-        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
-        // This crop removes the black border around the image.
-        this.position(circle.position());
-        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
-        this.offsetX(this.width() / 2);
-        this.offsetY(this.height() / 2 + 40);
-    
-        this.applyCustomAttributes(circle, grantOrder);
+    constructor(circle, grantOrder) {
+        const img = grantOrder === 3 ? BIG_DEMON_BG_IMG : LITTLE_DEMON_BG_IMG;
+        
+        super(img, circle, grantOrder);
     }
     
     
     updateDemonState(isDemon) {
         this.visible(isDemon);
+    }
+}
+
+
+class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
+    get _IMG_SCALE() {
+        return 0.43;
+    }
+    // HERE Make the muscles smaller (in PS).
+    
+    constructor(circle, grantOrder) {
+        super(MASCULINE_FUNCTION_BG_IMG, circle, grantOrder);
+    }
+    
+    
+    updateMasculineState(isMasculine) {
+        this.visible(isMasculine);
     }
 }
 
@@ -357,14 +404,19 @@ class CognitiveFunctionGroup extends Konva.Group {
     get outline() { return this.#outline; }
     
     /**
-     * @type {CognitiveFunctionBackgroundImage}
+     * @type {DemonBackgroundImage}
      */
     #demonBgImg;
     /**
      *
-     * @returns {CognitiveFunctionBackgroundImage}
+     * @returns {DemonBackgroundImage}
      */
     get demonBgImg() { return this.#demonBgImg; }
+    
+    /**
+     * @type {MasculineBackgroundImage}
+     */
+    #masculineBgImg;
     
     /**
      * @type {CognitiveFunctionText}
@@ -413,9 +465,11 @@ class CognitiveFunctionGroup extends Konva.Group {
         const outline = new CognitiveFunctionOutline(grantOrder);
         this.#outline = outline;
         
-        const demonBgImg = new CognitiveFunctionBackgroundImage(circle, grantOrder);
+        const demonBgImg = new DemonBackgroundImage(circle, grantOrder);
         this.#demonBgImg = demonBgImg;
         
+        const masculineBgImg = new MasculineBackgroundImage(circle,grantOrder);
+        this.#masculineBgImg = masculineBgImg;
         
         const text = new CognitiveFunctionText(circle);
         this.#text = text;
@@ -428,7 +482,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         // });
         
         
-        this.add(demonBgImg, outline, circle, text);
+        this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text);
     }
     
     
@@ -443,6 +497,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         
         const isSavior = opType.saviorFunctions.includes(cogFun);
         this.#demonBgImg.updateDemonState(!isSavior);
+        this.#masculineBgImg.updateMasculineState(opType.masculineFunctions.includes(cogFun));
         this.#outline.updateSaviorState(isSavior);
         this.#circle.updateCogFun(cogFun);
         this.#text.updateCogFun(cogFun);
@@ -586,7 +641,6 @@ class AnimalText extends Konva.Text {
     // noinspection JSMethodCanBeStatic
     /**
      * @returns {number}
-     * @constructor
      */
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
     

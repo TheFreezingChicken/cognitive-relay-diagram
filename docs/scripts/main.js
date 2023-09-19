@@ -1,4 +1,4 @@
-import {addDemonImgLoadEventListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
+import {addAllImgLoadEventListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
 import {OpType} from "./op-lib.js";
 
 
@@ -214,7 +214,7 @@ function selectionChangeHandler(event) {
 
 for (const e of allAppearanceElements) e.addEventListener('change', selectionChangeHandler);
 for (const e of allSelectionElements) e.addEventListener('change', selectionChangeHandler);
-addDemonImgLoadEventListener(() => {
+addAllImgLoadEventListener(() => {
     selectionChangeHandler('skipStoring');
 });
 
