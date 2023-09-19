@@ -214,13 +214,22 @@ class CognitiveFunctionOutline extends CognitiveFunctionCircle {
 }
 
 
-class DemonBackgroundImage extends Konva.Image {
-    static get BASE_SCALE() { return 0.37; }
+class CognitiveFunctionBackgroundImage extends Konva.Image {
     
     /**
-     * @type {CognitiveFunctionCircle}
+     * @protected
+     * @type {number}
      */
-    #circle;
+    get _BASE_SCALE() { return 0.37; }
+    
+    /**
+     * @protected
+     * @type {number}
+     */
+    _circleScale;
+    
+    
+    
     
     /**
      *
@@ -228,30 +237,50 @@ class DemonBackgroundImage extends Konva.Image {
      * @param {number} grantOrder
      */
     constructor(circle, grantOrder) {
-        
         super();
         
-        this.#circle = circle;
+        this.#circleScale = circle.scaleX();
         
         addDemonImgLoadEventListener(() => {
-            const baseScale = DemonBackgroundImage.BASE_SCALE;
-            const circleScale = this.#circle.scaleX();
-            
-            this.image(DEMON_FUNCTION_BG_IMG);
-            // this.opacity(grantOrder !== 3 ? 0.3 : 1);
-            // This crop removes the black border around the image.
-            this.position(circle.position());
-            // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
-            this.offsetX(this.width() / 2);
-            this.offsetY(this.height() / 2 + 40);
-            
-            this.scaleX(baseScale * circleScale * (grantOrder !== 3 ? 0.98 : 1));
-            this.scaleY(baseScale * circleScale * (grantOrder !== 3 ? 0.85 : 1));
-            this.filters([Konva.Filters.HSL]);
-            this.cache();
-            this.saturation(grantOrder !== 3 ? -3 : -0.3);
-            this.luminance(grantOrder !== 3 ? 0 : 0);
+            this.onImgLoad(circle, grantOrder);
         });
+    }
+    
+    
+    
+    /**
+     *
+     * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantOrder
+     */
+    applyCustomAttributes(circle, grantOrder) {
+        // HERE Keep fixing
+        const baseScale = 0.37;
+        this.scaleX(baseScale * circleScale * (grantOrder !== 3 ? 0.98 : 1));
+        this.scaleY(baseScale * circleScale * (grantOrder !== 3 ? 0.85 : 1));
+        this.filters([Konva.Filters.HSL]);
+        this.cache();
+        this.saturation(grantOrder !== 3 ? -3 : -0.3);
+        this.luminance(grantOrder !== 3 ? 0 : 0);
+    }
+    
+    /**
+     *
+     * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantOrder
+     */
+    onImgLoad(circle, grantOrder) {
+        const circleScale = this.#circle.scaleX();
+    
+        this.image(DEMON_FUNCTION_BG_IMG);
+        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
+        // This crop removes the black border around the image.
+        this.position(circle.position());
+        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
+        this.offsetX(this.width() / 2);
+        this.offsetY(this.height() / 2 + 40);
+    
+        this.applyCustomAttributes(circle, grantOrder);
     }
     
     
@@ -328,12 +357,12 @@ class CognitiveFunctionGroup extends Konva.Group {
     get outline() { return this.#outline; }
     
     /**
-     * @type {DemonBackgroundImage}
+     * @type {CognitiveFunctionBackgroundImage}
      */
     #demonBgImg;
     /**
      *
-     * @returns {DemonBackgroundImage}
+     * @returns {CognitiveFunctionBackgroundImage}
      */
     get demonBgImg() { return this.#demonBgImg; }
     
@@ -384,7 +413,7 @@ class CognitiveFunctionGroup extends Konva.Group {
         const outline = new CognitiveFunctionOutline(grantOrder);
         this.#outline = outline;
         
-        const demonBgImg = new DemonBackgroundImage(circle, grantOrder);
+        const demonBgImg = new CognitiveFunctionBackgroundImage(circle, grantOrder);
         this.#demonBgImg = demonBgImg;
         
         
