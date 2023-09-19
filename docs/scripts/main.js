@@ -25,7 +25,10 @@ const typeSelection = typeSelectionJSONData !== null ? JSON.parse(typeSelectionJ
 if (appearanceSettings !== null) {
     for (const e of allAppearanceElements) {
         const storedValue = appearanceSettings[e.id];
-        e.value = storedValue;
+    
+        if (e instanceof HTMLInputElement) e.checked = storedValue
+        else e.value = storedValue;
+        
         console.log(`Stored value for ${e.id} is ${storedValue}`);
     }
 }
@@ -33,7 +36,10 @@ if (appearanceSettings !== null) {
 if (typeSelection !== null) {
     for (const e of allSelectionElements) {
         const storedValue = typeSelection[e.id];
-        e.value = storedValue;
+    
+        if (e instanceof HTMLInputElement) e.checked = storedValue
+        else e.value = storedValue;
+    
         console.log(`Stored value for ${e.id} is ${storedValue}`);
     }
 }
@@ -171,9 +177,12 @@ function storeChangedUserInput(isStoringAppearance) {
     const dataToStore = {};
     if (isStoringAppearance) {
         for (const e of allAppearanceElements) {
-            dataToStore[e.id] = e.value;
+            let value;
+            if (e instanceof HTMLInputElement) value = e.checked
+            else value = e.value;
+            dataToStore[e.id] = value;
             console.log(
-                `Storing value ${e.value} for element ${e.id}`,
+                `Storing value ${value} for element ${e.id}`,
                 `Stored value: ${dataToStore[e.id]}`
             );
         }
@@ -185,9 +194,12 @@ function storeChangedUserInput(isStoringAppearance) {
         )
     } else {
         for (const e of allSelectionElements) {
-            dataToStore[e.id] = e.value;
+            let value;
+            if (e instanceof HTMLInputElement) value = e.checked
+            else value = e.value;
+            dataToStore[e.id] = value;
             console.log(
-                `Storing value ${e.value} for element ${e.id}`,
+                `Storing value ${value} for element ${e.id}`,
                 `Stored value: ${dataToStore[e.id]}`
             );
         }
@@ -204,7 +216,7 @@ function storeChangedUserInput(isStoringAppearance) {
  * @param {Event | string | null} event - Is either an event, null, or a 'skipStoring' string.
  */
 function selectionChangeHandler(event) {
-    const isChangeInAppearance = event?.target?.id === 'functions-style';
+    const isChangeInAppearance = event?.target?.className === 'appearance-setting';
     
     updateDiagram();
     
@@ -220,3 +232,4 @@ addAllImgLoadEventListener(() => {
 
 selectionChangeHandler(null);
 // TODO Add listener for page resize.
+// TODO Use "hide" option.
