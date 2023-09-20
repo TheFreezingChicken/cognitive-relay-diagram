@@ -81,6 +81,16 @@ export function addAllImgLoadEventListener(listener) {
 }
 
 
+const DiagramStateEvents = {
+    OP_TYPE_CHANGE: new CustomEvent('opTypeChange'),
+    APPEARANCE_SETTING_CHANGE: new CustomEvent('appearanceSettingChange')
+}
+
+class DiagramGroupState extends EventTarget {
+
+}
+
+export const mainDiagramGroup = new DiagramGroup();
 
 class DebugRect extends Konva.Rect {
     
@@ -454,6 +464,7 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @param {number} grantOrder
      */
     constructor(rootDiagramGroup, grantOrder) {
+        // HERE Fix by using state and not group
         super();
     
         this.#grantOrder = grantOrder;
@@ -898,6 +909,7 @@ class AnimalGroupsMatrix {
      * @param {DiagramGroup} rootDiagramGroup
      */
     constructor(rootDiagramGroup) {
+        // HERE Fix by using state and not group
         const cwIdxMatrix = new Array(4);
         const aSet = new Set();
         
@@ -963,18 +975,25 @@ export class DiagramGroup extends Konva.Group {
      */
     #animalGroups;
     
-    
+    /**
+     * @type {DiagramGroupState}
+     */
+    #state;
     
     constructor() {
         super();
         
+        const state = new DiagramGroupState();
+        this.#state = state;
+        // HERE Keep checking for state additions.
+        
         const cogFunGroups = new Array(4);
         for (let grantOrder = 0; grantOrder < 4; grantOrder++) {
-            cogFunGroups[grantOrder] = new CognitiveFunctionGroup(this, grantOrder);
+            cogFunGroups[grantOrder] = new CognitiveFunctionGroup(state, grantOrder);
         }
         this.#cogFunGroups = cogFunGroups;
         
-        const animalGroups = new AnimalGroupsMatrix(this);
+        const animalGroups = new AnimalGroupsMatrix(state);
         this.#animalGroups = animalGroups;
         
         
