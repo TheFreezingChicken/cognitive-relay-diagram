@@ -464,7 +464,7 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @param {number} grantOrder
      */
     constructor(rootDiagramGroup, grantOrder) {
-        // HERE Fix by using state and not group
+        // HERE Fix by getting state from group
         super();
     
         this.#grantOrder = grantOrder;
@@ -886,7 +886,7 @@ class AnimalGroup extends Konva.Group {
 
 
 
-class AnimalGroupsMatrix {
+class AnimalStackGroup extends Konva.Group {
     /**
      * Clockwise Indexed Matrix for the animal groups.
      *
@@ -909,7 +909,7 @@ class AnimalGroupsMatrix {
      * @param {DiagramGroup} rootDiagramGroup
      */
     constructor(rootDiagramGroup) {
-        // HERE Fix by using state and not group
+        // HERE Fix by getting state from group. Also now this is a group. Add stuff to it.
         const cwIdxMatrix = new Array(4);
         const aSet = new Set();
         
@@ -971,7 +971,7 @@ export class DiagramGroup extends Konva.Group {
     /**
      *
      * @private
-     * @type {AnimalGroupsMatrix}
+     * @type {AnimalStackGroup}
      */
     #animalGroups;
     
@@ -985,22 +985,17 @@ export class DiagramGroup extends Konva.Group {
         
         const state = new DiagramGroupState();
         this.#state = state;
-        // HERE Keep checking for state additions.
         
         const cogFunGroups = new Array(4);
         for (let grantOrder = 0; grantOrder < 4; grantOrder++) {
-            cogFunGroups[grantOrder] = new CognitiveFunctionGroup(state, grantOrder);
+            cogFunGroups[grantOrder] = new CognitiveFunctionGroup(this, grantOrder);
         }
         this.#cogFunGroups = cogFunGroups;
         
-        const animalGroups = new AnimalGroupsMatrix(state);
+        const animalGroups = new AnimalStackGroup(this);
         this.#animalGroups = animalGroups;
         
-        
-        // Adding all animal groups.
-        for (const ag of animalGroups.all) {
-            this.add(ag);
-        }
+        this.add(animalGroups)
         
         // Adding all cognitive functions groups.
         for (const cfg of cogFunGroups) {
@@ -1025,21 +1020,6 @@ export class DiagramGroup extends Konva.Group {
                 return this.#cogFunGroups[3];
             default:
                 throw new Error("Invalid index.");
-        }
-    }
-    
-    
-    /**
-     *
-     * @param {OpType} opType
-     */
-    updateType(opType) {
-        for (const cfg of this.#cogFunGroups) {
-            cfg.updateCogFun(opType)
-        }
-        
-        for (const ag of this.#animalGroups.all) {
-            ag.updateAnimal(opType)
         }
     }
 }
