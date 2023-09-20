@@ -801,8 +801,13 @@ class AnimalGroup extends Konva.Group {
     #stackOrderText;
     
     
-    
-    constructor(cogFun1Group, cogFun2Group) {
+    /**
+     *
+     * @param rootDiagram
+     * @param cwIndex1
+     * @param cwIndex2
+     */
+    constructor(rootDiagram, cwIndex1, cwIndex2) {
         super();
         
         this.#cogFun1Group = cogFun1Group;
@@ -930,10 +935,7 @@ class AnimalStackGroup extends Konva.Group {
                         break;
                     // Normal creation and assignment.
                     default:
-                        const newGroup = new AnimalGroup(
-                            rootDiagramGroup.getCogFunGroupClockwise(i),
-                            rootDiagramGroup.getCogFunGroupClockwise(j)
-                        );
+                        const newGroup = new AnimalGroup(rootDiagramGroup, i, j);
                         
                         // Assign to correct matrix slot and also add to the Set.
                         aSet.add(cwIdxMatrix[i][j] = newGroup);
@@ -944,10 +946,14 @@ class AnimalStackGroup extends Konva.Group {
         this.#aCwIdxMatrix = cwIdxMatrix;
         if (aSet.size > 4) throw new Error("Too many animal groups.");
         this.#aSet = aSet;
+    
+        for (const a of aSet) {
+            this.add(a);
+        }
     }
     
     
-    getGroup(index1, index2) {
+    get(index1, index2) {
         const result = this.#aCwIdxMatrix[index1][index2];
     }
     
@@ -982,9 +988,8 @@ export class DiagramGroup extends Konva.Group {
     
     constructor() {
         super();
-        
-        const state = new DiagramGroupState();
-        this.#state = state;
+
+        this.#state = new DiagramGroupState();
         
         const cogFunGroups = new Array(4);
         for (let grantOrder = 0; grantOrder < 4; grantOrder++) {
