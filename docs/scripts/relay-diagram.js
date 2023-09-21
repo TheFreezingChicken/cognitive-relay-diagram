@@ -38,14 +38,34 @@ const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
 
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
+
 /**
- * @enum {number}
+ * @class
+ */
+class GrantIndexCouple {
+    #idx1;
+    #idx2;
+    
+    get grantIdx1() { return this.#idx1; }
+    
+    get grantIdx2() { return this.#idx2; }
+    
+    
+    constructor(idx1, idx2) {
+        this.#idx1 = idx1;
+        this.#idx2 = idx2;
+    }
+}
+
+/**
+ * @readonly
+ * @enum {GrantIndexCouple}
  */
 const AnimalPosition = {
-    UPPER_LEFT: 0,
-    UPPER_RIGHT: 1,
-    LOWER_LEFT: 2,
-    LOWER_RIGHT: 3
+    UPPER_LEFT: new GrantIndexCouple(0, 1),
+    UPPER_RIGHT: new GrantIndexCouple(0, 2),
+    LOWER_LEFT: new GrantIndexCouple(3, 1),
+    LOWER_RIGHT: new GrantIndexCouple(3, 2)
 }
 
 
@@ -441,12 +461,12 @@ class CognitiveFunctionGroup extends Konva.Group {
     /**
      * @type {number}
      */
-    #grantOrder;
+    #grantIndex;
     /**
      *
      * @returns {number}
      */
-    get grantOrder () { return this.#grantOrder; }
+    get grantIndex () { return this.#grantIndex; }
     
     
     /**
@@ -461,25 +481,25 @@ class CognitiveFunctionGroup extends Konva.Group {
     
     /**
      * @param {DiagramGroup} rootDiagramGroup
-     * @param {number} grantOrder
+     * @param {number} grantIndex
      */
-    constructor(rootDiagramGroup, grantOrder) {
+    constructor(rootDiagramGroup, grantIndex) {
         // HERE Fix by getting state from group
         super();
     
-        this.#grantOrder = grantOrder;
+        this.#grantIndex = grantIndex;
         
         
-        const circle = new CognitiveFunctionCircle(grantOrder);
+        const circle = new CognitiveFunctionCircle(grantIndex);
         this.#circle = circle;
         
-        const outline = new CognitiveFunctionOutline(grantOrder);
+        const outline = new CognitiveFunctionOutline(grantIndex);
         this.#outline = outline;
         
-        const demonBgImg = new DemonBackgroundImage(circle, grantOrder);
+        const demonBgImg = new DemonBackgroundImage(circle, grantIndex);
         this.#demonBgImg = demonBgImg;
         
-        const masculineBgImg = new MasculineBackgroundImage(circle,grantOrder);
+        const masculineBgImg = new MasculineBackgroundImage(circle,grantIndex);
         this.#masculineBgImg = masculineBgImg;
         
         const text = new CognitiveFunctionText(circle);
@@ -503,7 +523,7 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @param {OpType} opType
      */
     updateCogFun(opType) {
-        const cogFun = opType.grantStack[this.#grantOrder];
+        const cogFun = opType.grantStack[this.#grantIndex];
         this.#cogFun = cogFun;
         
         const isSavior = opType.saviorFunctions.includes(cogFun);
@@ -537,11 +557,11 @@ class AnimalBackgroundTriangle extends Konva.Line {
     }
     
     /**
-     *
+     * FIX
      * @param {CognitiveFunctionGroup} cogFun1Group
      * @param {CognitiveFunctionGroup} cogFun2Group
      */
-    constructor(cogFun1Group, cogFun2Group,) {
+    constructor(rootDiagram, animalPosition) {
         const c1 = cogFun1Group.circle;
         const c2 = cogFun2Group.circle;
         
@@ -597,11 +617,11 @@ class AnimalLine extends Konva.Line {
     #circle2;
     
     /**
-     *
+     * FIX
      * @param {CognitiveFunctionCircle} circle1
      * @param {CognitiveFunctionCircle} circle2
      */
-    constructor(circle1, circle2) {
+    constructor(rootDiagram, animalPosition) {
         super({
             points: [
                 circle1.x(), circle1.y(),
@@ -655,8 +675,12 @@ class AnimalText extends Konva.Text {
      */
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
     
-    
-    constructor(cogFun1Group, cogFun2Group, animalPosition) {
+    /**
+     * FIX
+     * @param rootDiagram
+     * @param animalPosition
+     */
+    constructor(rootDiagram, animalPosition) {
         const c1 = cogFun1Group.circle;
         const c2 = cogFun2Group.circle;
         
@@ -737,6 +761,11 @@ class AnimalLetter extends AnimalText {
      */
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
     
+    
+    constructor(rootDiagram, animalPosition) {
+        super(rootDiagram, animalPosition);
+    }
+    
     /**
      * @override
      * @param {string} animal
@@ -758,7 +787,11 @@ class AnimalLetter extends AnimalText {
 }
 
 
-class AnimalOrderNumber extends AnimalText {}
+class AnimalOrderNumber extends AnimalText {
+    constructor(rootDiagram, animalPosition) {
+        super(rootDiagram, animalPosition);
+    }
+}
 
 
 
@@ -803,49 +836,24 @@ class AnimalGroup extends Konva.Group {
     
     /**
      *
-     * @param rootDiagram
-     * @param cwIndex1
-     * @param cwIndex2
+     * @param {DiagramGroup} rootDiagram
+     * @param {AnimalPosition} animalPosition
      */
-    constructor(rootDiagram, cwIndex1, cwIndex2) {
+    constructor(rootDiagram, animalPosition) {
         super();
         
-        this.#cogFun1Group = cogFun1Group;
-        this.#cogFun2Group = cogFun2Group;
-        
-        let animalPosition;
-        switch (`${cogFun1Group.grantOrder}${cogFun2Group.grantOrder}`) {
-            case '01':
-            case '10':
-                animalPosition = AnimalPosition.UPPER_LEFT;
-                break;
-            case '02':
-            case '20':
-                animalPosition = AnimalPosition.UPPER_RIGHT;
-                break
-            case '13':
-            case '31':
-                animalPosition = AnimalPosition.LOWER_LEFT;
-                break;
-            case '23':
-            case '32':
-                animalPosition = AnimalPosition.LOWER_RIGHT;
-                break
-            default:
-                throw new Error("Invalid group combinations or grant order.");
-        }
         this.#animalPosition = animalPosition;
-        
-        const bgTriangle = new AnimalBackgroundTriangle(cogFun1Group, cogFun2Group);
+    
+        const bgTriangle = new AnimalBackgroundTriangle(rootDiagram, animalPosition);
         this.#backgroundTriangle = bgTriangle;
         
-        const line = new AnimalLine(cogFun1Group.circle, cogFun2Group.circle);
+        const line = new AnimalLine(rootDiagram, animalPosition);
         this.#line = line;
     
-        const letterText = new AnimalLetter(cogFun1Group, cogFun2Group, animalPosition);
+        const letterText = new AnimalLetter(rootDiagram, animalPosition);
         this.#letterText = letterText;
         
-        const orderText = new AnimalOrderNumber(cogFun1Group, cogFun2Group, animalPosition);
+        const orderText = new AnimalOrderNumber(rootDiagram, animalPosition);
         this.#stackOrderText = orderText;
         
         
@@ -889,80 +897,14 @@ class AnimalGroup extends Konva.Group {
     }
 }
 
-
-
-class AnimalStackGroup extends Konva.Group {
-    /**
-     * Clockwise Indexed Matrix for the animal groups.
-     *
-     * @private
-     * @type {AnimalGroup[][]}
-     */
-    #aCwIdxMatrix;
-    
-    /**
-     * Set containing all the animal groups instances.
-     *
-     * @private
-     * @type {Set}
-     */
-    #aSet;
-    
-    
-    /**
-     *
-     * @param {DiagramGroup} rootDiagramGroup
-     */
-    constructor(rootDiagramGroup) {
-        // HERE Fix by getting state from group. Also now this is a group. Add stuff to it.
-        const cwIdxMatrix = new Array(4);
-        const aSet = new Set();
-        
-        for (let i = 0; i < 4; i++) {
-            cwIdxMatrix[i] = new Array(4);
-    
-            for (let j = 0; j < 4; j++) {
-                const clockwiseDistance = Math.abs(i - j);
-                
-                
-                switch (true) {
-                    // If the two functions are the same or opposite, skip.
-                    case clockwiseDistance === 0 || clockwiseDistance === 2:
-                        continue;
-                    // Retrieve reference for function combinations that we already did.
-                    case j < i:
-                        cwIdxMatrix[i][j] = cwIdxMatrix[j][i];
-                        break;
-                    // Normal creation and assignment.
-                    default:
-                        const newGroup = new AnimalGroup(rootDiagramGroup, i, j);
-                        
-                        // Assign to correct matrix slot and also add to the Set.
-                        aSet.add(cwIdxMatrix[i][j] = newGroup);
-                }
-            }
-        }
-        
-        this.#aCwIdxMatrix = cwIdxMatrix;
-        if (aSet.size > 4) throw new Error("Too many animal groups.");
-        this.#aSet = aSet;
-    
-        for (const a of aSet) {
-            this.add(a);
-        }
-    }
-    
-    
-    get(index1, index2) {
-        const result = this.#aCwIdxMatrix[index1][index2];
-    }
-    
-    /**
-     * @type {ReadonlySet}
-     */
-    get all () {
-        // noinspection JSValidateTypes
-        return this.#aSet
+const myField = {
+    nutaheduantehd: {
+        onithentoid: "hello",
+        rscpidg: "thanks"
+    },
+    noeidcguu: {
+        stiotehudi: "no u",
+        thdithexuihx: "vad"
     }
 }
 
@@ -974,10 +916,18 @@ export class DiagramGroup extends Konva.Group {
      * @type {CognitiveFunctionGroup[]}
      */
     #cogFunGroups;
+    
+    /**
+     * @param {number} grantIdx
+     * @returns {CognitiveFunctionGroup}
+     */
+    getCogFunGroup (grantIdx) { return this.#cogFunGroups[grantIdx]; }
+    
+    
     /**
      *
      * @private
-     * @type {AnimalStackGroup}
+     * @type {AnimalGroup[]}
      */
     #animalGroups;
     
@@ -985,47 +935,63 @@ export class DiagramGroup extends Konva.Group {
      * @type {DiagramGroupState}
      */
     #state;
+    /**
+     * @returns {DiagramGroupState}
+     */
+    get state() { return this.#state; }
+    
+    
     
     constructor() {
         super();
 
-        this.#state = new DiagramGroupState();
+        const state = new DiagramGroupState();
+        this.#state = state;
         
+        // Create group for the whole stack of functions and then create every single one of them and add them.
+        const cogFunStackGroup = new Konva.Group();
         const cogFunGroups = new Array(4);
-        for (let grantOrder = 0; grantOrder < 4; grantOrder++) {
-            cogFunGroups[grantOrder] = new CognitiveFunctionGroup(this, grantOrder);
+        for (let grantIndex = 0; grantIndex < 4; grantIndex++) {
+            const cfg = new CognitiveFunctionGroup(this, grantIndex);
+            cogFunGroups[grantIndex] = cfg;
+            cogFunStackGroup.add(cfg);
         }
         this.#cogFunGroups = cogFunGroups;
         
-        const animalGroups = new AnimalStackGroup(this);
+        // Do the same things for animals.
+        const animalStackGroup = new Konva.Group();
+        const animalGroups = [];
+        // Iterating AnimalPositions (through property names) to create AnimalGroups.
+        for (const ap in AnimalPosition) {
+            const ag = new AnimalGroup(this, AnimalPosition[ap]);
+            animalGroups.push(ag);
+            animalStackGroup.add(ag);
+        }
         this.#animalGroups = animalGroups;
         
-        this.add(animalGroups)
+        // Add the two stack-groups. Animals are visually below, so they're added first.
+        this.add(animalStackGroup, cogFunStackGroup);
         
-        // Adding all cognitive functions groups.
-        for (const cfg of cogFunGroups) {
-            this.add(cfg);
-        }
-    }
+        // HERE Start with adding what's missing in the relative classes, and then go on down the hierarchy.
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            for (const ag of animalGroups) {
+                ag.onTypeChange(state.opType);
+            }
     
+            for (const cfg of cogFunGroups) {
+                cfg.onTypeChange(state.opType);
+            }
+        });
     
-    
-    getCogFunGroup(index) { return this.#cogFunGroups[index]; }
-    
-    
-    getCogFunGroupClockwise(index) {
-        switch (index) {
-            case 0:
-                return this.#cogFunGroups[0];
-            case 3:
-                return this.#cogFunGroups[1];
-            case 1:
-                return this.#cogFunGroups[2];
-            case 2:
-                return this.#cogFunGroups[3];
-            default:
-                throw new Error("Invalid index.");
-        }
+        state.addEventListener(DiagramStateEvents.APPEARANCE_SETTING_CHANGE, () => {
+            for (const ag of animalGroups) {
+                ag.onTypeChange(state.appearanceSettings);
+            }
+        
+            for (const cfg of cogFunGroups) {
+                cfg.onTypeChange(state.appearanceSettings);
+            }
+        });
     }
 }
 
