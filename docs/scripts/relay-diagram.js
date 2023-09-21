@@ -107,7 +107,7 @@ const DiagramStateEvents = {
 }
 
 class DiagramGroupState extends EventTarget {
-
+    // TODO Remember to fire an event right after firing any change event, which will be used to redraw the diagram.
 }
 
 export const mainDiagramGroup = new DiagramGroup();
@@ -945,8 +945,7 @@ export class DiagramGroup extends Konva.Group {
     constructor() {
         super();
 
-        const state = new DiagramGroupState();
-        this.#state = state;
+        this.#state = new DiagramGroupState();
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
         const cogFunStackGroup = new Konva.Group();
@@ -971,29 +970,6 @@ export class DiagramGroup extends Konva.Group {
         
         // Add the two stack-groups. Animals are visually below, so they're added first.
         this.add(animalStackGroup, cogFunStackGroup);
-        
-        // HERE Delete all this and add listeners to all the sub-elemnts of the diagram and then once you fired the event from
-        //      the state you can fire another event right afterwards to signal that the graphical update has been
-        //      completed and you can redraw the whole diagram.
-        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            for (const ag of animalGroups) {
-                ag.onTypeChange(state.opType);
-            }
-    
-            for (const cfg of cogFunGroups) {
-                cfg.onTypeChange(state.opType);
-            }
-        });
-    
-        state.addEventListener(DiagramStateEvents.APPEARANCE_SETTING_CHANGE, () => {
-            for (const ag of animalGroups) {
-                ag.onTypeChange(state.appearanceSettings);
-            }
-        
-            for (const cfg of cogFunGroups) {
-                cfg.onTypeChange(state.appearanceSettings);
-            }
-        });
     }
 }
 
