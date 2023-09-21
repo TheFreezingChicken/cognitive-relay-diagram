@@ -972,7 +972,9 @@ export class DiagramGroup extends Konva.Group {
         // Add the two stack-groups. Animals are visually below, so they're added first.
         this.add(animalStackGroup, cogFunStackGroup);
         
-        // HERE Start with adding what's missing in the relative classes, and then go on down the hierarchy.
+        // HERE Delete all this and add listeners to all the sub-elemnts of the diagram and then once you fired the event from
+        //      the state you can fire another event right afterwards to signal that the graphical update has been
+        //      completed and you can redraw the whole diagram.
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
             for (const ag of animalGroups) {
                 ag.onTypeChange(state.opType);
