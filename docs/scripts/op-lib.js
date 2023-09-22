@@ -1,27 +1,3 @@
-export function invertFun(cognitiveFunction) {
-    let funChar = cognitiveFunction[0];
-    let introChar = cognitiveFunction[1];
-    
-    switch (funChar) {
-        case 'F':
-            funChar = 'T';
-            break;
-        case 'T':
-            funChar = 'F';
-            break;
-        case 'S':
-            funChar = 'N';
-            break;
-        case 'N':
-            funChar = 'S';
-            break;
-    }
-    
-    if (introChar === 'i') introChar = 'e' ; else introChar = 'i';
-    
-    return funChar + introChar;
-}
-
 // String must be either a single uppercase letter or a full name with first letter uppercase.
 export function invertAnimal(animal) {
     let result;
@@ -105,74 +81,414 @@ export function getAnimalLetter(cogFun1, cogFun2) {
     return animal;
 }
 
-
-class Quadra {
-    Di;
-    De;
-    Oi;
-    Oe;
-    Feeling;
-    Thinking;
-    Sensing;
-    Intuition;
+/**
+ * @class
+ */
+class PartialCognitiveFunction {
+    /**
+     * @param {string} cogFunName
+     */
+    constructor(cogFunName) {
+        if (typeof cogFunName !== 'string') throw new TypeError('Not a string.');
     
-    constructor(quadraDi, quadraDe, quadraOi, quadraOe) {
-        this.Di = quadraDi;
-        this.De = quadraDe;
-        this.Oi = quadraOi;
-        this.Oe = quadraOe;
-        this.Feeling = quadraDi[0] === 'F' ? quadraDi : quadraDe;
-        this.Thinking = invertFun(this.Feeling);
-        this.Sensing = quadraOi[0] === 'S' ? quadraOi : quadraOe;
-        this.Intuition = invertFun(this.Sensing);
+    
+        // Check length for validity.
+        if (cogFunName.length < 1 || cogFunName.length > 2) throw new Error('Invalid length.');
+    
+    
+        // If it's a one-letter function add a question mark for the introversion/extroversion
+        if (cogFunName.length === 1) cogFunName = cogFunName + '?';
+    
+        // Check first letter for validity.
+        if (/[^FTSNDO?]/.test(cogFunName[0])) throw new Error('Invalid first letter.');
+    
+        // Check second letter for validity.
+        if (/[^ie?]/.test(cogFunName[1])) throw new Error('Invalid second letter.');
+    
+        // Check that we don't have only question marks.
+        if (!/[^?]/.test(cogFunName)) throw new Error('Only question marks.');
+        
+        
+        this._cogFunName = cogFunName
+    }
+    
+    
+    /**
+     * @returns {string}
+     */
+    get name() { return this._cogFunName; }
+    
+    /**
+     * @returns {boolean|undefined}
+     */
+    get isIntroverted() {
+        const ie = this.name[1];
+        if (ie === '?') {
+            return undefined;
+        } else return ie === 'i';
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isExtroverted() {
+        const ie = this.name[1];
+        if (ie === '?') {
+            return undefined;
+        } else {
+            return ie === 'e';
+        }
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isObserving() {
+        if (this.name[0] === '?') {
+            return undefined
+        } else {
+            return /[SNO]/.test(this.name[0]);
+        }
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isOi() { return this.isIntroverted && this.isObserving; }
+    
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isOe() { return this.isExtroverted && this.isObserving; }
+    
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isSensing() {
+        if (/[?O]/.test(this.name[0])) {
+            return undefined
+        } else {
+            return this.name[0] === 'S';
+        }
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isIntuition() {
+        if (/[?O]/.test(this.name[0])) {
+            return undefined
+        } else return this.name[0] === 'N';
+    }
+    
+    
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isDeciding() {
+        if (this.name[0] === '?') {
+            return undefined
+        } else {
+            return /[FT]/.test(this.name[0]);
+        }
+    }
+    
+    get isFeeling() {
+        if (/[?D]/.test(this.name[0])) {
+            return undefined
+        } else {
+            return this.name[0] === 'F';
+        }
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isThinking() {
+        if (/[?D]/.test(this.name[0])) {
+            return undefined
+        } else {
+            return this.name[0] === 'T';
+        }
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isDi() { return this.isIntroverted && this.isDeciding; }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isDe() { return this.isExtroverted && this.isDeciding; }
+    
+    
+
+    opposite() {
+        let funChar = this.name[0];
+        let introChar = this.name[1];
+        
+        switch (funChar) {
+            case 'F':
+                funChar = 'T';
+                break;
+            case 'T':
+                funChar = 'F';
+                break;
+            case 'S':
+                funChar = 'N';
+                break;
+            case 'N':
+                funChar = 'S';
+                break;
+            default:
+                break;
+        }
+        
+        if (introChar === 'i') introChar = 'e' ; else introChar = 'i';
+        
+        const result = funChar + introChar;
+        
+        return result.includes('?') ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+    }
+    
+    
+    /**
+     *
+     * @param {any | PartialCognitiveFunction} other
+     * @returns {boolean|undefined}
+     */
+    equalsTo(other) {
+        if (!(other instanceof PartialCognitiveFunction)) return undefined;
+        
+        return this.name === other.name;
+    }
+    
+    hasSameLetterOf(other) {
+        // HERE Code
+    }
+    
+    /**
+     * @override
+     * @returns {string}
+     */
+    toString() {
+        return this.name;
     }
 }
 
 
+/**
+ * @class
+ */
+class CognitiveFunction extends PartialCognitiveFunction{
+    /**
+     * @param {string} cogFunName
+     */
+    constructor(cogFunName) {
+        // Check length for validity.
+        if (cogFunName.length !== 2) throw new Error('Invalid length.');
+        
+        // No partial functions allowed.
+        if (cogFunName.includes('?')) throw new Error('Invalid function (partial).');
+        
+        super(cogFunName);
+    
+        this._cogFunName = cogFunName
+    }
+}
+
+
+
+/**
+ * @class
+ */
+class Quadra {
+    
+    /**
+     *
+     * @param {CognitiveFunction|string} diFunction
+     * @param {CognitiveFunction|string} oiFunction
+     */
+    constructor(diFunction, oiFunction) {
+        if (typeof diFunction === 'string') diFunction = new CognitiveFunction(diFunction);
+        if (typeof oiFunction === 'string') oiFunction = new CognitiveFunction(oiFunction);
+        
+        if (!(diFunction instanceof CognitiveFunction && oiFunction instanceof CognitiveFunction))
+            throw new TypeError("One or more arguments can't be converted to CognitiveFunction.");
+    
+        this._deFunction = diFunction.opposite();
+        this._oeFunction = oiFunction.opposite();
+        this._feelingFunction = diFunction.isFeeling ? diFunction : this._deFunction;
+        this._thinkingFunction = this._feelingFunction.opposite();
+        this._sensingFunction = oiFunction.isSensing ? oiFunction : this._oeFunction;
+        this._intuitionFunction = this._sensingFunction.opposite();
+        this._diFunction = diFunction;
+        this._oiFunction = oiFunction;
+    }
+    
+    
+    get diFunction() {
+        return this._diFunction;
+    }
+    
+    get oiFunction() {
+        return this._oiFunction;
+    }
+    
+    get deFunction() {
+        return this._deFunction;
+    }
+    
+    get oeFunction() {
+        return this._oeFunction;
+    }
+    
+    get feelingFunction() {
+        return this._feelingFunction;
+    }
+    
+    get thinkingFunction() {
+        return this._thinkingFunction;
+    }
+    
+    get sensingFunction() {
+        return this._sensingFunction;
+    }
+    
+    get intuitionFunction() {
+        return this._intuitionFunction;
+    }
+    
+    
+    opposite() { return new Quadra(this.diFunction.opposite(), this.oiFunction.opposite()); }
+}
+
+/**
+ * @enum {Quadra}
+ */
 export const Quadras = {
-    alpha: new Quadra("Ti", "Fe", "Si", "Ne"),
-    beta: new Quadra("Ti", "Fe", "Ni", "Se"),
-    gamma: new Quadra("Fi", "Te", "Ni", "Se"),
-    delta: new Quadra("Fi", "Te", "Si", "Ne"),
+    alpha: new Quadra("Ti", "Si"),
+    beta: new Quadra("Ti", "Ni"),
+    gamma: new Quadra("Fi", "Ni"),
+    delta: new Quadra("Fi", "Si"),
 };
 
-
-export class Animal {
-    decidingFunction;
-    observingFunction;
+/**
+ * @class
+ */
+export class PartialAnimal {
     
-    constructor(dFunction, oFunction) {
-        this.decidingFunction = dFunction;
-        this.observingFunction = oFunction;
+    constructor(cogFun1, cogFun2) {
+        // noinspection EqualityComparisonWithCoercionJS
+        if (cogFun2 == undefined) {
+            const animalLetter = cogFun1;
+            // HERE Code
+            if ()
+        } else {
+        
+        }
+        
+        this._dFunction = dFunction;
+        this._oFunction = oFunction;
+    }
+    
+    
+    get decidingFunction() {
+        return this._dFunction;
+    }
+    
+    get observingFunction() {
+        return this._oFunction;
     }
 }
 
 export const GenericAnimals = {
-    S: new Animal("Di", "Oi"),
-    C: new Animal("Di", "Oe"),
-    B: new Animal("De", "Oi"),
-    P: new Animal("De", "Oe"),
+    S: new PartialAnimal("Di", "Oi"),
+    C: new PartialAnimal("Di", "Oe"),
+    B: new PartialAnimal("De", "Oi"),
+    P: new PartialAnimal("De", "Oe"),
 };
 
 
+/**
+ * @class
+ */
 export class OpType {
-    // FIX Make all these private and use getters.
-    quadra;
-    isSingleObserver;
-    isSingleDecider;
-    grantStack;
+    /**
+     * @type {Boolean}
+     */
+    _isSingleObserver;
     
-    saviorFunctions;
-    animalStack;
-    doubleActivatedAnimal;
+    /**
+     * @type {PartialAnimal}
+     */
+    _doubleActivatedAnimal;
+    _quadra;
+    _saviorFunctions;
+    _grantStack;
+    _masculineFunctions;
+    _socialStack;
+    _animalStack;
+    _modality;
+    _socialType;
     
-    modality;
-    masculineFunctions;
     
-    socialType;
-    socialStack;
+    get isSingleObserver() {
+        return this._isSingleObserver;
+    }
     
+    get animalStack() {
+        return this._animalStack;
+    }
     
+    get modality() {
+        return this._modality;
+    }
+    
+    get socialType() {
+        return this._socialType;
+    }
+    
+    get isSingleDecider() {
+        return !this._isSingleObserver;
+    }
+    
+    get doubleActivatedAnimal() {
+        return this._doubleActivatedAnimal;
+    }
+    
+    get quadra() {
+        return this._quadra;
+    }
+    
+    get saviorFunctions() {
+        return this._saviorFunctions;
+    }
+    
+    get grantStack() {
+        return this._grantStack;
+    }
+    
+    get masculineFunctions() {
+        return this._masculineFunctions;
+    }
+    
+    get socialStack() {
+        return this._socialStack;
+    }
     
     constructor(quadraName, isSingleObserver, animalStack, modality, socialType) {
         console.log(
@@ -183,13 +499,20 @@ export class OpType {
             `Modality: ${modality}\n`,
             `Social Type: ${socialType}\n`
         )
-        
+    
+        this._isSingleObserver = isSingleObserver;
+        this._animalStack = animalStack;
+        this._doubleActivatedAnimal = invertAnimal(animalStack[3]);
+        this._modality = modality;
+        this._socialType = socialType;
+    
+    
         const quadra = Quadras[quadraName.toLowerCase()];
+        this._quadra = quadra
+        
         
         const firstAnimal = GenericAnimals[animalStack[0]];
-    
         const saviorFunctions = new Array(2);
-        
         if (isSingleObserver) {
             saviorFunctions[0] = quadra[firstAnimal.observingFunction];
             saviorFunctions[1] = quadra[firstAnimal.decidingFunction];
@@ -197,57 +520,52 @@ export class OpType {
             saviorFunctions[0] = quadra[firstAnimal.decidingFunction];
             saviorFunctions[1] = quadra[firstAnimal.observingFunction];
         }
+        this._saviorFunctions = saviorFunctions;
+        
         
         const grantStack = new Array(4);
-        
         // First and last function.
         grantStack[0] = saviorFunctions[0];
         grantStack[3] = invertFun(grantStack[0]);
-        
         // If introversion/extroversion characters of first and second savior functions are matching, then the correct
         // second Grant function is the opposite of the second savior function, otherwise it's the savior function itself.
         const matchingSaviorsExtroversion = saviorFunctions[0][1] === saviorFunctions[1][1];
         grantStack[1] = matchingSaviorsExtroversion ? invertFun(saviorFunctions[1]) : saviorFunctions[1];
         grantStack[2] = invertFun(grantStack[1]);
+        this._grantStack = grantStack;
+        
         
         const masculineFunctions = new Array(2);
         masculineFunctions[0] = modality[0] === "M" ? quadra.Sensing : quadra.Intuition;
         masculineFunctions[1] = modality[1] === "M" ? quadra.De : quadra.Di;
+        this._masculineFunctions = masculineFunctions;
+        
         
         let socialStack;
         switch (socialType) {
             case "#1":
-                socialStack = ["C", "S", "P", "B"];
+                socialStack = "CSPB";
                 break;
             case "#2":
-                socialStack = ["P", "C", "B", "S"];
+                socialStack = "PCBS";
                 break;
             case "#3":
-                socialStack = ["S", "B", "C", "P"];
+                socialStack = "SBCP";
                 break;
             case "#4":
-                socialStack = ["B", "P", "S", "C"];
+                socialStack = "BPSC";
                 break;
         }
-        
-        
-        this.quadra = quadra
-        this.isSingleObserver = isSingleObserver;
-        this.isSingleDecider = !isSingleObserver;
-        this.animalStack = animalStack;
-        this.doubleActivatedAnimal = invertAnimal(animalStack[3]);
-        this.modality = modality;
-        this.socialType = socialType;
-        this.grantStack = grantStack;
-        this.saviorFunctions = saviorFunctions;
-        this.masculineFunctions = masculineFunctions;
-        this.socialStack = socialStack;
+        this._socialStack = socialStack;
     }
     
     
+    
+    
+    
     saviorFunctionsToString() {
-        const s1 = this.saviorFunctions[0];
-        const s2 = this.saviorFunctions[1];
+        const s1 = this._saviorFunctions[0];
+        const s2 = this._saviorFunctions[1];
         return s1 + "/" + s2;
     }
     
@@ -260,6 +578,7 @@ export class OpType {
     }
     
     
+    
     toString() {
         const mod = this.modality;
         const sav = this.saviorFunctionsToString();
@@ -269,3 +588,26 @@ export class OpType {
 }
 
 
+
+
+export const CognitiveFunctions = {
+    Fi: new CognitiveFunction('Fi'),
+    Fe: new CognitiveFunction('Fe'),
+    Ti: new CognitiveFunction('Ti'),
+    Te: new CognitiveFunction('Te'),
+    Si: new CognitiveFunction('Si'),
+    Se: new CognitiveFunction('Se'),
+    Ni: new CognitiveFunction('Ni'),
+    Ne: new CognitiveFunction('Ne')
+}
+
+export const PartialFunctions = {
+    F: new PartialCognitiveFunction('F'),
+    T: new PartialCognitiveFunction('T'),
+    S: new PartialCognitiveFunction('S'),
+    N: new PartialCognitiveFunction('N'),
+    Di: new PartialCognitiveFunction('Di'),
+    De: new PartialCognitiveFunction('De'),
+    Oi: new PartialCognitiveFunction('Oi'),
+    Oe: new PartialCognitiveFunction('Oe')
+}
