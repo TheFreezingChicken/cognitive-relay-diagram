@@ -69,6 +69,42 @@ export function invertAnimal(animal) {
     return result;
 }
 
+/**
+ *
+ * @param {string} cogFun1
+ * @param {string} cogFun2
+ * @returns {string}
+ */
+export function getAnimalLetter(cogFun1, cogFun2) {
+    if (cogFun1.length + cogFun2.length < 4) throw new Error(
+        "Invalid cognitive functions. Each one must be 2 characters."
+    );
+    
+    const isFirstGroupDecider = cogFun1[0].match("F|T");
+    
+    let animal;
+    // Using introversion/extroversion letters to identify animal.
+    switch (cogFun1[1] + cogFun2[1]) {
+        case "ii":
+            animal = "S";
+            break;
+        case "ee":
+            animal = "P";
+            break;
+        // For the next two cases we need to check the first letter as well.
+        case "ie":
+            if (isFirstGroupDecider) animal = "C";
+            else animal = "B";
+            break;
+        case "ei":
+            if (isFirstGroupDecider) animal = "B";
+            else animal = "C";
+            break;
+    }
+    
+    return animal;
+}
+
 
 class Quadra {
     Di;
@@ -101,7 +137,7 @@ export const Quadras = {
 };
 
 
-class Animal {
+export class Animal {
     decidingFunction;
     observingFunction;
     
@@ -111,7 +147,7 @@ class Animal {
     }
 }
 
-export const Animals = {
+export const GenericAnimals = {
     S: new Animal("Di", "Oi"),
     C: new Animal("Di", "Oe"),
     B: new Animal("De", "Oi"),
@@ -120,6 +156,7 @@ export const Animals = {
 
 
 export class OpType {
+    // FIX Make all these private and use getters.
     quadra;
     isSingleObserver;
     isSingleDecider;
@@ -149,9 +186,9 @@ export class OpType {
         
         const quadra = Quadras[quadraName.toLowerCase()];
         
+        const firstAnimal = GenericAnimals[animalStack[0]];
+    
         const saviorFunctions = new Array(2);
-        
-        const firstAnimal = Animals[animalStack[0]];
         
         if (isSingleObserver) {
             saviorFunctions[0] = quadra[firstAnimal.observingFunction];

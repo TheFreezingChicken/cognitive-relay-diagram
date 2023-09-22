@@ -1,4 +1,4 @@
-import {OpType} from "./op-lib.js";
+import {getAnimalLetter, OpType} from "./op-lib.js";
 
 // Convention: every index follows the Grant stack positioning.
 const CIRCLE_BASE_RADIUS = 60;
@@ -100,13 +100,24 @@ export function addAllImgLoadEventListener(listener) {
     MASCULINE_FUNCTION_BG_IMG.addEventListener('load', listener);
 }
 
-
+/**
+ * @enum {string}
+ */
 const DiagramStateEvents = {
-    OP_TYPE_CHANGE: new CustomEvent('opTypeChange'),
-    APPEARANCE_SETTING_CHANGE: new CustomEvent('appearanceSettingChange')
+    OP_TYPE_CHANGE: 'opTypeChange',
+    APPEARANCE_SETTING_CHANGE: 'appearanceSettingChange'
 }
 
 class DiagramGroupState extends EventTarget {
+    /**
+     * @type {OpType}
+     */
+    #opType;
+    /**
+     *
+     * @returns {OpType}
+     */
+    get opType() { return this.#opType; }
     // TODO Remember to fire an event right after firing any change event, which will be used to redraw the diagram.
 }
 
@@ -139,17 +150,18 @@ class CognitiveFunctionCircle extends Konva.Circle {
      * @private
      * @type {number}
      */
-    #grantOrder;
+    #grantIndex;
     
     
     /**
-     * @param {number} grantOrder
+     * @param {DiagramGroup} rootDiagramGroup
+     * @param {number} grantIndex
      */
-    constructor(grantOrder) {
+    constructor(rootDiagramGroup, grantIndex) {
         let position;
         let scaleFactor;
     
-        switch (grantOrder) {
+        switch (grantIndex) {
             case 0:
                 position = {
                     x: DIAGRAM_CENTER,
@@ -194,39 +206,38 @@ class CognitiveFunctionCircle extends Konva.Circle {
         });
         
         
-        this.#grantOrder = grantOrder;
-    }
-    
-    
-    /**
-     *
-     * @param {string} cogFun
-     */
-    updateCogFun(cogFun) {
-    
-        let fillColor;
-        let strokeColor;
-        switch (cogFun[0]) {
-            case 'F':
-                fillColor = TFCStyleColor.FEELING_FILL;
-                strokeColor = TFCStyleColor.FEELING_STROKE;
-                break;
-            case 'T':
-                fillColor = TFCStyleColor.THINKING_FILL;
-                strokeColor = TFCStyleColor.THINKING_STROKE;
-                break;
-            case 'S':
-                fillColor = TFCStyleColor.SENSING_FILL;
-                strokeColor = TFCStyleColor.SENSING_STROKE;
-                break;
-            case 'N':
-                fillColor = TFCStyleColor.INTUITION_FILL;
-                strokeColor = TFCStyleColor.INTUITION_STROKE;
-                break;
-        }
+        this.#grantIndex = grantIndex;
         
-        this.fill(fillColor);
-        this.stroke(strokeColor);
+        const state = rootDiagramGroup.state;
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            let fillColor;
+            let strokeColor;
+            // Checking first character of the corresponding grant function.
+            switch (state.opType.grantStack[grantIndex][0]) {
+                case 'F':
+                    fillColor = TFCStyleColor.FEELING_FILL;
+                    strokeColor = TFCStyleColor.FEELING_STROKE;
+                    break;
+                case 'T':
+                    fillColor = TFCStyleColor.THINKING_FILL;
+                    strokeColor = TFCStyleColor.THINKING_STROKE;
+                    break;
+                case 'S':
+                    fillColor = TFCStyleColor.SENSING_FILL;
+                    strokeColor = TFCStyleColor.SENSING_STROKE;
+                    break;
+                case 'N':
+                    fillColor = TFCStyleColor.INTUITION_FILL;
+                    strokeColor = TFCStyleColor.INTUITION_STROKE;
+                    break;
+                default:
+                    fillColor = 'white';
+                    strokeColor = 'black';
+            }
+    
+            this.fill(fillColor);
+            this.stroke(strokeColor);
+        });
     }
 }
 
@@ -334,18 +345,25 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
     
     /**
      *
+     * @param {DiagramGroup} rootDiagramGroup
      * @param {CognitiveFunctionCircle} circle
-     * @param {number} grantOrder
+     * @param {number} grantIndex
      */
-    constructor(circle, grantOrder) {
-        const img = grantOrder === 3 ? BIG_DEMON_BG_IMG : LITTLE_DEMON_BG_IMG;
+    constructor(rootDiagramGroup, circle, grantIndex) {
+        const img = grantIndex === 3 ? BIG_DEMON_BG_IMG : LITTLE_DEMON_BG_IMG;
         
-        super(img, circle, grantOrder);
+        super(img, circle, grantIndex);
+        
+        const state = rootDiagramGroup.state;
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            const cogFun = state.opType.grantStack[grantIndex];
+            const isSavior = state.opType.saviorFunctions.includes(cogFun);
+            this.visible(!isSavior);
+        });
     }
     
     
     updateDemonState(isDemon) {
-        this.visible(isDemon);
     }
 }
 
@@ -354,15 +372,22 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     get _IMG_SCALE() {
         return 0.43;
     }
-    // HERE Make the muscles smaller (in PS).
     
-    constructor(circle, grantOrder) {
-        super(MASCULINE_FUNCTION_BG_IMG, circle, grantOrder);
-    }
+    /**
+     *
+     * @param {DiagramGroup} rootDiagramGroup
+     * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantIndex
+     */
+    constructor(rootDiagramGroup, circle, grantIndex) {
+        super(MASCULINE_FUNCTION_BG_IMG, circle, grantIndex);
     
-    
-    updateMasculineState(isMasculine) {
-        this.visible(isMasculine);
+        const state = rootDiagramGroup.state;
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            const cogFun = state.opType.grantStack[grantIndex];
+            const isMasculine = state.opType.masculineFunctions.includes(cogFun);
+            this.visible(isMasculine);
+        });
     }
 }
 
@@ -372,9 +397,11 @@ class CognitiveFunctionText extends Konva.Text {
     
     /**
      *
+     * @param {DiagramGroup} rootDiagramGroup
      * @param {CognitiveFunctionCircle} circle
+     * @param {number} grantIndex
      */
-    constructor(circle) {
+    constructor(rootDiagramGroup, circle, grantIndex) {
         super(
             {
                 position: {
@@ -401,12 +428,12 @@ class CognitiveFunctionText extends Konva.Text {
         );
         
         this.#circle = circle;
-    }
     
-    
-    
-    updateCogFun(cogFun) {
-        this.text(cogFun);
+        const state = rootDiagramGroup.state;
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            const cogFun = state.opType.grantStack[grantIndex];
+            this.text(cogFun);
+        });
     }
 }
 
@@ -484,54 +511,28 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @param {number} grantIndex
      */
     constructor(rootDiagramGroup, grantIndex) {
-        // HERE Fix by getting state from group
         super();
     
         this.#grantIndex = grantIndex;
         
         
-        const circle = new CognitiveFunctionCircle(grantIndex);
+        const circle = new CognitiveFunctionCircle(rootDiagramGroup, grantIndex);
         this.#circle = circle;
         
-        const outline = new CognitiveFunctionOutline(grantIndex);
-        this.#outline = outline;
+        // const outline = new CognitiveFunctionOutline(grantIndex);
+        // this.#outline = outline;
         
-        const demonBgImg = new DemonBackgroundImage(circle, grantIndex);
+        const demonBgImg = new DemonBackgroundImage(rootDiagramGroup, circle, grantIndex);
         this.#demonBgImg = demonBgImg;
         
-        const masculineBgImg = new MasculineBackgroundImage(circle,grantIndex);
+        const masculineBgImg = new MasculineBackgroundImage(rootDiagramGroup, circle, grantIndex);
         this.#masculineBgImg = masculineBgImg;
         
-        const text = new CognitiveFunctionText(circle);
+        const text = new CognitiveFunctionText(rootDiagramGroup, circle, grantIndex);
         this.#text = text;
-        
-        // addDemonImgLoadEventListener(() => {
-        //     const debugRect = new DebugRect(demonBgImg.getClientRect());
-        //     console.log(demonBgImg.getClientRect());
-        //
-        //     this.add(debugRect);
-        // });
         
         
         this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text);
-    }
-    
-    
-    
-    /**
-     *
-     * @param {OpType} opType
-     */
-    updateCogFun(opType) {
-        const cogFun = opType.grantStack[this.#grantIndex];
-        this.#cogFun = cogFun;
-        
-        const isSavior = opType.saviorFunctions.includes(cogFun);
-        this.#demonBgImg.updateDemonState(!isSavior);
-        this.#masculineBgImg.updateMasculineState(opType.masculineFunctions.includes(cogFun));
-        this.#outline.updateSaviorState(isSavior);
-        this.#circle.updateCogFun(cogFun);
-        this.#text.updateCogFun(cogFun);
     }
 }
 
@@ -557,15 +558,12 @@ class AnimalBackgroundTriangle extends Konva.Line {
     }
     
     /**
-     * FIX
-     * @param {CognitiveFunctionGroup} cogFun1Group
-     * @param {CognitiveFunctionGroup} cogFun2Group
+     * @param {DiagramGroup} rootDiagramGroup
+     * @param {AnimalPosition} animalPosition
      */
-    constructor(rootDiagram, animalPosition) {
-        const c1 = cogFun1Group.circle;
-        const c2 = cogFun2Group.circle;
-        
-        
+    constructor(rootDiagramGroup, animalPosition) {
+        const c1 = rootDiagramGroup.getCogFunGroup(animalPosition.grantIdx1).circle;
+        const c2 = rootDiagramGroup.getCogFunGroup(animalPosition.grantIdx2).circle;
         
         super({
             points: [
@@ -575,35 +573,40 @@ class AnimalBackgroundTriangle extends Konva.Line {
             ],
             closed: true
         });
+    
+    
+        const state = rootDiagramGroup.state;
+        state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            const cf1 = state.opType.grantStack[animalPosition.grantIdx1];
+            const cf2 = state.opType.grantStack[animalPosition.grantIdx2];
+            
+            const animal = getAnimalLetter(cf1, cf2);
+    
+    
+            switch (stackIndex) {
+                case 0:
+                    this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
+                    this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                    break;
+                case 1:
+                    this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
+                    this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                    break;
+                case 2:
+                    this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
+                    this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                    break;
+                case 3:
+                    this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
+                    this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                    break;
+                default:
+                    throw new Error("Invalid animal order.");
+            }
+        });
     }
     
     
-    /**
-     *
-     * @param {number} order
-     */
-    updateAnimalOrder(order) {
-        switch (order) {
-            case 0:
-                this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
-                break;
-            case 1:
-                this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
-                break;
-            case 2:
-                this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
-                break;
-            case 3:
-                this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
-                break;
-            default:
-                throw new Error("Invalid animal order.");
-        }
-    }
 }
 
 class AnimalLine extends Konva.Line {
@@ -836,75 +839,28 @@ class AnimalGroup extends Konva.Group {
     
     /**
      *
-     * @param {DiagramGroup} rootDiagram
+     * @param {DiagramGroup} rootDiagramGroup
      * @param {AnimalPosition} animalPosition
      */
-    constructor(rootDiagram, animalPosition) {
+    constructor(rootDiagramGroup, animalPosition) {
         super();
         
         this.#animalPosition = animalPosition;
     
-        const bgTriangle = new AnimalBackgroundTriangle(rootDiagram, animalPosition);
+        const bgTriangle = new AnimalBackgroundTriangle(rootDiagramGroup, animalPosition);
         this.#backgroundTriangle = bgTriangle;
         
-        const line = new AnimalLine(rootDiagram, animalPosition);
+        const line = new AnimalLine(rootDiagramGroup, animalPosition);
         this.#line = line;
     
-        const letterText = new AnimalLetter(rootDiagram, animalPosition);
+        const letterText = new AnimalLetter(rootDiagramGroup, animalPosition);
         this.#letterText = letterText;
         
-        const orderText = new AnimalOrderNumber(rootDiagram, animalPosition);
+        const orderText = new AnimalOrderNumber(rootDiagramGroup, animalPosition);
         this.#stackOrderText = orderText;
         
         
         this.add(bgTriangle, line, letterText, orderText);
-    }
-    
-    
-    updateAnimal(opType) {
-        let animal;
-        
-        const cogFun1 = this.#cogFun1Group.cogFun;
-        const cogFun2 = this.#cogFun2Group.cogFun;
-        const isFirstGroupDecider = cogFun1[0].match("F|T");
-        
-        
-        // Using introversion/extroversion letters to identify animal.
-        switch (cogFun1[1] + cogFun2[1]) {
-            case "ii":
-                animal = "S";
-                break;
-            case "ee":
-                animal = "P";
-                break;
-            // For the next two cases we need to check the first letter as well.
-            case "ie":
-                if (isFirstGroupDecider) animal = "C";
-                else animal = "B";
-                break;
-            case "ei":
-                if (isFirstGroupDecider) animal = "B";
-                else animal = "C";
-                break;
-        }
-        
-        const isDoubleActivated = opType.doubleActivatedAnimal === animal;
-        const stackOrder = opType.animalStack.indexOf(animal);
-        this.#backgroundTriangle.updateAnimalOrder(stackOrder);
-        this.#line.updateAnimalOrder(stackOrder);
-        this.#letterText.updateText(animal, stackOrder, isDoubleActivated);
-        this.#stackOrderText.updateText(stackOrder + 1, stackOrder, isDoubleActivated);
-    }
-}
-
-const myField = {
-    nutaheduantehd: {
-        onithentoid: "hello",
-        rscpidg: "thanks"
-    },
-    noeidcguu: {
-        stiotehudi: "no u",
-        thdithexuihx: "vad"
     }
 }
 
