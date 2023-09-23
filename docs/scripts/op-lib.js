@@ -322,17 +322,26 @@ class PartialCognitiveFunction {
     
     
     /**
-     *
+     * Returns true only if this instance of PartialCognitiveFunction
+     * @returns {boolean}
+     */
+    get isActuallyPartial() {
+        return /[OD?]/.test(this.name);
+    }
+    
+    /**
      * @param {any | PartialCognitiveFunction} otherFunction
      * @returns {boolean|undefined}
      */
     equalsTo(otherFunction) {
+        if (typeof otherFunction === 'string') otherFunction = new PartialCognitiveFunction(otherFunction);
+        if (!this.isActuallyPartial) otherFunction = new CognitiveFunction(otherFunction);
         if (!(otherFunction instanceof PartialCognitiveFunction)) return undefined;
         
         return this.name === otherFunction.name;
     }
     
-    hasLetterAffinityWith(other) {
+    hasAffinityWith(otherFunction) {
         // HERE Code
     }
     
