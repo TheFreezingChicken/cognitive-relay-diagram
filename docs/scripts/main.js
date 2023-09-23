@@ -1,5 +1,5 @@
 import {addAllImgLoadEventListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
-import {OpType} from "./op-lib.js";
+import * as OP from "./op-lib.js";
 
 
 const APPEARANCE_SETTING_HTML_CLASS_NAME = '.appearance-setting';
@@ -113,7 +113,7 @@ class DiagramStage extends Konva.Stage {
     
     /**
      *
-     * @param {OpType} opType
+     * @param {CognitiveType} opType
      */
     redraw(
         opType
@@ -162,7 +162,7 @@ function updateDiagram() {
         
         const isSingleObserver = observerDecider === 'ODD';
         
-        const opType = new OpType(quadra, isSingleObserver, animals, modality, socialType);
+        const opType = new OP.CognitiveType(quadra, isSingleObserver, animals, modality, socialType);
         // TODO Add double activation numeric hints and masculinity.
         
         diagramStage.redraw(opType)

@@ -86,9 +86,10 @@ export function getAnimalLetter(cogFun1, cogFun2) {
  */
 class PartialCognitiveFunction {
     /**
-     * @param {string} cogFunName
+     * @param {string|PartialCognitiveFunction} cogFunName
      */
     constructor(cogFunName) {
+        if (cogFunName instanceof PartialCognitiveFunction) cogFunName = cogFunName.name;
         if (typeof cogFunName !== 'string') throw new TypeError('Not a string.');
     
     
@@ -117,15 +118,25 @@ class PartialCognitiveFunction {
      * @returns {string}
      */
     get name() { return this._cogFunName; }
+    get letter() {
+        const letter = this.name[0];
+        return letter === '?' ? undefined : letter;
+    }
+    get charge() {
+        const charge = this.name[1];
+        return charge === '?' ? undefined : charge;
+    }
+    
+    
     
     /**
      * @returns {boolean|undefined}
      */
     get isIntroverted() {
-        const ie = this.name[1];
-        if (ie === '?') {
+        const charge = this.name[1];
+        if (charge === '?') {
             return undefined;
-        } else return ie === 'i';
+        } else return charge === 'i';
     }
     
     /**
@@ -133,11 +144,11 @@ class PartialCognitiveFunction {
      * @returns {boolean|undefined}
      */
     get isExtroverted() {
-        const ie = this.name[1];
-        if (ie === '?') {
+        const charge = this.name[1];
+        if (charge === '?') {
             return undefined;
         } else {
-            return ie === 'e';
+            return charge === 'e';
         }
     }
     
@@ -168,7 +179,7 @@ class PartialCognitiveFunction {
     
     /**
      *
-     * @returns {boolean}
+     * @returns {boolean|undefined}
      */
     get isSensing() {
         if (/[?O]/.test(this.name[0])) {
@@ -235,48 +246,93 @@ class PartialCognitiveFunction {
     get isDe() { return this.isExtroverted && this.isDeciding; }
     
     
-
+    /**
+     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     */
     opposite() {
-        let funChar = this.name[0];
-        let introChar = this.name[1];
+        let letter = this.name[0];
+        let charge = this.name[1];
         
-        switch (funChar) {
+        switch (letter) {
             case 'F':
-                funChar = 'T';
+                letter = 'T';
                 break;
             case 'T':
-                funChar = 'F';
+                letter = 'F';
                 break;
             case 'S':
-                funChar = 'N';
+                letter = 'N';
                 break;
             case 'N':
-                funChar = 'S';
+                letter = 'S';
                 break;
             default:
+                // Do nothing.
                 break;
         }
         
-        if (introChar === 'i') introChar = 'e' ; else introChar = 'i';
+        if (charge === 'i') charge = 'e' ; else charge = 'i';
         
-        const result = funChar + introChar;
+        const result = letter + charge;
         
-        return result.includes('?') ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+    }
+    
+    /**
+     *
+     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     */
+    withOppositeLetter() {
+        let letter = this.name[0];
+    
+        switch (letter) {
+            case 'F':
+                letter = 'T';
+                break;
+            case 'T':
+                letter = 'F';
+                break;
+            case 'S':
+                letter = 'N';
+                break;
+            case 'N':
+                letter = 'S';
+                break;
+            default:
+                // Do nothing.
+                break;
+        }
+    
+        const result = letter + this.name[1];
+    
+        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+    }
+    
+    withOppositeCharge() {
+        let charge = this.name[1];
+        
+        if (charge === '?') return new PartialCognitiveFunction(this);
+        
+        if (charge === 'i') charge = 'e' ; else charge = 'i';
+    
+        const result = this.name[0] + charge;
+    
+        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
     }
     
     
     /**
      *
-     * @param {any | PartialCognitiveFunction} other
+     * @param {any | PartialCognitiveFunction} otherFunction
      * @returns {boolean|undefined}
      */
-    equalsTo(other) {
-        if (!(other instanceof PartialCognitiveFunction)) return undefined;
+    equalsTo(otherFunction) {
+        if (!(otherFunction instanceof PartialCognitiveFunction)) return undefined;
         
-        return this.name === other.name;
+        return this.name === otherFunction.name;
     }
     
-    hasSameLetterOf(other) {
+    hasLetterAffinityWith(other) {
         // HERE Code
     }
     
@@ -328,6 +384,10 @@ class Quadra {
         
         if (!(diFunction instanceof CognitiveFunction && oiFunction instanceof CognitiveFunction))
             throw new TypeError("One or more arguments can't be converted to CognitiveFunction.");
+        
+        if (!(diFunction.isDeciding && diFunction.isIntroverted && oiFunction.isObserving && oiFunction.isIntroverted)) {
+            throw new Error('Invalid arguments. First argument must be Di and second argument must be Oi.');
+        }
     
         this._deFunction = diFunction.opposite();
         this._oeFunction = oiFunction.opposite();
@@ -340,40 +400,75 @@ class Quadra {
     }
     
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get diFunction() {
         return this._diFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get oiFunction() {
         return this._oiFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get deFunction() {
         return this._deFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get oeFunction() {
         return this._oeFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get feelingFunction() {
         return this._feelingFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get thinkingFunction() {
         return this._thinkingFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get sensingFunction() {
         return this._sensingFunction;
     }
     
+    /**
+     *
+     * @returns {CognitiveFunction}
+     */
     get intuitionFunction() {
         return this._intuitionFunction;
     }
     
-    
-    opposite() { return new Quadra(this.diFunction.opposite(), this.oiFunction.opposite()); }
+    /**
+     *
+     * @returns {Quadra}
+     */
+    opposite() { return new Quadra(this.diFunction.withOppositeLetter(), this.oiFunction.withOppositeLetter()); }
 }
 
 /**
@@ -426,7 +521,7 @@ export const GenericAnimals = {
 /**
  * @class
  */
-export class OpType {
+export class CognitiveType {
     /**
      * @type {Boolean}
      */
