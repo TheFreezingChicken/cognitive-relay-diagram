@@ -111,6 +111,8 @@ class PartialCognitiveFunction {
         
         
         this._cogFunName = cogFunName
+        
+        if (!this.isActuallyPartial) console.warn('Complete Cognitive Function was instantiated as partial.');
     }
     
     
@@ -274,8 +276,8 @@ class PartialCognitiveFunction {
         if (charge === 'i') charge = 'e' ; else charge = 'i';
         
         const result = letter + charge;
-        
-        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+    
+        return CognitiveFunction.bestInstanceFromString(result);
     }
     
     /**
@@ -284,7 +286,7 @@ class PartialCognitiveFunction {
      */
     withOppositeLetter() {
         let letter = this.name[0];
-    
+        
         switch (letter) {
             case 'F':
                 letter = 'T';
@@ -305,7 +307,7 @@ class PartialCognitiveFunction {
     
         const result = letter + this.name[1];
     
-        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+        return CognitiveFunction.bestInstanceFromString(result);
     }
     
     withOppositeCharge() {
@@ -317,7 +319,7 @@ class PartialCognitiveFunction {
     
         const result = this.name[0] + charge;
     
-        return /[?OD]/.test(result) ? new PartialCognitiveFunction(result) : new CognitiveFunction(result);
+        return CognitiveFunction.bestInstanceFromString(result);
     }
     
     
@@ -335,7 +337,6 @@ class PartialCognitiveFunction {
      */
     equalsTo(otherFunction) {
         if (typeof otherFunction === 'string') otherFunction = new PartialCognitiveFunction(otherFunction);
-        if (!this.isActuallyPartial) otherFunction = new CognitiveFunction(otherFunction);
         if (!(otherFunction instanceof PartialCognitiveFunction)) return undefined;
         
         return this.name === otherFunction.name;
@@ -343,6 +344,18 @@ class PartialCognitiveFunction {
     
     hasAffinityWith(otherFunction) {
         // HERE Code
+        throw new Error('not implemented.');
+    }
+    
+    /**
+     * @param otherFunction
+     * @returns {boolean|undefined}
+     */
+    isSameAxisOf(otherFunction) {
+        if (typeof otherFunction === 'string') otherFunction = CognitiveFunction.bestInstanceFromString(otherFunction);
+        if (!(otherFunction instanceof PartialCognitiveFunction)) throw new Error('Invalid argument. Not a function.');
+        
+        return this.isDeciding && otherFunction.isDeciding || this.isObserving && otherFunction.isObserving;
     }
     
     /**
@@ -359,19 +372,23 @@ class PartialCognitiveFunction {
  * @class
  */
 class CognitiveFunction extends PartialCognitiveFunction{
+    static bestInstanceFromString(cogFunName) {
+        if (typeof cogFunName !== 'string') throw new Error ('Argument is not a string.');
+        return /[DO?]/.test(cogFunName) ? new PartialCognitiveFunction(cogFunName) : new CognitiveFunction(cogFunName);
+    }
+    
     /**
-     * @param {string} cogFunName
+     * @param {string|PartialCognitiveFunction} cogFunName
      */
     constructor(cogFunName) {
+        // We must keep super() call first because of the PartialCognitiveFunction to string conversion check.
+        super(cogFunName);
+        
         // Check length for validity.
         if (cogFunName.length !== 2) throw new Error('Invalid length.');
-        
+    
         // No partial functions allowed.
         if (cogFunName.includes('?')) throw new Error('Invalid function (partial).');
-        
-        super(cogFunName);
-    
-        this._cogFunName = cogFunName
     }
 }
 
@@ -388,6 +405,7 @@ class Quadra {
      * @param {CognitiveFunction|string} oiFunction
      */
     constructor(diFunction, oiFunction) {
+        // SLEEP Make constructor recognize the two functions automatically, regardless of order of the arguments.
         if (typeof diFunction === 'string') diFunction = new CognitiveFunction(diFunction);
         if (typeof oiFunction === 'string') oiFunction = new CognitiveFunction(oiFunction);
         
@@ -478,6 +496,8 @@ class Quadra {
      * @returns {Quadra}
      */
     opposite() { return new Quadra(this.diFunction.withOppositeLetter(), this.oiFunction.withOppositeLetter()); }
+    
+    // SLEEP Add oppositeObserverAxis and oppositeDeciderAxis.
 }
 
 /**
@@ -494,19 +514,22 @@ export const Quadras = {
  * @class
  */
 export class PartialAnimal {
-    
+    /**
+     * @param {PartialCognitiveFunction} cogFun1
+     * @param {PartialCognitiveFunction} cogFun2
+     */
     constructor(cogFun1, cogFun2) {
-        // noinspection EqualityComparisonWithCoercionJS
-        if (cogFun2 == undefined) {
-            const animalLetter = cogFun1;
-            // HERE Code
-            if ()
-        } else {
+        if (typeof cogFun1 === 'string') cogFun1 = CognitiveFunction.bestInstanceFromString(cogFun1);
+        if (typeof cogFun2 === 'string') cogFun2 = CognitiveFunction.bestInstanceFromString(cogFun2);
+        if (!(cogFun1 instanceof PartialCognitiveFunction && cogFun2 instanceof PartialCognitiveFunction))
+            throw new Error('Invalid argument. Must be cognitive function name or PartialCognitiveFunction.');
         
-        }
+        if (cogFun1.isSameAxisOf(cogFun2)) throw new Error(
+            "Invalid argument. Functions must be on different axes D+O."
+        );
         
-        this._dFunction = dFunction;
-        this._oFunction = oFunction;
+        this._dFunction = cogFun1.isDeciding ? cogFun1 : cogFun2;
+        this._oFunction = cogFun1.isObserving ? cogFun1 : cogFun2;
     }
     
     
@@ -517,9 +540,29 @@ export class PartialAnimal {
     get observingFunction() {
         return this._oFunction;
     }
+    
+    // SLEEP Add animal full name getter.
 }
 
-export const GenericAnimals = {
+export class Animal extends PartialAnimal {
+    // SLEEP Make "fromString" similar to CogFun.
+    
+    /**
+     * @param {CognitiveFunction} cogFun1
+     * @param {CognitiveFunction} cogFun2
+     */
+    constructor(cogFun1, cogFun2) {
+        // Must call super() first because of string conversion check.
+        super(cogFun1, cogFun2);
+        
+        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) throw new Error(
+            "Invalid arguments. Only CognitiveFunction is allowed."
+        );
+    }
+}
+
+
+const GenericAnimals = {
     S: new PartialAnimal("Di", "Oi"),
     C: new PartialAnimal("Di", "Oe"),
     B: new PartialAnimal("De", "Oi"),
@@ -531,6 +574,7 @@ export const GenericAnimals = {
  * @class
  */
 export class CognitiveType {
+    // HERE Should remain only this to fix.
     /**
      * @type {Boolean}
      */
