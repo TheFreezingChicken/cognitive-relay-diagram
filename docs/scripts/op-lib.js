@@ -622,7 +622,7 @@ export class PartialCognitiveType {
      * @returns {boolean|undefined}
      */
     get isSingleObserver() {
-        const coin = this._coinSingleObserverDecider;
+        const coin = this._coinStuckType;
         if (coin == null) return undefined;
         
         return coin === 'ODD'
@@ -687,16 +687,16 @@ export class PartialCognitiveType {
             case 'O':
             case 'ODD':
             case true:
-                this._coinSingleObserverDecider = 'ODD';
+                this._coinStuckType = 'ODD';
                 break;
             case 'D':
             case 'DOO':
             case false:
-                this._coinSingleObserverDecider = 'DOO';
+                this._coinStuckType = 'DOO';
                 break;
             case null:
             case undefined:
-                this._coinSingleObserverDecider = undefined;
+                this._coinStuckType = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isSingleObserver.");
@@ -705,15 +705,15 @@ export class PartialCognitiveType {
         switch (isSaviorDi) {
             case 'Di':
             case true:
-                this._coinDiDe = 'Di';
+                this._coinDeciderCharge = 'Di';
                 break;
             case 'De':
             case false:
-                this._coinDiDe = 'De';
+                this._coinDeciderCharge = 'De';
                 break;
             case null:
             case undefined:
-                this._coinDiDe = undefined;
+                this._coinDeciderCharge = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isSaviorDi.");
@@ -723,15 +723,15 @@ export class PartialCognitiveType {
         switch (isSaviorOi) {
             case 'Oi':
             case true:
-                this._coinOiOe = 'Oi';
+                this._coinObserverCharge = 'Oi';
                 break;
             case 'Oe':
             case false:
-                this._coinOiOe = 'Oe';
+                this._coinObserverCharge = 'Oe';
                 break;
             case null:
             case undefined:
-                this._coinOiOe = undefined;
+                this._coinObserverCharge = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isSaviorOi.");
@@ -739,6 +739,103 @@ export class PartialCognitiveType {
     
     
         switch (isSaviorSensing) {
+            case 'S':
+            case true:
+                this._coinObserverLetter = 'S';
+                break;
+            case 'N':
+            case false:
+                this._coinObserverLetter = 'N';
+                break;
+            case null:
+            case undefined:
+                this._coinObserverLetter = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorSensing.");
+        }
+    
+    
+    
+        switch (isSaviorFeeling) {
+            case 'F':
+            case true:
+                this._coinDeciderLetter = 'F';
+                break;
+            case 'T':
+            case false:
+                this._coinDeciderLetter = 'T';
+                break;
+            case null:
+            case undefined:
+                this._coinDeciderLetter = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorFeeling.");
+        }
+    
+    
+        switch (isSaviorConsume) {
+            case 'C':
+            case 'Consume':
+            case true:
+                this._coinInfoAnimal = 'C';
+                break;
+            case 'B':
+            case 'Blast':
+            case false:
+                this._coinInfoAnimal = 'B';
+                break;
+            case null:
+            case undefined:
+                this._coinInfoAnimal = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorConsume.");
+        }
+    
+    
+        switch (isSaviorSleep) {
+            case 'S':
+            case 'Sleep':
+            case true:
+                this._coinEnergyAnimal = 'S';
+                break;
+            case 'P':
+            case 'Play':
+            case false:
+                this._coinEnergyAnimal = 'P';
+                break;
+            case null:
+            case undefined:
+                this._coinEnergyAnimal = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorSleep.");
+        }
+        
+        
+        switch (isInfoDom) {
+            case 'I':
+            case 'Info':
+            case true:
+                this._coinAnimalDominance = 'Info';
+                break;
+            case 'E':
+            case 'Energy':
+            case false:
+                this._coinAnimalDominance = 'Energy';
+                break;
+            case null:
+            case undefined:
+                this._coinAnimalDominance = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isInfoDom.");
+        }
+        
+        // HERE Keep fixing
+        switch (isIntroverted) {
             case 'S':
             case true:
                 this._coinSensingIntuition = 'S';
@@ -752,29 +849,81 @@ export class PartialCognitiveType {
                 this._coinSensingIntuition = undefined;
                 break;
             default:
-                throw Error("Invalid argument for isSaviorSensing.");
+                throw Error("Invalid argument for isIntroverted.");
         }
-    
-    
-    
-        switch (isSaviorFeeling) {
-            case 'F':
+        
+        
+        switch (hasMasculineSensory) {
+            case 'S':
             case true:
-                this._coinFeelingIntuition = 'F';
+                this._coinSensingIntuition = 'S';
                 break;
-            case 'T':
+            case 'N':
             case false:
-                this._coinFeelingIntuition = 'T';
+                this._coinSensingIntuition = 'N';
                 break;
             case null:
             case undefined:
-                this._coinFeelingIntuition = undefined;
+                this._coinSensingIntuition = undefined;
                 break;
             default:
-                throw Error("Invalid argument for isSaviorFeeling.");
+                throw Error("Invalid argument for hasMasculineSensory.");
         }
         
-        // HERE
+        
+        switch (hasMasculineDe) {
+            case 'S':
+            case true:
+                this._coinSensingIntuition = 'S';
+                break;
+            case 'N':
+            case false:
+                this._coinSensingIntuition = 'N';
+                break;
+            case null:
+            case undefined:
+                this._coinSensingIntuition = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for hasMasculineDe.");
+        }
+        
+        
+        switch (isFlex) {
+            case 'S':
+            case true:
+                this._coinSensingIntuition = 'S';
+                break;
+            case 'N':
+            case false:
+                this._coinSensingIntuition = 'N';
+                break;
+            case null:
+            case undefined:
+                this._coinSensingIntuition = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isFlex.");
+        }
+        switch (isResponsibility) {
+            case 'S':
+            case true:
+                this._coinSensingIntuition = 'S';
+                break;
+            case 'N':
+            case false:
+                this._coinSensingIntuition = 'N';
+                break;
+            case null:
+            case undefined:
+                this._coinSensingIntuition = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isResponsibility.");
+        }
+        
+        
+        
         
         console.log(
             "Constructing OP type...\n",
