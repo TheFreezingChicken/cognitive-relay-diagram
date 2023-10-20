@@ -42,9 +42,9 @@
             margin-bottom: 10px;
         }
 
-        /*select {*/
-        /*    margin-left: 5px;*/
-        /*}*/
+        select {
+            font-family: Fira Code, Roboto Mono, Liberation Mono, Consolas, monospace;
+        }
 
         .title-container {
             align-self: center;
@@ -132,8 +132,8 @@
 <div class="title-container">
     <h1>Cognitive Relay Diagram</h1>
     <p class="made-by">
-        (by <a href="https://thefreezingchicken.github.io">The Freezing Chicken</a>, and based on the
-        <a href="https://www.objectivepersonality.com/">Objective Personality System</a>)
+        (by <a href="https://www.youtube.com/playlist?list=PLE0nCoAePeKGfWioDXoYPcGXeaSFlflu4">The Freezing Chicken</a>,
+        and based on the <a href="https://www.objectivepersonality.com/">Objective Personality System</a>)
     </p>
 </div>
 
@@ -165,41 +165,41 @@
             <label for="quadra">Quadra:</label>
             <select id="quadra" class="type-selection">
                 <option value="NONE">-- CHOOSE --</option>
-                <option value="alpha">Alpha | (Fe-Ti) + (Ne-Si)</option>
-                <option value="beta">Beta | (Fe-Ti) + (Se-Ni)</option>
-                <option value="gamma">Gamma | (Te-Fi) + (Se-Ni)</option>
-                <option value="delta">Delta | (Te-Fi) + (Ne-Si)</option>
+                <option value="alpha">Alpha | xNTP or xSFJ | (Fe-Ti) + (Si-Ne)</option>
+                <option value="beta"> Beta &nbsp;| xSTP or xNFJ | (Fe-Ti) + (Se-Ni)</option>
+                <option value="gamma">Gamma | xNFP or xSTJ | (Fi-Te) + (Se-Ni)</option>
+                <option value="delta">Delta | xSFP or xNTJ | (Fi-Te) + (Si-Ne)</option>
             </select>
 
             <label for="observer-decider">Observer/Decider:</label>
             <select id="observer-decider" class="type-selection">
                 <option value="NONE">-- CHOOSE --</option>
-                <option value="DOO">Single Decider (Double Observer)</option>
+                <option value="DOO">Single Decider &nbsp;(Double Observer)</option>
                 <option value="ODD">Single Observer (Double Decider)</option>
             </select>
 
             <label for="animals">Animal Stack:</label>
             <select id="animals" class="type-selection">
                 <option value="NONE">-- CHOOSE --</option>
-                <optgroup label="Sleep">
+                <optgroup label="Sleep First">
                     <option value="SCBP">SC/B(P)</option>
                     <option value="SCPB">SC/P(B)</option>
                     <option value="SBCP">SB/C(P)</option>
                     <option value="SBPC">SB/P(C)</option>
                 </optgroup>
-                <optgroup label="Consume">
+                <optgroup label="Consume First">
                     <option value="CSBP">CS/B(P)</option>
                     <option value="CSPB">CS/P(B)</option>
                     <option value="CPSB">CP/S(B)</option>
                     <option value="CPBS">CP/B(S)</option>
                 </optgroup>
-                <optgroup label="Blast">
+                <optgroup label="Blast First">
                     <option value="BSCP">BS/C(P)</option>
                     <option value="BSPC">BS/P(C)</option>
                     <option value="BPSC">BP/S(C)</option>
                     <option value="BPCS">BP/C(S)</option>
                 </optgroup>
-                <optgroup label="Play">
+                <optgroup label="Play First">
                     <option value="PCSB">PC/S(B)</option>
                     <option value="PCBS">PC/B(S)</option>
                     <option value="PBSC">PB/S(C)</option>

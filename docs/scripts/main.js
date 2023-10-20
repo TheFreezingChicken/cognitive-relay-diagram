@@ -113,7 +113,7 @@ class DiagramStage extends Konva.Stage {
     
     /**
      *
-     * @param {CognitiveType} opType
+     * @param {PartialCognitiveType} opType
      */
     redraw(
         opType
@@ -162,7 +162,7 @@ function updateDiagram() {
         
         const isSingleObserver = observerDecider === 'ODD';
         
-        const opType = new OP.CognitiveType(quadra, isSingleObserver, animals, modality, socialType);
+        const opType = new OP.PartialCognitiveType(quadra, isSingleObserver, animals, modality, socialType);
         // TODO Add double activation numeric hints and masculinity.
         
         diagramStage.redraw(opType)

@@ -515,8 +515,8 @@ export const Quadras = {
  */
 export class PartialAnimal {
     /**
-     * @param {PartialCognitiveFunction} cogFun1
-     * @param {PartialCognitiveFunction} cogFun2
+     * @param {PartialCognitiveFunction|string} cogFun1
+     * @param {PartialCognitiveFunction|string} cogFun2
      */
     constructor(cogFun1, cogFun2) {
         if (typeof cogFun1 === 'string') cogFun1 = CognitiveFunction.bestInstanceFromString(cogFun1);
@@ -570,15 +570,39 @@ const GenericAnimals = {
 };
 
 
+
+
+
+
+export const CognitiveFunctions = {
+    Fi: new CognitiveFunction('Fi'),
+    Fe: new CognitiveFunction('Fe'),
+    Ti: new CognitiveFunction('Ti'),
+    Te: new CognitiveFunction('Te'),
+    Si: new CognitiveFunction('Si'),
+    Se: new CognitiveFunction('Se'),
+    Ni: new CognitiveFunction('Ni'),
+    Ne: new CognitiveFunction('Ne')
+}
+
+export const PartialFunctions = {
+    F: new PartialCognitiveFunction('F'),
+    T: new PartialCognitiveFunction('T'),
+    S: new PartialCognitiveFunction('S'),
+    N: new PartialCognitiveFunction('N'),
+    Di: new PartialCognitiveFunction('Di'),
+    De: new PartialCognitiveFunction('De'),
+    Oi: new PartialCognitiveFunction('Oi'),
+    Oe: new PartialCognitiveFunction('Oe')
+}
+
+
+
+
 /**
  * @class
  */
-export class CognitiveType {
-    // HERE Should remain only this to fix.
-    /**
-     * @type {Boolean}
-     */
-    _isSingleObserver;
+export class PartialCognitiveType {
     
     /**
      * @type {PartialAnimal}
@@ -593,9 +617,15 @@ export class CognitiveType {
     _modality;
     _socialType;
     
-    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
     get isSingleObserver() {
-        return this._isSingleObserver;
+        const coin = this._coinSingleObserverDecider;
+        if (coin == null) return undefined;
+        
+        return coin === 'ODD'
     }
     
     get animalStack() {
@@ -638,23 +668,138 @@ export class CognitiveType {
         return this._socialStack;
     }
     
-    constructor(quadraName, isSingleObserver, animalStack, modality, socialType) {
-        console.log(
-            'Constructing OP type...\n',
-            `Quadra: ${quadraName}\n`,
-            `Is single observer: ${isSingleObserver}\n`,
-            `Animal Stack: ${animalStack}\n`,
-            `Modality: ${modality}\n`,
-            `Social Type: ${socialType}\n`
-        )
+    constructor(
+        isSingleObserver,
+        isSaviorDi,
+        isSaviorOi,
+        isSaviorSensing,
+        isSaviorFeeling,
+        isSaviorConsume,
+        isSaviorSleep,
+        isInfoDom,
+        isIntroverted,
+        hasMasculineSensory,
+        hasMasculineDe,
+        isFlex,
+        isResponsibility
+    ) {
+        switch (isSingleObserver) {
+            case 'O':
+            case 'ODD':
+            case true:
+                this._coinSingleObserverDecider = 'ODD';
+                break;
+            case 'D':
+            case 'DOO':
+            case false:
+                this._coinSingleObserverDecider = 'DOO';
+                break;
+            case null:
+            case undefined:
+                this._coinSingleObserverDecider = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSingleObserver.");
+        }
     
+        switch (isSaviorDi) {
+            case 'Di':
+            case true:
+                this._coinDiDe = 'Di';
+                break;
+            case 'De':
+            case false:
+                this._coinDiDe = 'De';
+                break;
+            case null:
+            case undefined:
+                this._coinDiDe = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorDi.");
+        }
+    
+    
+        switch (isSaviorOi) {
+            case 'Oi':
+            case true:
+                this._coinOiOe = 'Oi';
+                break;
+            case 'Oe':
+            case false:
+                this._coinOiOe = 'Oe';
+                break;
+            case null:
+            case undefined:
+                this._coinOiOe = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorOi.");
+        }
+    
+    
+        switch (isSaviorSensing) {
+            case 'S':
+            case true:
+                this._coinSensingIntuition = 'S';
+                break;
+            case 'N':
+            case false:
+                this._coinSensingIntuition = 'N';
+                break;
+            case null:
+            case undefined:
+                this._coinSensingIntuition = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorSensing.");
+        }
+    
+    
+    
+        switch (isSaviorFeeling) {
+            case 'F':
+            case true:
+                this._coinFeelingIntuition = 'F';
+                break;
+            case 'T':
+            case false:
+                this._coinFeelingIntuition = 'T';
+                break;
+            case null:
+            case undefined:
+                this._coinFeelingIntuition = undefined;
+                break;
+            default:
+                throw Error("Invalid argument for isSaviorFeeling.");
+        }
+        
+        // HERE
+        
+        console.log(
+            "Constructing OP type...\n",
+            `ODD/DOO: ${isSingleObserver}\n`,
+            `Di/De: ${isSaviorDi}\n`,
+            `Oi/Oe: ${isSaviorOi}\n`,
+            `S/N: ${isSaviorSensing}\n`,
+            `F/T: ${isSaviorFeeling}\n`,
+            `Consume/Blast: ${isSaviorConsume}\n`,
+            `Sleep/Play: ${isSaviorSleep}\n`,
+            `Info/Energy: ${isInfoDom}\n`,
+            `Introvert/Extrovert: ${isIntroverted}\n`,
+            `M/F Sensory: ${hasMasculineSensory}\n`,
+            `M/F De: ${hasMasculineDe}\n`,
+            `Flex/Friends: ${isFlex}\n`,
+            `Responsibility/Specialize: ${isResponsibility}\n`,
+        )
+        
         this._isSingleObserver = isSingleObserver;
         this._animalStack = animalStack;
         this._doubleActivatedAnimal = invertAnimal(animalStack[3]);
         this._modality = modality;
         this._socialType = socialType;
-    
-    
+        
+        
         const quadra = Quadras[quadraName.toLowerCase()];
         this._quadra = quadra
         
@@ -733,29 +878,4 @@ export class CognitiveType {
         const anim = this.animalStackToString();
         return mod + "-" + sav + "-" + anim + "-" + this.socialType;
     }
-}
-
-
-
-
-export const CognitiveFunctions = {
-    Fi: new CognitiveFunction('Fi'),
-    Fe: new CognitiveFunction('Fe'),
-    Ti: new CognitiveFunction('Ti'),
-    Te: new CognitiveFunction('Te'),
-    Si: new CognitiveFunction('Si'),
-    Se: new CognitiveFunction('Se'),
-    Ni: new CognitiveFunction('Ni'),
-    Ne: new CognitiveFunction('Ne')
-}
-
-export const PartialFunctions = {
-    F: new PartialCognitiveFunction('F'),
-    T: new PartialCognitiveFunction('T'),
-    S: new PartialCognitiveFunction('S'),
-    N: new PartialCognitiveFunction('N'),
-    Di: new PartialCognitiveFunction('Di'),
-    De: new PartialCognitiveFunction('De'),
-    Oi: new PartialCognitiveFunction('Oi'),
-    Oe: new PartialCognitiveFunction('Oe')
 }
