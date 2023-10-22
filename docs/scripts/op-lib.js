@@ -834,19 +834,23 @@ export class PartialCognitiveType {
                 throw Error("Invalid argument for isInfoDom.");
         }
         
-        // HERE Keep fixing
+        
         switch (isIntroverted) {
-            case 'S':
+            case 'I':
+            case 'Introvert':
+            case 'Introverted':
             case true:
-                this._coinSensingIntuition = 'S';
+                this._coinSocialEnergy = 'I';
                 break;
-            case 'N':
+            case 'E':
+            case 'Extrovert':
+            case 'Extroverted':
             case false:
-                this._coinSensingIntuition = 'N';
+                this._coinSocialEnergy = 'E';
                 break;
             case null:
             case undefined:
-                this._coinSensingIntuition = undefined;
+                this._coinSocialEnergy = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isIntroverted.");
@@ -854,17 +858,19 @@ export class PartialCognitiveType {
         
         
         switch (hasMasculineSensory) {
-            case 'S':
+            case 'M':
+            case 'Masculine':
             case true:
-                this._coinSensingIntuition = 'S';
+                this._coinSensorySexual = 'M';
                 break;
-            case 'N':
+            case 'F':
+            case 'Feminine':
             case false:
-                this._coinSensingIntuition = 'N';
+                this._coinSensorySexual = 'F';
                 break;
             case null:
             case undefined:
-                this._coinSensingIntuition = undefined;
+                this._coinSensorySexual = undefined;
                 break;
             default:
                 throw Error("Invalid argument for hasMasculineSensory.");
@@ -872,17 +878,19 @@ export class PartialCognitiveType {
         
         
         switch (hasMasculineDe) {
-            case 'S':
+            case 'M':
+            case 'Masculine':
             case true:
-                this._coinSensingIntuition = 'S';
+                this._coinDeSexual = 'M';
                 break;
-            case 'N':
+            case 'F':
+            case 'Feminine':
             case false:
-                this._coinSensingIntuition = 'N';
+                this._coinDeSexual = 'F';
                 break;
             case null:
             case undefined:
-                this._coinSensingIntuition = undefined;
+                this._coinDeSexual = undefined;
                 break;
             default:
                 throw Error("Invalid argument for hasMasculineDe.");
@@ -890,46 +898,48 @@ export class PartialCognitiveType {
         
         
         switch (isFlex) {
-            case 'S':
+            case 'Flex':
             case true:
-                this._coinSensingIntuition = 'S';
+                this._coinRespect = 'Flex';
                 break;
-            case 'N':
+            case 'Friends':
             case false:
-                this._coinSensingIntuition = 'N';
+                this._coinRespect = 'Friends';
                 break;
             case null:
             case undefined:
-                this._coinSensingIntuition = undefined;
+                this._coinRespect = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isFlex.");
         }
+    
+    
         switch (isResponsibility) {
-            case 'S':
+            case 'Responsibility':
             case true:
-                this._coinSensingIntuition = 'S';
+                this._coinAchievements = 'Responsibility';
                 break;
-            case 'N':
+            case 'Specialize':
+            case 'Specialization':
             case false:
-                this._coinSensingIntuition = 'N';
+                this._coinAchievements = 'Specialize';
                 break;
             case null:
             case undefined:
-                this._coinSensingIntuition = undefined;
+                this._coinAchievements = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isResponsibility.");
         }
-        
-        
-        
-        
+    
+    
+    
         console.log(
             "Constructing OP type...\n",
             `ODD/DOO: ${isSingleObserver}\n`,
-            `Di/De: ${isSaviorDi}\n`,
             `Oi/Oe: ${isSaviorOi}\n`,
+            `Di/De: ${isSaviorDi}\n`,
             `S/N: ${isSaviorSensing}\n`,
             `F/T: ${isSaviorFeeling}\n`,
             `Consume/Blast: ${isSaviorConsume}\n`,
@@ -941,8 +951,16 @@ export class PartialCognitiveType {
             `Flex/Friends: ${isFlex}\n`,
             `Responsibility/Specialize: ${isResponsibility}\n`,
         )
+    
+    
+        const saviorFunctions = new Array(2);
+        if (
+            this.isCoinStuckTypeCongruent &&
+            this.isObserverChargeCongruent &&
+            this.isDeciderChargeCongruent &&
+        )
         
-        this._isSingleObserver = isSingleObserver;
+        
         this._animalStack = animalStack;
         this._doubleActivatedAnimal = invertAnimal(animalStack[3]);
         this._modality = modality;
@@ -954,7 +972,6 @@ export class PartialCognitiveType {
         
         
         const firstAnimal = GenericAnimals[animalStack[0]];
-        const saviorFunctions = new Array(2);
         if (isSingleObserver) {
             saviorFunctions[0] = quadra[firstAnimal.observingFunction];
             saviorFunctions[1] = quadra[firstAnimal.decidingFunction];
