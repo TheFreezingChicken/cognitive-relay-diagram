@@ -101,13 +101,10 @@ class PartialCognitiveFunction {
         if (cogFunName.length === 1) cogFunName = cogFunName + '?';
     
         // Check first letter for validity.
-        if (/[^FTSNDO?]/.test(cogFunName[0])) throw new Error('Invalid first letter.');
+        if (/[^FTSNDO]/.test(cogFunName[0])) throw new Error('Invalid first letter.');
     
         // Check second letter for validity.
         if (/[^ie?]/.test(cogFunName[1])) throw new Error('Invalid second letter.');
-    
-        // Check that we don't have only question marks.
-        if (!/[^?]/.test(cogFunName)) throw new Error('Only question marks.');
         
         
         this._cogFunName = cogFunName
@@ -545,34 +542,58 @@ export class PartialAnimal {
 }
 
 export class Animal extends PartialAnimal {
-    // SLEEP Make "fromString" similar to CogFun.
+    /**
+     *
+     * @param cogFunName1 {string}
+     * @param cogFunName2 {string}
+     * @returns {PartialAnimal|Animal}
+     */
+    static bestInstanceFromString(cogFunName1, cogFunName2) {
+        if (typeof cogFunName1 !== 'string' || typeof cogFunName2 !== 'string') {
+            throw new Error('Only string arguments accepted.');
+        }
+        const regEx = /[DO?]/;
+        return regEx.test(cogFunName1) || regEx.test(cogFunName2) ?
+            new PartialAnimal(cogFunName1, cogFunName2) : new Animal(cogFunName1, cogFunName2);
+    }
     
     /**
-     * @param {CognitiveFunction} cogFun1
-     * @param {CognitiveFunction} cogFun2
+     * @param {string|CognitiveFunction} cogFun1
+     * @param {string|CognitiveFunction} cogFun2
      */
     constructor(cogFun1, cogFun2) {
-        // Must call super() first because of string conversion check.
+        // Must call super() before the rest because of string conversion check.
         super(cogFun1, cogFun2);
         
-        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) throw new Error(
-            "Invalid arguments. Only CognitiveFunction is allowed."
-        );
+        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) {
+            throw new Error("Invalid arguments. Only CognitiveFunction is allowed.")
+        }
     }
 }
 
 
-const GenericAnimals = {
-    S: new PartialAnimal("Di", "Oi"),
-    C: new PartialAnimal("Di", "Oe"),
-    B: new PartialAnimal("De", "Oi"),
-    P: new PartialAnimal("De", "Oe"),
-};
 
 
 
+export const MainUnbalances = {
+    O: new PartialCognitiveFunction('O'),
+    D: new PartialCognitiveFunction('D')
+}
+
+export const HumanNeeds = {
+    Di: new PartialCognitiveFunction('Di'),
+    De: new PartialCognitiveFunction('De'),
+    Oi: new PartialCognitiveFunction('Oi'),
+    Oe: new PartialCognitiveFunction('Oe')
+}
 
 
+export const Letters = {
+    F: new PartialCognitiveFunction('F'),
+    T: new PartialCognitiveFunction('T'),
+    S: new PartialCognitiveFunction('S'),
+    N: new PartialCognitiveFunction('N'),
+}
 
 export const CognitiveFunctions = {
     Fi: new CognitiveFunction('Fi'),
@@ -585,18 +606,38 @@ export const CognitiveFunctions = {
     Ne: new CognitiveFunction('Ne')
 }
 
-export const PartialFunctions = {
-    F: new PartialCognitiveFunction('F'),
-    T: new PartialCognitiveFunction('T'),
-    S: new PartialCognitiveFunction('S'),
-    N: new PartialCognitiveFunction('N'),
-    Di: new PartialCognitiveFunction('Di'),
-    De: new PartialCognitiveFunction('De'),
-    Oi: new PartialCognitiveFunction('Oi'),
-    Oe: new PartialCognitiveFunction('Oe')
+
+export const Animals = {
+    S: new PartialAnimal("Di", "Oi"),
+    C: new PartialAnimal("Di", "Oe"),
+    B: new PartialAnimal("De", "Oi"),
+    P: new PartialAnimal("De", "Oe"),
 }
 
+export const AnimalDominance = {
+    Info: 'Info',
+    Energy: 'Energy'
+}
 
+export const SocialEnergy = {
+    I: 'I',
+    E: 'E'
+}
+
+export const SexualCharge = {
+    M: 'M',
+    F: 'F'
+}
+
+export const RespectType = {
+    Flex: 'Flex',
+    Friends: 'Friends'
+}
+
+export const AchievementType = {
+    Responsibility: 'Responsibility',
+    Specialize: 'Specialize'
+}
 
 
 /**
@@ -622,7 +663,7 @@ export class PartialCognitiveType {
      * @returns {boolean|undefined}
      */
     get isSingleObserver() {
-        const coin = this._coinStuckType;
+        const coin = this._coinMainUnbalance;
         if (coin == null) return undefined;
         
         return coin === 'ODD'
@@ -687,16 +728,16 @@ export class PartialCognitiveType {
             case 'O':
             case 'ODD':
             case true:
-                this._coinStuckType = 'ODD';
+                this._coinMainUnbalance = MainUnbalances.O;
                 break;
             case 'D':
             case 'DOO':
             case false:
-                this._coinStuckType = 'DOO';
+                this._coinMainUnbalance = MainUnbalances.D;
                 break;
             case null:
             case undefined:
-                this._coinStuckType = undefined;
+                this._coinMainUnbalance = undefined;
                 break;
             default:
                 throw Error("Invalid argument for isSingleObserver.");
@@ -705,11 +746,11 @@ export class PartialCognitiveType {
         switch (isSaviorDi) {
             case 'Di':
             case true:
-                this._coinDeciderCharge = 'Di';
+                this._coinDeciderCharge = HumanNeeds.Di;
                 break;
             case 'De':
             case false:
-                this._coinDeciderCharge = 'De';
+                this._coinDeciderCharge = HumanNeeds.De;
                 break;
             case null:
             case undefined:
@@ -723,11 +764,11 @@ export class PartialCognitiveType {
         switch (isSaviorOi) {
             case 'Oi':
             case true:
-                this._coinObserverCharge = 'Oi';
+                this._coinObserverCharge = HumanNeeds.Oi;
                 break;
             case 'Oe':
             case false:
-                this._coinObserverCharge = 'Oe';
+                this._coinObserverCharge = HumanNeeds.Oe;
                 break;
             case null:
             case undefined:
@@ -741,11 +782,11 @@ export class PartialCognitiveType {
         switch (isSaviorSensing) {
             case 'S':
             case true:
-                this._coinObserverLetter = 'S';
+                this._coinObserverLetter = Letters.S;
                 break;
             case 'N':
             case false:
-                this._coinObserverLetter = 'N';
+                this._coinObserverLetter = Letters.N;
                 break;
             case null:
             case undefined:
@@ -760,11 +801,11 @@ export class PartialCognitiveType {
         switch (isSaviorFeeling) {
             case 'F':
             case true:
-                this._coinDeciderLetter = 'F';
+                this._coinDeciderLetter = Letters.F;
                 break;
             case 'T':
             case false:
-                this._coinDeciderLetter = 'T';
+                this._coinDeciderLetter = Letters.T;
                 break;
             case null:
             case undefined:
@@ -779,12 +820,12 @@ export class PartialCognitiveType {
             case 'C':
             case 'Consume':
             case true:
-                this._coinInfoAnimal = 'C';
+                this._coinInfoAnimal = Animals.C;
                 break;
             case 'B':
             case 'Blast':
             case false:
-                this._coinInfoAnimal = 'B';
+                this._coinInfoAnimal = Animals.B;
                 break;
             case null:
             case undefined:
@@ -799,12 +840,12 @@ export class PartialCognitiveType {
             case 'S':
             case 'Sleep':
             case true:
-                this._coinEnergyAnimal = 'S';
+                this._coinEnergyAnimal = Animals.S;
                 break;
             case 'P':
             case 'Play':
             case false:
-                this._coinEnergyAnimal = 'P';
+                this._coinEnergyAnimal = Animals.P;
                 break;
             case null:
             case undefined:
@@ -819,12 +860,12 @@ export class PartialCognitiveType {
             case 'I':
             case 'Info':
             case true:
-                this._coinAnimalDominance = 'Info';
+                this._coinAnimalDominance = AnimalDominance.Info;
                 break;
             case 'E':
             case 'Energy':
             case false:
-                this._coinAnimalDominance = 'Energy';
+                this._coinAnimalDominance = AnimalDominance.Energy;
                 break;
             case null:
             case undefined:
@@ -840,13 +881,13 @@ export class PartialCognitiveType {
             case 'Introvert':
             case 'Introverted':
             case true:
-                this._coinSocialEnergy = 'I';
+                this._coinSocialEnergy = SocialEnergy.I;
                 break;
             case 'E':
             case 'Extrovert':
             case 'Extroverted':
             case false:
-                this._coinSocialEnergy = 'E';
+                this._coinSocialEnergy = SocialEnergy.E;
                 break;
             case null:
             case undefined:
@@ -861,12 +902,12 @@ export class PartialCognitiveType {
             case 'M':
             case 'Masculine':
             case true:
-                this._coinSensorySexual = 'M';
+                this._coinSensorySexual = SexualCharge.M;
                 break;
             case 'F':
             case 'Feminine':
             case false:
-                this._coinSensorySexual = 'F';
+                this._coinSensorySexual = SexualCharge.F;
                 break;
             case null:
             case undefined:
@@ -881,12 +922,12 @@ export class PartialCognitiveType {
             case 'M':
             case 'Masculine':
             case true:
-                this._coinDeSexual = 'M';
+                this._coinDeSexual = SexualCharge.M;
                 break;
             case 'F':
             case 'Feminine':
             case false:
-                this._coinDeSexual = 'F';
+                this._coinDeSexual = SexualCharge.F;
                 break;
             case null:
             case undefined:
@@ -900,11 +941,11 @@ export class PartialCognitiveType {
         switch (isFlex) {
             case 'Flex':
             case true:
-                this._coinRespect = 'Flex';
+                this._coinRespect = RespectType.Flex;
                 break;
             case 'Friends':
             case false:
-                this._coinRespect = 'Friends';
+                this._coinRespect = RespectType.Friends;
                 break;
             case null:
             case undefined:
@@ -918,12 +959,12 @@ export class PartialCognitiveType {
         switch (isResponsibility) {
             case 'Responsibility':
             case true:
-                this._coinAchievements = 'Responsibility';
+                this._coinAchievements = AchievementType.Responsibility
                 break;
             case 'Specialize':
             case 'Specialization':
             case false:
-                this._coinAchievements = 'Specialize';
+                this._coinAchievements = AchievementType.Specialize;
                 break;
             case null:
             case undefined:
@@ -954,11 +995,7 @@ export class PartialCognitiveType {
     
     
         const saviorFunctions = new Array(2);
-        if (
-            this.isCoinStuckTypeCongruent &&
-            this.isObserverChargeCongruent &&
-            this.isDeciderChargeCongruent &&
-        )
+        if (this.getConflictingCoins())
         
         
         this._animalStack = animalStack;
@@ -971,7 +1008,7 @@ export class PartialCognitiveType {
         this._quadra = quadra
         
         
-        const firstAnimal = GenericAnimals[animalStack[0]];
+        const firstAnimal = Animals[animalStack[0]];
         if (isSingleObserver) {
             saviorFunctions[0] = quadra[firstAnimal.observingFunction];
             saviorFunctions[1] = quadra[firstAnimal.decidingFunction];
@@ -1020,6 +1057,13 @@ export class PartialCognitiveType {
     
     
     
+    getConflictingCoins() {
+        const badCoins = [];
+        
+        
+        return false;
+    }
+    
     
     
     saviorFunctionsToString() {
@@ -1044,4 +1088,6 @@ export class PartialCognitiveType {
         const anim = this.animalStackToString();
         return mod + "-" + sav + "-" + anim + "-" + this.socialType;
     }
+    
+    
 }
