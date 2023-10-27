@@ -333,7 +333,9 @@ class PartialCognitiveFunction {
      * @returns {boolean|undefined}
      */
     equalsTo(otherFunction) {
-        if (typeof otherFunction === 'string') otherFunction = new PartialCognitiveFunction(otherFunction);
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new PartialCognitiveFunction(otherFunction);
+        } catch (e) { return undefined; }
         if (!(otherFunction instanceof PartialCognitiveFunction)) return undefined;
         
         return this.name === otherFunction.name;
@@ -527,18 +529,65 @@ export class PartialAnimal {
         
         this._dFunction = cogFun1.isDeciding ? cogFun1 : cogFun2;
         this._oFunction = cogFun1.isObserving ? cogFun1 : cogFun2;
+        
+        let name;
+        switch (true) {
+            case cogFun1.isExtroverted && cogFun2.isExtroverted:
+                name = 'Play';
+                break;
+            case cogFun1.isIntroverted && cogFun2.isIntroverted:
+                name = 'Sleep';
+                break;
+            default:
+                if (this._oFunction.isIntroverted) name = 'Blast'
+                else name = 'Consume';
+        }
+        this._name = name;
     }
     
-    
+    /**
+     *
+     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     */
     get decidingFunction() {
         return this._dFunction;
     }
     
+    /**
+     *
+     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     */
     get observingFunction() {
         return this._oFunction;
     }
     
-    // SLEEP Add animal full name getter.
+    /**
+     *
+     * @returns {string}
+     */
+    get name() {
+        return this._name;
+    }
+    
+    isSameAnimal(otherAnimal) {
+        if (!(otherAnimal instanceof PartialAnimal)) return undefined;
+        
+        return otherAnimal.name === this.name;
+    }
+    
+    /**
+     *
+     * @param otherAnimal {PartialAnimal|any}
+     * @returns {boolean|undefined}
+     */
+    isOppositeOf(otherAnimal) {
+        if (!(otherAnimal instanceof PartialAnimal)) return undefined;
+        
+        const observerIsOpposite = this.observingFunction.opposite().equalsTo(otherAnimal.observingFunction);
+        const deciderIsOpposite = this.observingFunction.opposite().equalsTo(otherAnimal.decidingFunction);
+        
+        return observerIsOpposite && deciderIsOpposite;
+    }
 }
 
 export class Animal extends PartialAnimal {
@@ -1062,10 +1111,9 @@ export class PartialCognitiveType {
         let saviorAnimal;
         try {
             saviorAnimal = new PartialAnimal(this._coinDeciderCharge, this._coinObserverCharge);
-            // HERE
-        }
-        
-        return false;
+        } catch (e) { return badCoins }
+        // HERE Check if this is over
+        return saviorAnimal.isOppositeOf(this._coinInfoAnimal) || saviorAnimal.isOppositeOf(this._coinEnergyAnimal)
     }
     
     
