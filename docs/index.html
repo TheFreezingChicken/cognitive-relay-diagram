@@ -46,6 +46,10 @@
             font-family: Fira Code, Roboto Mono, Liberation Mono, Consolas, monospace;
         }
 
+        input::placeholder {
+            text-transform: none;
+        }
+
         .title-container {
             align-self: center;
             text-align: center;
@@ -86,10 +90,15 @@
 
         .selection-group-items-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             grid-template-rows: auto;
             column-gap: 5px;
             row-gap: 10px;
+        }
+
+        .grid-span-2 {
+            grid-column: span 2;
+            justify-self: center;
         }
 
         .selection-group-items-grid > label {
@@ -105,7 +114,6 @@
             display: flex; /* Add flex display */
             justify-content: center; /* Center horizontally */
             align-items: center; /* Center vertically */
-            margin-left: 15px;
         }
 
 
@@ -145,7 +153,7 @@
         <h2 class="selection-group-title">Settings</h2>
 
         <div class="selection-group-items-grid">
-            <label for="functions-style">Functions Style:</label>
+            <label for="functions-style">Circles Style:</label>
             <select id="functions-style" class="appearance-setting">
                 <option value="tfc">The Freezing Chicken</option>
                 <option value="op">OP ebook</option>
@@ -157,73 +165,41 @@
         </div>
     </div>
 
+    <!-- TODO Make direct selection a typing thing -->
     <div class="selection-group">
         <h2 class="selection-group-title">Diagram</h2>
 
         <div class="selection-group-items-grid">
 
-            <label for="quadra">Quadra:</label>
-            <select id="quadra" class="type-selection">
-                <option value="NONE">-- CHOOSE --</option>
-                <option value="alpha">Alpha | xNTP or xSFJ | (Fe-Ti) + (Si-Ne)</option>
-                <option value="beta"> Beta &nbsp;| xSTP or xNFJ | (Fe-Ti) + (Se-Ni)</option>
-                <option value="gamma">Gamma | xNFP or xSTJ | (Fi-Te) + (Se-Ni)</option>
-                <option value="delta">Delta | xSFP or xNTJ | (Fi-Te) + (Si-Ne)</option>
-            </select>
 
-            <label for="observer-decider">Observer/Decider:</label>
-            <select id="observer-decider" class="type-selection">
-                <option value="NONE">-- CHOOSE --</option>
-                <option value="DOO">Single Decider &nbsp;(Double Observer)</option>
-                <option value="ODD">Single Observer (Double Decider)</option>
-            </select>
+        <label for="modality">Modality:</label>
+        <select id="modality" class="type-selection">
+            <option value="NONE">-- CHOOSE --</option>
+            <option value="FF">FF - Tester</option>
+            <option value="FM">FM - Visual</option>
+            <option value="MF">MF - Audio</option>
+            <option value="MM">MM - Kinesthetic</option>
+        </select>
 
-            <label for="animals">Animal Stack:</label>
-            <select id="animals" class="type-selection">
-                <option value="NONE">-- CHOOSE --</option>
-                <optgroup label="Sleep First">
-                    <option value="SCBP">SC/B(P)</option>
-                    <option value="SCPB">SC/P(B)</option>
-                    <option value="SBCP">SB/C(P)</option>
-                    <option value="SBPC">SB/P(C)</option>
-                </optgroup>
-                <optgroup label="Consume First">
-                    <option value="CSBP">CS/B(P)</option>
-                    <option value="CSPB">CS/P(B)</option>
-                    <option value="CPSB">CP/S(B)</option>
-                    <option value="CPBS">CP/B(S)</option>
-                </optgroup>
-                <optgroup label="Blast First">
-                    <option value="BSCP">BS/C(P)</option>
-                    <option value="BSPC">BS/P(C)</option>
-                    <option value="BPSC">BP/S(C)</option>
-                    <option value="BPCS">BP/C(S)</option>
-                </optgroup>
-                <optgroup label="Play First">
-                    <option value="PCSB">PC/S(B)</option>
-                    <option value="PCBS">PC/B(S)</option>
-                    <option value="PBSC">PB/S(C)</option>
-                    <option value="PBCS">PB/C(S)</option>
-                </optgroup>
-            </select>
+            <label for="saviors">Saviors:</label>
+            <input type="text" id="saviors" placeholder="(eg: Fi/Ne)"
+                   style="width: 9ch; text-transform: capitalize" maxlength="5"/>
 
-            <label for="modality">Modality:</label>
-            <select id="modality" class="type-selection">
-                <option value="NONE">-- CHOOSE --</option>
-                <option value="FF">FF - Tester</option>
-                <option value="FM">FM - Visual</option>
-                <option value="MF">MF - Audio</option>
-                <option value="MM">MM - Kinesthetic</option>
-            </select>
+            <label for="animals">Animals:</label>
+            <div>
+                <input type="text" id="animals" placeholder="(eg: CPS)"
+                       style="width: 8ch; text-transform: uppercase" maxlength="3"/>
+                <label for="animals">(X)</label>
+            </div>
 
-            <label for="social">Social Type:</label>
-            <select id="social" class="type-selection">
-                <option value="NONE">-- CHOOSE --</option>
-                <option value="#1">#1 - Flex</option>
-                <option value="#2">#2 - Responsibility</option>
-                <option value="#3">#3 - Specialize</option>
-                <option value="#4">#4 - Friends</option>
-            </select>
+<!--            <label for="social">Social Type:</label>-->
+<!--            <select id="social" class="type-selection">-->
+<!--                <option value="NONE">&#45;&#45; CHOOSE &#45;&#45;</option>-->
+<!--                <option value="#1">#1 - Flex</option>-->
+<!--                <option value="#2">#2 - Responsibility</option>-->
+<!--                <option value="#3">#3 - Specialize</option>-->
+<!--                <option value="#4">#4 - Friends</option>-->
+<!--            </select>-->
         </div>
     </div>
 

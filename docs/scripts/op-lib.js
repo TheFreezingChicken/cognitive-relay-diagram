@@ -1059,7 +1059,11 @@ export class PartialCognitiveType {
     
     getConflictingCoins() {
         const badCoins = [];
-        
+        let saviorAnimal;
+        try {
+            saviorAnimal = new PartialAnimal(this._coinDeciderCharge, this._coinObserverCharge);
+            // HERE
+        }
         
         return false;
     }
