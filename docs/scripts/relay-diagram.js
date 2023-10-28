@@ -1,4 +1,4 @@
-import {getAnimalLetter, PartialCognitiveType} from "./op-lib.js";
+import {getAnimalLetter, PartialOpType} from "./op-lib.js";
 
 // Convention: every index follows the Grant stack positioning.
 const CIRCLE_BASE_RADIUS = 60;
@@ -110,12 +110,12 @@ const DiagramStateEvents = {
 
 class DiagramGroupState extends EventTarget {
     /**
-     * @type {PartialCognitiveType}
+     * @type {PartialOpType}
      */
     #opType;
     /**
      *
-     * @returns {PartialCognitiveType}
+     * @returns {PartialOpType}
      */
     get opType() { return this.#opType; }
     // TODO Remember to fire an event right after firing any change event, which will be used to redraw the diagram.

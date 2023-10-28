@@ -84,12 +84,12 @@ export function getAnimalLetter(cogFun1, cogFun2) {
 /**
  * @class
  */
-class PartialCognitiveFunction {
+class CognitiveFunction {
     /**
-     * @param {string|PartialCognitiveFunction} cogFunName
+     * @param {string|CognitiveFunction} cogFunName
      */
     constructor(cogFunName) {
-        if (cogFunName instanceof PartialCognitiveFunction) cogFunName = cogFunName.name;
+        if (cogFunName instanceof CognitiveFunction) cogFunName = cogFunName.name;
         if (typeof cogFunName !== 'string') throw new TypeError('Not a string.');
     
     
@@ -107,35 +107,40 @@ class PartialCognitiveFunction {
         if (/[^ie?]/.test(cogFunName[1])) throw new Error('Invalid second letter.');
         
         
-        this._cogFunName = cogFunName
-        
-        if (!this.isActuallyPartial) console.warn('Complete Cognitive Function was instantiated as partial.');
+        this._name = cogFunName
     }
     
     
     /**
      * @returns {string}
      */
-    get name() { return this._cogFunName; }
+    get name() { return this._name; }
+    
+    /**
+     *
+     * @returns {undefined|string}
+     */
     get letter() {
         const letter = this.name[0];
         return letter === '?' ? undefined : letter;
     }
+    
+    /**
+     *
+     * @returns {undefined|string}
+     */
     get charge() {
         const charge = this.name[1];
         return charge === '?' ? undefined : charge;
     }
     
     
-    
     /**
-     * @returns {boolean|undefined}
+     *
+     * @returns {undefined|boolean}
      */
     get isIntroverted() {
-        const charge = this.name[1];
-        if (charge === '?') {
-            return undefined;
-        } else return charge === 'i';
+        return this.charge && this.charge === 'i';
     }
     
     /**
@@ -143,12 +148,7 @@ class PartialCognitiveFunction {
      * @returns {boolean|undefined}
      */
     get isExtroverted() {
-        const charge = this.name[1];
-        if (charge === '?') {
-            return undefined;
-        } else {
-            return charge === 'e';
-        }
+        return this.charge && !this.isIntroverted;
     }
     
     /**
@@ -246,7 +246,7 @@ class PartialCognitiveFunction {
     
     
     /**
-     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction|CognitiveFunction}
      */
     opposite() {
         let letter = this.name[0];
@@ -274,12 +274,12 @@ class PartialCognitiveFunction {
         
         const result = letter + charge;
     
-        return CognitiveFunction.bestInstanceFromString(result);
+        return new CognitiveFunction(result);
     }
     
     /**
      *
-     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction|CognitiveFunction}
      */
     withOppositeLetter() {
         let letter = this.name[0];
@@ -304,39 +304,42 @@ class PartialCognitiveFunction {
     
         const result = letter + this.name[1];
     
-        return CognitiveFunction.bestInstanceFromString(result);
+        return new CognitiveFunction(result);
     }
     
     withOppositeCharge() {
         let charge = this.name[1];
         
-        if (charge === '?') return new PartialCognitiveFunction(this);
+        if (charge === '?') return new CognitiveFunction(this);
         
         if (charge === 'i') charge = 'e' ; else charge = 'i';
-    
         const result = this.name[0] + charge;
     
-        return CognitiveFunction.bestInstanceFromString(result);
+        return new CognitiveFunction(result);
     }
     
     
     /**
-     * Returns true only if this instance of PartialCognitiveFunction
+     * Returns true when this instance is a partial cognitive function. A partial cognitive function is a function
+     * with an undefined letter ("O/D" instead of "F/T/S/N") or an undefined charge ("?" instead of "i/e")
      * @returns {boolean}
      */
-    get isActuallyPartial() {
+    get isPartial() {
         return /[OD?]/.test(this.name);
     }
     
     /**
-     * @param {any | PartialCognitiveFunction} otherFunction
+     * @param {any | CognitiveFunction} otherFunction
      * @returns {boolean|undefined}
      */
     equalsTo(otherFunction) {
         try {
-            if (typeof otherFunction === 'string') otherFunction = new PartialCognitiveFunction(otherFunction);
-        } catch (e) { return undefined; }
-        if (!(otherFunction instanceof PartialCognitiveFunction)) return undefined;
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            return undefined
+        }
+        
+        if (!(otherFunction instanceof CognitiveFunction)) return undefined;
         
         return this.name === otherFunction.name;
     }
@@ -351,8 +354,8 @@ class PartialCognitiveFunction {
      * @returns {boolean|undefined}
      */
     isSameAxisOf(otherFunction) {
-        if (typeof otherFunction === 'string') otherFunction = CognitiveFunction.bestInstanceFromString(otherFunction);
-        if (!(otherFunction instanceof PartialCognitiveFunction)) throw new Error('Invalid argument. Not a function.');
+        if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        if (!(otherFunction instanceof CognitiveFunction)) throw new Error('Invalid argument. Not a function.');
         
         return this.isDeciding && otherFunction.isDeciding || this.isObserving && otherFunction.isObserving;
     }
@@ -365,32 +368,6 @@ class PartialCognitiveFunction {
         return this.name;
     }
 }
-
-
-/**
- * @class
- */
-class CognitiveFunction extends PartialCognitiveFunction{
-    static bestInstanceFromString(cogFunName) {
-        if (typeof cogFunName !== 'string') throw new Error ('Argument is not a string.');
-        return /[DO?]/.test(cogFunName) ? new PartialCognitiveFunction(cogFunName) : new CognitiveFunction(cogFunName);
-    }
-    
-    /**
-     * @param {string|PartialCognitiveFunction} cogFunName
-     */
-    constructor(cogFunName) {
-        // We must keep super() call first because of the PartialCognitiveFunction to string conversion check.
-        super(cogFunName);
-        
-        // Check length for validity.
-        if (cogFunName.length !== 2) throw new Error('Invalid length.');
-    
-        // No partial functions allowed.
-        if (cogFunName.includes('?')) throw new Error('Invalid function (partial).');
-    }
-}
-
 
 
 /**
@@ -509,19 +486,26 @@ export const Quadras = {
     delta: new Quadra("Fi", "Si"),
 };
 
+export const AnimalNames = {
+    Sleep: 'Sleep',
+    Consume: 'Consume',
+    Blast: 'Blast',
+    Play: 'Play'
+}
+
 /**
  * @class
  */
-export class PartialAnimal {
+export class Animal {
     /**
-     * @param {PartialCognitiveFunction|string} cogFun1
-     * @param {PartialCognitiveFunction|string} cogFun2
+     * @param {CognitiveFunction|string} cogFun1
+     * @param {CognitiveFunction|string} cogFun2
      */
     constructor(cogFun1, cogFun2) {
-        if (typeof cogFun1 === 'string') cogFun1 = CognitiveFunction.bestInstanceFromString(cogFun1);
-        if (typeof cogFun2 === 'string') cogFun2 = CognitiveFunction.bestInstanceFromString(cogFun2);
-        if (!(cogFun1 instanceof PartialCognitiveFunction && cogFun2 instanceof PartialCognitiveFunction))
-            throw new Error('Invalid argument. Must be cognitive function name or PartialCognitiveFunction.');
+        if (typeof cogFun1 === 'string') cogFun1 = new CognitiveFunction(cogFun1);
+        if (typeof cogFun2 === 'string') cogFun2 = new CognitiveFunction(cogFun2);
+        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction))
+            throw new Error('Invalid argument. Must be cognitive function name or CognitiveFunction.');
         
         if (cogFun1.isSameAxisOf(cogFun2)) throw new Error(
             "Invalid argument. Functions must be on different axes D+O."
@@ -533,21 +517,21 @@ export class PartialAnimal {
         let name;
         switch (true) {
             case cogFun1.isExtroverted && cogFun2.isExtroverted:
-                name = 'Play';
+                name = AnimalNames.Play;
                 break;
             case cogFun1.isIntroverted && cogFun2.isIntroverted:
-                name = 'Sleep';
+                name = AnimalNames.Sleep;
                 break;
             default:
-                if (this._oFunction.isIntroverted) name = 'Blast'
-                else name = 'Consume';
+                if (this._oFunction.isIntroverted) name = AnimalNames.Blast
+                else name = AnimalNames.Consume;
         }
         this._name = name;
     }
     
     /**
      *
-     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction|CognitiveFunction}
      */
     get decidingFunction() {
         return this._dFunction;
@@ -555,7 +539,7 @@ export class PartialAnimal {
     
     /**
      *
-     * @returns {PartialCognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction|CognitiveFunction}
      */
     get observingFunction() {
         return this._oFunction;
@@ -569,55 +553,30 @@ export class PartialAnimal {
         return this._name;
     }
     
-    isSameAnimal(otherAnimal) {
-        if (!(otherAnimal instanceof PartialAnimal)) return undefined;
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isPartial() {
+        return this.decidingFunction.isPartial || this.observingFunction.isPartial
+    }
+    
+    
+    invert() {
+        const oppositeObserver = this.observingFunction.opposite()
+        const oppositeDecider = this.observingFunction.opposite()
+        
+        return Animal.bestInstance(oppositeObserver.name, oppositeDecider.name);
+    }
+    
+    
+    isSameAnimalOf(otherAnimal) {
+        if (!(otherAnimal instanceof Animal)) return undefined;
         
         return otherAnimal.name === this.name;
     }
     
-    /**
-     *
-     * @param otherAnimal {PartialAnimal|any}
-     * @returns {boolean|undefined}
-     */
-    isOppositeOf(otherAnimal) {
-        if (!(otherAnimal instanceof PartialAnimal)) return undefined;
-        
-        const observerIsOpposite = this.observingFunction.opposite().equalsTo(otherAnimal.observingFunction);
-        const deciderIsOpposite = this.observingFunction.opposite().equalsTo(otherAnimal.decidingFunction);
-        
-        return observerIsOpposite && deciderIsOpposite;
-    }
-}
-
-export class Animal extends PartialAnimal {
-    /**
-     *
-     * @param cogFunName1 {string}
-     * @param cogFunName2 {string}
-     * @returns {PartialAnimal|Animal}
-     */
-    static bestInstanceFromString(cogFunName1, cogFunName2) {
-        if (typeof cogFunName1 !== 'string' || typeof cogFunName2 !== 'string') {
-            throw new Error('Only string arguments accepted.');
-        }
-        const regEx = /[DO?]/;
-        return regEx.test(cogFunName1) || regEx.test(cogFunName2) ?
-            new PartialAnimal(cogFunName1, cogFunName2) : new Animal(cogFunName1, cogFunName2);
-    }
     
-    /**
-     * @param {string|CognitiveFunction} cogFun1
-     * @param {string|CognitiveFunction} cogFun2
-     */
-    constructor(cogFun1, cogFun2) {
-        // Must call super() before the rest because of string conversion check.
-        super(cogFun1, cogFun2);
-        
-        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) {
-            throw new Error("Invalid arguments. Only CognitiveFunction is allowed.")
-        }
-    }
 }
 
 
@@ -625,23 +584,23 @@ export class Animal extends PartialAnimal {
 
 
 export const MainUnbalances = {
-    O: new PartialCognitiveFunction('O'),
-    D: new PartialCognitiveFunction('D')
+    O: new CognitiveFunction('O'),
+    D: new CognitiveFunction('D')
 }
 
 export const HumanNeeds = {
-    Di: new PartialCognitiveFunction('Di'),
-    De: new PartialCognitiveFunction('De'),
-    Oi: new PartialCognitiveFunction('Oi'),
-    Oe: new PartialCognitiveFunction('Oe')
+    Di: new CognitiveFunction('Di'),
+    De: new CognitiveFunction('De'),
+    Oi: new CognitiveFunction('Oi'),
+    Oe: new CognitiveFunction('Oe')
 }
 
 
 export const Letters = {
-    F: new PartialCognitiveFunction('F'),
-    T: new PartialCognitiveFunction('T'),
-    S: new PartialCognitiveFunction('S'),
-    N: new PartialCognitiveFunction('N'),
+    F: new CognitiveFunction('F'),
+    T: new CognitiveFunction('T'),
+    S: new CognitiveFunction('S'),
+    N: new CognitiveFunction('N'),
 }
 
 export const CognitiveFunctions = {
@@ -657,10 +616,10 @@ export const CognitiveFunctions = {
 
 
 export const Animals = {
-    S: new PartialAnimal("Di", "Oi"),
-    C: new PartialAnimal("Di", "Oe"),
-    B: new PartialAnimal("De", "Oi"),
-    P: new PartialAnimal("De", "Oe"),
+    S: new Animal("Di", "Oi"),
+    C: new Animal("Di", "Oe"),
+    B: new Animal("De", "Oi"),
+    P: new Animal("De", "Oe"),
 }
 
 export const AnimalDominance = {
@@ -692,10 +651,10 @@ export const AchievementType = {
 /**
  * @class
  */
-export class PartialCognitiveType {
+export class PartialOpType {
     
     /**
-     * @type {PartialAnimal}
+     * @type {Animal}
      */
     _doubleActivatedAnimal;
     _quadra;
@@ -1041,10 +1000,13 @@ export class PartialCognitiveType {
             `Flex/Friends: ${isFlex}\n`,
             `Responsibility/Specialize: ${isResponsibility}\n`,
         )
-    
+        
+        const conflicts = this.getConflictingCoins();
     
         const saviorFunctions = new Array(2);
-        if (this.getConflictingCoins())
+        if (!conflicts.SaviorCharges) {
+            // HERE Do de ting.
+        }
         
         
         this._animalStack = animalStack;
@@ -1104,16 +1066,72 @@ export class PartialCognitiveType {
         this._socialStack = socialStack;
     }
     
-    
-    
+    /**
+     *
+     * @returns {{InfoAnimal: boolean, DominanceAndSocialEnergy: boolean, SaviorCharges: boolean, EnergyAnimal:
+     *     boolean}}
+     */
     getConflictingCoins() {
-        const badCoins = [];
+        // If savior charges are defined an animal is created and we invert it.
         let saviorAnimal;
         try {
-            saviorAnimal = new PartialAnimal(this._coinDeciderCharge, this._coinObserverCharge);
-        } catch (e) { return badCoins }
-        // HERE Check if this is over
-        return saviorAnimal.isOppositeOf(this._coinInfoAnimal) || saviorAnimal.isOppositeOf(this._coinEnergyAnimal)
+            saviorAnimal = new Animal(this._coinDeciderCharge, this._coinObserverCharge);
+        } catch (e) {  }
+        let oppositeSaviorAnimal = saviorAnimal && saviorAnimal.invert();
+        
+        
+        // Find the animal that can't be Savior because it must be Last.
+        let incompatibleAnimal;
+        // noinspection EqualityComparisonWithCoercionJS
+        if (this._coinAnimalDominance != undefined && this._coinSocialEnergy != undefined) {
+            switch(this._coinAnimalDominance[0] + this._coinSocialEnergy[0]) {
+                case 'II':
+                    incompatibleAnimal = Animals.P;
+                    break;
+                case 'IE':
+                    incompatibleAnimal = Animals.S;
+                    break;
+                case 'EI':
+                    incompatibleAnimal = Animals.B;
+                    break;
+                case 'EE':
+                    incompatibleAnimal = Animals.C;
+                    break;
+                default:
+                    throw Error("Impossible case.")
+            }
+        }
+    
+        const badCoins = {
+            SaviorCharges: false,
+            InfoAnimal: false,
+            EnergyAnimal: false,
+            DominanceAndSocialEnergy: false
+        }
+        
+        badCoins.SaviorCharges = oppositeSaviorAnimal && (
+            oppositeSaviorAnimal.isSameAnimalOf(this._coinInfoAnimal) ||
+            oppositeSaviorAnimal.isSameAnimalOf(this._coinEnergyAnimal) ||
+            saviorAnimal.isSameAnimalOf(incompatibleAnimal)
+        )
+        
+        badCoins.InfoAnimal = this._coinInfoAnimal && (
+            this._coinInfoAnimal.isSameAnimalOf(oppositeSaviorAnimal) ||
+            this._coinInfoAnimal.isSameAnimalOf(incompatibleAnimal)
+        )
+        
+        badCoins.EnergyAnimal = this._coinEnergyAnimal && (
+            this._coinEnergyAnimal.isSameAnimalOf(oppositeSaviorAnimal) ||
+            this._coinEnergyAnimal.isSameAnimalOf(incompatibleAnimal)
+        )
+        
+        badCoins.DominanceAndSocialEnergy = incompatibleAnimal && (
+            incompatibleAnimal.isSameAnimalOf(saviorAnimal) ||
+            incompatibleAnimal.isSameAnimalOf(this._coinInfoAnimal) ||
+            incompatibleAnimal.isSameAnimalOf(this._coinEnergyAnimal)
+        )
+        
+        return badCoins
     }
     
     
