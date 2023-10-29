@@ -122,7 +122,7 @@ class CognitiveFunction {
      */
     get letter() {
         const letter = this.name[0];
-        return letter === '?' ? undefined : letter;
+        return /[OD]/.test(letter) ? undefined : letter;
     }
     
     /**
@@ -156,11 +156,7 @@ class CognitiveFunction {
      * @returns {boolean|undefined}
      */
     get isObserving() {
-        if (this.name[0] === '?') {
-            return undefined
-        } else {
-            return /[SNO]/.test(this.name[0]);
-        }
+        return /[SNO]/.test(this.name[0]);
     }
     
     /**
@@ -651,71 +647,7 @@ export const AchievementType = {
 /**
  * @class
  */
-export class PartialOpType {
-    
-    /**
-     * @type {Animal}
-     */
-    _doubleActivatedAnimal;
-    _quadra;
-    _saviorFunctions;
-    _grantStack;
-    _masculineFunctions;
-    _socialStack;
-    _animalStack;
-    _modality;
-    _socialType;
-    
-    /**
-     *
-     * @returns {boolean|undefined}
-     */
-    get isSingleObserver() {
-        const coin = this._coinMainUnbalance;
-        if (coin == null) return undefined;
-        
-        return coin === 'ODD'
-    }
-    
-    get animalStack() {
-        return this._animalStack;
-    }
-    
-    get modality() {
-        return this._modality;
-    }
-    
-    get socialType() {
-        return this._socialType;
-    }
-    
-    get isSingleDecider() {
-        return !this._isSingleObserver;
-    }
-    
-    get doubleActivatedAnimal() {
-        return this._doubleActivatedAnimal;
-    }
-    
-    get quadra() {
-        return this._quadra;
-    }
-    
-    get saviorFunctions() {
-        return this._saviorFunctions;
-    }
-    
-    get grantStack() {
-        return this._grantStack;
-    }
-    
-    get masculineFunctions() {
-        return this._masculineFunctions;
-    }
-    
-    get socialStack() {
-        return this._socialStack;
-    }
+export class OpType {
     
     constructor(
         isSingleObserver,
@@ -983,7 +915,6 @@ export class PartialOpType {
         }
     
     
-    
         console.log(
             "Constructing OP type...\n",
             `ODD/DOO: ${isSingleObserver}\n`,
@@ -1001,75 +932,131 @@ export class PartialOpType {
             `Responsibility/Specialize: ${isResponsibility}\n`,
         )
         
+        
         const conflicts = this.getConflictingCoins();
     
+        
         const saviorFunctions = new Array(2);
+        let obFunc, decFunc;
         if (!conflicts.SaviorCharges) {
-            // HERE Do de ting.
+            const obLet = this._coinObserverLetter?.letter;
+            const obCharge = this._coinObserverLetter?.charge;
+            if (obLet || obCharge) obFunc = new CognitiveFunction((obLet ?? 'O') + (obCharge ?? ''));
+    
+            const decLet = this._coinDeciderLetter?.letter;
+            const decCharge = this._coinDeciderLetter?.charge;
+            if (decLet || decCharge) decFunc = new CognitiveFunction((decLet ?? 'D') + (decCharge ?? ''));
+            
+            switch (this._coinMainUnbalance) {
+                case MainUnbalances.O:
+                    saviorFunctions[0] = obFunc;
+                    saviorFunctions[1] = decFunc;
+                    break;
+                case MainUnbalances.D:
+                    saviorFunctions[0] = decFunc;
+                    saviorFunctions[1] = obFunc;
+                    break;
+            }
         }
-        
-        
-        this._animalStack = animalStack;
-        this._doubleActivatedAnimal = invertAnimal(animalStack[3]);
-        this._modality = modality;
-        this._socialType = socialType;
-        
-        
-        const quadra = Quadras[quadraName.toLowerCase()];
-        this._quadra = quadra
-        
-        
-        const firstAnimal = Animals[animalStack[0]];
-        if (isSingleObserver) {
-            saviorFunctions[0] = quadra[firstAnimal.observingFunction];
-            saviorFunctions[1] = quadra[firstAnimal.decidingFunction];
-        } else {
-            saviorFunctions[0] = quadra[firstAnimal.decidingFunction];
-            saviorFunctions[1] = quadra[firstAnimal.observingFunction];
-        }
-        this._saviorFunctions = saviorFunctions;
         
         
         const grantStack = new Array(4);
+        
         // First and last function.
         grantStack[0] = saviorFunctions[0];
-        grantStack[3] = invertFun(grantStack[0]);
+        grantStack[3] = grantStack[0]?.opposite();
         // If introversion/extroversion characters of first and second savior functions are matching, then the correct
         // second Grant function is the opposite of the second savior function, otherwise it's the savior function itself.
-        const matchingSaviorsExtroversion = saviorFunctions[0][1] === saviorFunctions[1][1];
-        grantStack[1] = matchingSaviorsExtroversion ? invertFun(saviorFunctions[1]) : saviorFunctions[1];
-        grantStack[2] = invertFun(grantStack[1]);
+        const matchingSaviorsExtroversion = saviorFunctions[0]?.charge === saviorFunctions[1]?.charge;
+        grantStack[1] = matchingSaviorsExtroversion ? saviorFunctions[1]?.opposite() : saviorFunctions[1];
+        grantStack[2] = grantStack[1]?.opposite();
         this._grantStack = grantStack;
         
-        
-        const masculineFunctions = new Array(2);
-        masculineFunctions[0] = modality[0] === "M" ? quadra.Sensing : quadra.Intuition;
-        masculineFunctions[1] = modality[1] === "M" ? quadra.De : quadra.Di;
-        this._masculineFunctions = masculineFunctions;
-        
-        
-        let socialStack;
-        switch (socialType) {
-            case "#1":
-                socialStack = "CSPB";
-                break;
-            case "#2":
-                socialStack = "PCBS";
-                break;
-            case "#3":
-                socialStack = "SBCP";
-                break;
-            case "#4":
-                socialStack = "BPSC";
-                break;
+        let quadra;
+        if (!(grantStack[0]?.isPartial() || grantStack[1]?.isPartial())) {
+            switch (this.isSingleObserver) {
+                case true:
+                    quadra = new Quadra(grantStack[1], grantStack[0]);
+                    break;
+                case false:
+                    quadra = new Quadra(grantStack[0], grantStack[1]);
+                    break;
+            }
         }
-        this._socialStack = socialStack;
+        // HERE Check and go
+        
+        // let socialStack;
+        // switch (socialType) {
+        //     case "#1":
+        //         socialStack = "CSPB";
+        //         break;
+        //     case "#2":
+        //         socialStack = "PCBS";
+        //         break;
+        //     case "#3":
+        //         socialStack = "SBCP";
+        //         break;
+        //     case "#4":
+        //         socialStack = "BPSC";
+        //         break;
+        // }
+        // this._socialStack = socialStack;
+    }
+    
+    
+    get isPartial() {
+        return !(
+            this._coinMainUnbalance &&
+            this._coinDeciderCharge &&
+            this._coinObserverCharge &&
+            this._coinDeciderLetter &&
+            this._coinObserverLetter &&
+            this._coinInfoAnimal &&
+            this._coinEnergyAnimal &&
+            this._coinAnimalDominance &&
+            this._coinSocialEnergy &&
+            this._coinSensorySexual &&
+            this._coinDeSexual &&
+            this._coinRespect &&
+            this._coinAchievements
+        )
     }
     
     /**
      *
-     * @returns {{InfoAnimal: boolean, DominanceAndSocialEnergy: boolean, SaviorCharges: boolean, EnergyAnimal:
-     *     boolean}}
+     * @returns {boolean|undefined}
+     */
+    get isSingleObserver() {
+        const coin = this._coinMainUnbalance;
+        
+        return coin && coin === MainUnbalances.O
+    }
+    
+    /**
+     *
+     * @returns {boolean|undefined}
+     */
+    get isSingleDecider() {
+        // We need to do the && to maintain 'undefined' on _coinMainUnbalance.
+        return this._coinMainUnbalance && !this.isSingleObserver;
+    }
+    
+    /**
+     *
+     * @returns {CognitiveFunction[]}
+     */
+    get grantStack() {
+        return this._grantStack;
+    }
+    
+    
+    
+    
+    /**
+     *
+     * @returns {
+     *      {InfoAnimal: boolean, DominanceAndSocialEnergy: boolean, SaviorCharges: boolean, EnergyAnimal: boolean}
+     * }
      */
     getConflictingCoins() {
         // If savior charges are defined an animal is created and we invert it.
@@ -1082,8 +1069,7 @@ export class PartialOpType {
         
         // Find the animal that can't be Savior because it must be Last.
         let incompatibleAnimal;
-        // noinspection EqualityComparisonWithCoercionJS
-        if (this._coinAnimalDominance != undefined && this._coinSocialEnergy != undefined) {
+        if (this._coinAnimalDominance && this._coinSocialEnergy) {
             switch(this._coinAnimalDominance[0] + this._coinSocialEnergy[0]) {
                 case 'II':
                     incompatibleAnimal = Animals.P;
@@ -1102,36 +1088,29 @@ export class PartialOpType {
             }
         }
     
-        const badCoins = {
-            SaviorCharges: false,
-            InfoAnimal: false,
-            EnergyAnimal: false,
-            DominanceAndSocialEnergy: false
-        }
+        return {
+            SaviorCharges: (
+                oppositeSaviorAnimal?.isSameAnimalOf(this._coinInfoAnimal) ||
+                oppositeSaviorAnimal?.isSameAnimalOf(this._coinEnergyAnimal) ||
+                saviorAnimal?.isSameAnimalOf(incompatibleAnimal)
+            ) ?? false,
         
-        badCoins.SaviorCharges = oppositeSaviorAnimal && (
-            oppositeSaviorAnimal.isSameAnimalOf(this._coinInfoAnimal) ||
-            oppositeSaviorAnimal.isSameAnimalOf(this._coinEnergyAnimal) ||
-            saviorAnimal.isSameAnimalOf(incompatibleAnimal)
-        )
+            InfoAnimal: (
+                this._coinInfoAnimal?.isSameAnimalOf(oppositeSaviorAnimal) ||
+                this._coinInfoAnimal?.isSameAnimalOf(incompatibleAnimal)
+            ) ?? false,
         
-        badCoins.InfoAnimal = this._coinInfoAnimal && (
-            this._coinInfoAnimal.isSameAnimalOf(oppositeSaviorAnimal) ||
-            this._coinInfoAnimal.isSameAnimalOf(incompatibleAnimal)
-        )
+            EnergyAnimal: (
+                this._coinEnergyAnimal?.isSameAnimalOf(oppositeSaviorAnimal) ||
+                this._coinEnergyAnimal?.isSameAnimalOf(incompatibleAnimal)
+            ) ?? false,
         
-        badCoins.EnergyAnimal = this._coinEnergyAnimal && (
-            this._coinEnergyAnimal.isSameAnimalOf(oppositeSaviorAnimal) ||
-            this._coinEnergyAnimal.isSameAnimalOf(incompatibleAnimal)
-        )
-        
-        badCoins.DominanceAndSocialEnergy = incompatibleAnimal && (
-            incompatibleAnimal.isSameAnimalOf(saviorAnimal) ||
-            incompatibleAnimal.isSameAnimalOf(this._coinInfoAnimal) ||
-            incompatibleAnimal.isSameAnimalOf(this._coinEnergyAnimal)
-        )
-        
-        return badCoins
+            DominanceAndSocialEnergy: (
+                incompatibleAnimal?.isSameAnimalOf(saviorAnimal) ||
+                incompatibleAnimal?.isSameAnimalOf(this._coinInfoAnimal) ||
+                incompatibleAnimal?.isSameAnimalOf(this._coinEnergyAnimal)
+            ) ?? false
+        };
     }
     
     
