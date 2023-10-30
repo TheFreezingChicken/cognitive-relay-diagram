@@ -841,11 +841,13 @@ export class OpType {
         switch (hasMasculineSensory) {
             case 'M':
             case 'Masculine':
+            case 'S':
             case true:
                 this._coinSensorySexual = SexualCharge.M;
                 break;
             case 'F':
             case 'Feminine':
+            case 'N':
             case false:
                 this._coinSensorySexual = SexualCharge.F;
                 break;
@@ -960,6 +962,8 @@ export class OpType {
         }
         
         
+        
+        
         const grantStack = new Array(4);
         
         // First and last function.
@@ -972,18 +976,15 @@ export class OpType {
         grantStack[2] = grantStack[1]?.opposite();
         this._grantStack = grantStack;
         
-        let quadra;
-        if (!(grantStack[0]?.isPartial() || grantStack[1]?.isPartial())) {
-            switch (this.isSingleObserver) {
-                case true:
-                    quadra = new Quadra(grantStack[1], grantStack[0]);
-                    break;
-                case false:
-                    quadra = new Quadra(grantStack[0], grantStack[1]);
-                    break;
-            }
-        }
-        // HERE Check and go
+        
+        // Instantiate Quadra only if at least one of the two savior functions is not undefined.
+        if (decFunc || obFunc) this._quadra = new Quadra(
+            decFunc?.isIntroverted ? decFunc : decFunc?.opposite(),
+            obFunc?.isIntroverted ? obFunc : obFunc?.opposite()
+        )
+        const quad = this._quadra;
+        // HERE Make Quadra partial by nature.
+        
         
         // let socialStack;
         // switch (socialType) {
