@@ -172,25 +172,51 @@
         <div class="selection-group-items-grid">
 
 
-        <label for="modality">Modality:</label>
-        <select id="modality" class="type-selection">
-            <option value="NONE">-- CHOOSE --</option>
-            <option value="FF">FF - Tester</option>
-            <option value="FM">FM - Visual</option>
-            <option value="MF">MF - Audio</option>
-            <option value="MM">MM - Kinesthetic</option>
-        </select>
-
-            <label for="saviors">Saviors:</label>
-            <input type="text" id="saviors" placeholder="(eg: Fi/Ne)"
-                   style="width: 9ch; text-transform: capitalize" maxlength="5"/>
-
             <label for="animals">Animals:</label>
             <div>
-                <input type="text" id="animals" placeholder="(eg: CPS)"
-                       style="width: 8ch; text-transform: uppercase" maxlength="3"/>
-                <label for="animals">(X)</label>
+                <select id="animals" class="type-selection">
+                    <option value="NONE">-- CHOOSE --</option>
+                    <optgroup label="Sleep">
+                        <option value="SCBP">SC/B(P)</option>
+                        <option value="SCPB">SC/P(B)</option>
+                        <option value="SBCP">SB/C(P)</option>
+                        <option value="SBPC">SB/P(C)</option>
+                    </optgroup>
+                    <optgroup label="Consume">
+                        <option value="CSBP">CS/B(P)</option>
+                        <option value="CSPB">CS/P(B)</option>
+                        <option value="CPSB">CP/S(B)</option>
+                        <option value="CPBS">CP/B(S)</option>
+                    </optgroup>
+                    <optgroup label="Blast">
+                        <option value="BSCP">BS/C(P)</option>
+                        <option value="BSPC">BS/P(C)</option>
+                        <option value="BPSC">BP/S(C)</option>
+                        <option value="BPCS">BP/C(S)</option>
+                    </optgroup>
+                    <optgroup label="Play">
+                        <option value="PCSB">PC/S(B)</option>
+                        <option value="PCBS">PC/B(S)</option>
+                        <option value="PBSC">PB/S(C)</option>
+                        <option value="PBCS">PB/C(S)</option>
+                    </optgroup>
+                </select>
             </div>
+
+
+            <label for="saviors">Saviors:</label>
+            <select id="saviors" class="type-selection">
+
+            </select>
+
+            <label for="modality">Modality:</label>
+            <select id="modality" class="type-selection">
+                <option value="NONE">-- CHOOSE --</option>
+                <option value="FF">FF - Tester</option>
+                <option value="FM">FM - Visual</option>
+                <option value="MF">MF - Audio</option>
+                <option value="MM">MM - Kinesthetic</option>
+            </select>
 
 <!--            <label for="social">Social Type:</label>-->
 <!--            <select id="social" class="type-selection">-->
@@ -208,7 +234,7 @@
     <div id="cognitive-diagram-container"></div>
 </div>
 
-
+<script type="module" src="scripts/input-logic.js"></script>
 <script type="module" src="scripts/main.js"></script>
 
 </body>

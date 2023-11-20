@@ -380,22 +380,34 @@ class Quadra {
         // SLEEP Make constructor recognize the two functions automatically, regardless of order of the arguments.
         if (typeof diFunction === 'string') diFunction = new CognitiveFunction(diFunction);
         if (typeof oiFunction === 'string') oiFunction = new CognitiveFunction(oiFunction);
-        
-        if (!(diFunction instanceof CognitiveFunction && oiFunction instanceof CognitiveFunction))
-            throw new TypeError("One or more arguments can't be converted to CognitiveFunction.");
-        
-        if (!(diFunction.isDeciding && diFunction.isIntroverted && oiFunction.isObserving && oiFunction.isIntroverted)) {
-            throw new Error('Invalid arguments. First argument must be Di and second argument must be Oi.');
+    
+    
+        if (diFunction && !(diFunction instanceof CognitiveFunction)) {
+            throw new TypeError("Invalid diFunction argument.");
         }
     
-        this._deFunction = diFunction.opposite();
-        this._oeFunction = oiFunction.opposite();
-        this._feelingFunction = diFunction.isFeeling ? diFunction : this._deFunction;
-        this._thinkingFunction = this._feelingFunction.opposite();
-        this._sensingFunction = oiFunction.isSensing ? oiFunction : this._oeFunction;
-        this._intuitionFunction = this._sensingFunction.opposite();
+        if (oiFunction && !(oiFunction instanceof CognitiveFunction)) {
+            throw new TypeError("Invalid oiFunction argument.");
+        }
+        
+        if (diFunction && !(diFunction.isIntroverted && diFunction.isDeciding)) {
+            throw new Error("diFunction is not Di.");
+        }
+    
+        if (oiFunction && !(oiFunction.isIntroverted && oiFunction.isObserving)) {
+            throw new Error("oiFunction is not Oi.");
+        }
+        
         this._diFunction = diFunction;
         this._oiFunction = oiFunction;
+        
+        
+        this._deFunction = diFunction?.opposite();
+        this._oeFunction = oiFunction?.opposite();
+        this._feelingFunction = diFunction && (diFunction.isFeeling ? diFunction : this._deFunction);
+        this._thinkingFunction = this._feelingFunction?.opposite();
+        this._sensingFunction = oiFunction && (oiFunction.isSensing ? oiFunction : this._oeFunction);
+        this._intuitionFunction = this._sensingFunction?.opposite();
     }
     
     
@@ -983,7 +995,6 @@ export class OpType {
             obFunc?.isIntroverted ? obFunc : obFunc?.opposite()
         )
         const quad = this._quadra;
-        // HERE Make Quadra partial by nature.
         
         
         // let socialStack;
