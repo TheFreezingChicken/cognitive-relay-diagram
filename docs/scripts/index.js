@@ -45,6 +45,40 @@ if (typeSelection !== null) {
 }
 
 
+class DiagramSettings extends EventTarget {
+}
+
+class OpTypeInputs extends EventTarget {
+    
+    constructor() {
+        super();
+    
+        const animals = document.getElementById('animals').value;
+        const saviors = document.getElementById('saviors').value;
+        const modality = document.getElementById('modality').value;
+        // const socialType = document.getElementById('social').value;
+        
+        this.#initialize(animals, saviors, modality);
+    }
+    
+    /**
+     * @type {OpType}
+     */
+    get opType() {
+        throw Error("Not implemented.")
+    }
+    
+    /**
+     *
+     * @param elements {...HTMLElement}
+     */
+    #initialize(...elements) {
+        throw Error("Not implemented.")
+        
+        // HERE Restore from storage and add listeners.
+        //      Listeners will save changes in storage and also apply changes to this class fields.
+    }
+}
 
 class DiagramStage extends Konva.Stage {
     /**
@@ -62,6 +96,16 @@ class DiagramStage extends Konva.Stage {
     #diagramGroup;
     
     /**
+     * @type {DiagramSettings}
+     */
+    #diagramSettings;
+    
+    /**
+     * @type {OpTypeInputs}
+     */
+    #typeInputs;
+    
+    /**
      *
      * @private
      * @type {LegendGroup}
@@ -69,12 +113,20 @@ class DiagramStage extends Konva.Stage {
     #legendGroup;
     
     
-    constructor(htmlElement) {
+    constructor() {
+        const diagramContainer = document.getElementById('cognitive-diagram-container');
+        
         super({
-            container: htmlElement.id,
+            container: diagramContainer.id,
             width: DIAGRAM_SIZE,
             height: DIAGRAM_SIZE
         });
+    
+    
+        const diagramSettings = new DiagramSettings();
+        const diagramInputs = new OpTypeInputs();
+        this.#diagramSettings = diagramSettings;
+        this.#typeInputs = diagramInputs;
         
         const diagramGroup = new DiagramGroup();
         this.#diagramGroup = diagramGroup;
@@ -111,33 +163,51 @@ class DiagramStage extends Konva.Stage {
     }
     
     
+    startListening() {
+        this.#diagramSettings.addEventListener('change', () => {
+            this.#drawWithInputs()
+        });
+        this.#typeInputs.addEventListener('change', () => {
+            this.#drawWithInputs()
+        });
+        throw Error("Not implemented.")
+    }
+    
+    #resetToHint() {
+        this.#diagramLayer.visible(false);
+        this._fillHintLayer.visible(true);
+        this.draw();
+    }
+    
     /**
-     *
-     * @param {OpType} opType
+     * @param opType {OpType}
      */
-    redraw(
-        opType
-    ) {
+    #drawType(opType) {
+    
+    
         this.#diagramGroup.updateType(opType);
-        
+    
         this.#diagramLayer.visible(true);
         this._fillHintLayer.visible(false);
         this.draw();
     }
     
-    resetToHint() {
-        this.#diagramLayer.visible(false);
-        this._fillHintLayer.visible(true);
-        this.draw();
+    #drawWithInputs() {
+        const settings = this.#diagramSettings;
+        const typeInputs = this.#typeInputs;
+        if (typeInputs.areRequiredMissing) {
+            this.#resetToHint();
+        } else this.#drawType(typeInputs.opType);
     }
+    
+    
+    
+    
+    
 }
 
 
-// MAIN START (everything is loaded above) =============================================================
-
-const diagramContainerElement = document.getElementById('cognitive-diagram-container');
-
-const diagramStage = new DiagramStage(diagramContainerElement);
+// ===== OLD MAIN START (will slowly deleted when each part is replaced/moved) =========================================
 
 
 
@@ -154,20 +224,15 @@ function updateDiagram() {
     
     // Redrawing diagram if a full OP type can be built, or resets to hint to the user to complete the selection.
     if (areAllSelected) {
-        const observerDecider = document.getElementById('observer-decider').value;
-        const animals = document.getElementById('animals').value;
-        const quadra = document.getElementById('quadra').value;
-        const modality = document.getElementById('modality').value;
-        const socialType = document.getElementById('social').value;
         
         const isSingleObserver = observerDecider === 'ODD';
         
         const opType = new OP.OpType(quadra, isSingleObserver, animals, modality, socialType);
         // TODO Add double activation numeric hints and masculinity.
         
-        diagramStage.redraw(opType)
+        diagramStage.#drawWithInputs()
     } else {
-        diagramStage.resetToHint();
+        diagramStage.#resetToHint();
     }
 }
 
@@ -233,3 +298,9 @@ addAllImgLoadEventListener(() => {
 selectionChangeHandler(null);
 // TODO Add listener for page resize.
 // TODO Use "hide" option.
+
+
+// =============== MAIN ===============================
+const diagramStage = new DiagramStage();
+diagramStage.startListening()
+

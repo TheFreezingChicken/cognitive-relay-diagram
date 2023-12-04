@@ -118,7 +118,7 @@ class DiagramGroupState extends EventTarget {
      * @returns {OpType}
      */
     get opType() { return this.#opType; }
-    // TODO Remember to fire an event right after firing any change event, which will be used to redraw the diagram.
+    // TODO Remember to fire an event right after firing any change event, which will be used to drawWithInputs the diagram.
 }
 
 export const mainDiagramGroup = new DiagramGroup();
