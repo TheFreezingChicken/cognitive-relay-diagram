@@ -2,63 +2,64 @@ import {addAllImgLoadEventListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} fro
 import * as OP from "./op-lib.js";
 
 
-const APPEARANCE_SETTING_HTML_CLASS_NAME = '.appearance-setting';
-const TYPE_SELECTION_HTML_CLASS_NAME = '.type-selection';
+const DIAGRAM_SETTINGS_STORAGE_KEY = 'diagram_settings';
+const OP_TYPE_INPUTS_STORAGE_KEY = 'op_type_inputs';
 
 
-// sessionStorage.clear();
-// localStorage.clear();
 
-// Query all elements by class.
-const allAppearanceElements = document.querySelectorAll(APPEARANCE_SETTING_HTML_CLASS_NAME);
-const allSelectionElements = document.querySelectorAll(TYPE_SELECTION_HTML_CLASS_NAME);
 
-// Get appearance settings from local storage (they persist beyond the session) and type selection choices from session
-// storage.
-const appearanceSettingsJSONData = localStorage.getItem(APPEARANCE_SETTING_HTML_CLASS_NAME);
-const typeSelectionJSONData = sessionStorage.getItem(TYPE_SELECTION_HTML_CLASS_NAME);
-
-// Parse the JSON if not null.
-const appearanceSettings = appearanceSettingsJSONData !== null ? JSON.parse(appearanceSettingsJSONData) : null;
-const typeSelection = typeSelectionJSONData !== null ? JSON.parse(typeSelectionJSONData) : null;
-
-if (appearanceSettings !== null) {
-    for (const e of allAppearanceElements) {
-        const storedValue = appearanceSettings[e.id];
+class StoredInputs extends EventTarget {
     
-        if (e instanceof HTMLInputElement) e.checked = storedValue
-        else e.value = storedValue;
+    /**
+     *
+     * @param storage {Storage}
+     * @param jsonObjectKey {string}
+     * @param elements {...HTMLElement}
+     */
+    constructor(storage, jsonObjectKey, ...elements) {
+        super();
         
-        console.log(`Stored value for ${e.id} is ${storedValue}`);
+        const storedInputsObject = JSON.parse(storage.getItem(jsonObjectKey));
+    
+        for (const e of elements) {
+            const storedValue = storedInputsObject[e.id];
+            
+            if (storedValue != null) {
+                if (e instanceof HTMLInputElement) {
+                    e.checked = storedValue;
+                } else {
+                    e.value = storedValue;
+                }
+            }
+    
+            console.log(`Stored value for ${e.id} is ${storedValue}`);
+            
+            e.addEventListener('change', () => {
+                // HERE Save the new value.
+            });
+        }
     }
 }
 
-if (typeSelection !== null) {
-    for (const e of allSelectionElements) {
-        const storedValue = typeSelection[e.id];
-    
-        if (e instanceof HTMLInputElement) e.checked = storedValue
-        else e.value = storedValue;
-    
-        console.log(`Stored value for ${e.id} is ${storedValue}`);
-    }
+
+
+class DiagramSettings extends StoredInputs {
 }
 
 
-class DiagramSettings extends EventTarget {
-}
-
-class OpTypeInputs extends EventTarget {
+class OpTypeInputs extends StoredInputs {
     
     constructor() {
-        super();
-    
-        const animals = document.getElementById('animals').value;
-        const saviors = document.getElementById('saviors').value;
-        const modality = document.getElementById('modality').value;
+        const animals = document.getElementById('animals');
+        /** @type {HTMLSelectElement} */
+        const saviors = document.getElementById('saviors');
+        /** @type {HTMLSelectElement} */
+        const modality = document.getElementById('modality');
         // const socialType = document.getElementById('social').value;
         
-        this.#initialize(animals, saviors, modality);
+        super(sessionStorage, OP_TYPE_INPUTS_STORAGE_KEY, animals, saviors, modality);
+    
+        // HERE Add listeners to apply changes to fields. Storing itself is already done in the superclass.
     }
     
     /**
@@ -67,18 +68,11 @@ class OpTypeInputs extends EventTarget {
     get opType() {
         throw Error("Not implemented.")
     }
-    
-    /**
-     *
-     * @param elements {...HTMLElement}
-     */
-    #initialize(...elements) {
-        throw Error("Not implemented.")
-        
-        // HERE Restore from storage and add listeners.
-        //      Listeners will save changes in storage and also apply changes to this class fields.
-    }
 }
+
+
+
+
 
 class DiagramStage extends Konva.Stage {
     /**
@@ -254,7 +248,7 @@ function storeChangedUserInput(isStoringAppearance) {
         
         
         localStorage.setItem(
-            APPEARANCE_SETTING_HTML_CLASS_NAME,
+            DIAGRAM_SETTINGS_STORAGE_KEY,
             JSON.stringify(dataToStore)
         )
     } else {
@@ -270,7 +264,7 @@ function storeChangedUserInput(isStoringAppearance) {
         }
         
         sessionStorage.setItem(
-            TYPE_SELECTION_HTML_CLASS_NAME,
+            OP_TYPE_INPUTS_STORAGE_KEY,
             JSON.stringify(dataToStore)
         )
     }
@@ -300,7 +294,11 @@ selectionChangeHandler(null);
 // TODO Use "hide" option.
 
 
-// =============== MAIN ===============================
+// =============== MAIN ====================================================================================
+
+// sessionStorage.clear();
+// localStorage.clear();
+
 const diagramStage = new DiagramStage();
 diagramStage.startListening()
 
