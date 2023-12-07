@@ -5,8 +5,7 @@ import * as OP from "./op-lib.js";
 const DIAGRAM_SETTINGS_STORAGE_KEY = 'diagram_settings';
 const OP_TYPE_INPUTS_STORAGE_KEY = 'op_type_inputs';
 
-
-
+const CHANGE_EVENT = new Event('change');
 
 class StoredInputs extends EventTarget {
     
@@ -20,12 +19,13 @@ class StoredInputs extends EventTarget {
         super();
         
         const storedInputsObject = JSON.parse(storage.getItem(jsonObjectKey));
+        this.#storedInputsObject = storedInputsObject;
     
         for (const e of elements) {
             const storedValue = storedInputsObject[e.id];
             
             if (storedValue != null) {
-                if (e instanceof HTMLInputElement) {
+                if (e instanceof HTMLInputElement && e.type === 'checkbox') {
                     e.checked = storedValue;
                 } else {
                     e.value = storedValue;
@@ -35,7 +35,25 @@ class StoredInputs extends EventTarget {
             console.log(`Stored value for ${e.id} is ${storedValue}`);
             
             e.addEventListener('change', () => {
-                // HERE Save the new value.
+                let value;
+                if (e instanceof HTMLInputElement && e.type === 'checkbox') {
+                    value = e.checked
+                } else {
+                    value = e.value;
+                }
+                storedInputsObject[e.id] = value;
+                
+                console.log(
+                    `Storing value ${value} for element ${e.id}`,
+                    `Stored value: ${storedInputsObject[e.id]}`
+                );
+                
+                storage.setItem(
+                    jsonObjectKey,
+                    JSON.stringify(storedInputsObject)
+                );
+                
+                this.dispatchEvent(CHANGE_EVENT);
             });
         }
     }
@@ -44,6 +62,13 @@ class StoredInputs extends EventTarget {
 
 
 class DiagramSettings extends StoredInputs {
+    
+    constructor() {
+        const functionsStyle = document.getElementById('functions-style');
+        const
+        super();
+    }
+    
 }
 
 
@@ -51,15 +76,54 @@ class OpTypeInputs extends StoredInputs {
     
     constructor() {
         const animals = document.getElementById('animals');
-        /** @type {HTMLSelectElement} */
         const saviors = document.getElementById('saviors');
-        /** @type {HTMLSelectElement} */
         const modality = document.getElementById('modality');
         // const socialType = document.getElementById('social').value;
+    
+        throw Error("Not implemented.")
+        animals.addEventListener('change', function () {
+            // HERE Fix this code from ChatGPT.
+            // Enable the 'saviors' select
+            saviorsSelect.disabled = false;
+        
+            // Clear existing options in 'saviors' select
+            saviorsSelect.innerHTML = '<option value="NONE">-- ☝🏻 --</option>';
+        
+            // Get the selected value from 'animals' select
+            const selectedAnimal = animalsSelect.value;
+        
+            // Define options for 'saviors' based on the first character of selected value
+            switch (selectedAnimal[0]) {
+                case 'S':
+                    saviorsSelect.add(new Option('Option for S', 'value_for_S'));
+                    // Add more options for 'S' scenario if needed
+                    break;
+                case 'C':
+                    saviorsSelect.add(new Option('Option for C', 'value_for_C'));
+                    // Add more options for 'C' scenario if needed
+                    break;
+                case 'B':
+                    saviorsSelect.add(new Option('Option for B', 'value_for_B'));
+                    // Add more options for 'B' scenario if needed
+                    break;
+                case 'P':
+                    saviorsSelect.add(new Option('Option for P', 'value_for_P'));
+                    // Add more options for 'P' scenario if needed
+                    break;
+                default:
+                    // If it doesn't match any case, keep the default options
+                    break;
+            }
+        });
         
         super(sessionStorage, OP_TYPE_INPUTS_STORAGE_KEY, animals, saviors, modality);
     
-        // HERE Add listeners to apply changes to fields. Storing itself is already done in the superclass.
+        /** @type {HTMLSelectElement} */
+        this.animals = animals;
+        /** @type {HTMLSelectElement} */
+        this.saviors = saviors;
+        /** @type {HTMLSelectElement} */
+        this.modality = modality;
     }
     
     /**
@@ -236,21 +300,10 @@ function storeChangedUserInput(isStoringAppearance) {
     const dataToStore = {};
     if (isStoringAppearance) {
         for (const e of allAppearanceElements) {
-            let value;
-            if (e instanceof HTMLInputElement) value = e.checked
-            else value = e.value;
-            dataToStore[e.id] = value;
-            console.log(
-                `Storing value ${value} for element ${e.id}`,
-                `Stored value: ${dataToStore[e.id]}`
-            );
         }
         
         
-        localStorage.setItem(
-            DIAGRAM_SETTINGS_STORAGE_KEY,
-            JSON.stringify(dataToStore)
-        )
+        localStorage
     } else {
         for (const e of allSelectionElements) {
             let value;
