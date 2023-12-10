@@ -7,6 +7,9 @@ const OP_TYPE_INPUTS_STORAGE_KEY = 'op_type_inputs';
 
 const CHANGE_EVENT = new Event('change');
 
+/**
+ * @class
+ */
 class StoredInputs extends EventTarget {
     
     /**
@@ -60,7 +63,9 @@ class StoredInputs extends EventTarget {
 }
 
 
-
+/**
+ * @class
+ */
 class DiagramSettings extends StoredInputs {
     
     constructor() {
@@ -72,28 +77,32 @@ class DiagramSettings extends StoredInputs {
 }
 
 
+/**
+ * @class
+ */
 class OpTypeInputs extends StoredInputs {
     
     constructor() {
-        const animals = document.getElementById('animals');
-        const saviors = document.getElementById('saviors');
-        const modality = document.getElementById('modality');
+        /** @type {HTMLSelectElement} */
+        const animalStackSelect = document.getElementById('animals');
+        /** @type {HTMLSelectElement} */
+        const saviorsSelect = document.getElementById('saviors');
+        /** @type {HTMLSelectElement} */
+        const modalitySelect = document.getElementById('modality');
         // const socialType = document.getElementById('social').value;
     
-        throw Error("Not implemented.")
-        animals.addEventListener('change', function () {
-            // HERE Fix this code from ChatGPT.
-            // Enable the 'saviors' select
-            saviorsSelect.disabled = false;
-        
-            // Clear existing options in 'saviors' select
+        animalStackSelect.addEventListener('change', function () {
+            // HERE Take the "NONE" through the first value of the options. Then fix the rest.
+            saviorsSelect.options[0].value
+            const isAnimalStackSelected = animalStackSelect.value !== "NONE"
+            const noneOptionText = ;
+            
             saviorsSelect.innerHTML = '<option value="NONE">-- ☝🏻 --</option>';
-        
             // Get the selected value from 'animals' select
-            const selectedAnimal = animalsSelect.value;
+            const selectedAnimalStack = animalStackSelect.value;
         
             // Define options for 'saviors' based on the first character of selected value
-            switch (selectedAnimal[0]) {
+            switch (selectedAnimalStack[0]) {
                 case 'S':
                     saviorsSelect.add(new Option('Option for S', 'value_for_S'));
                     // Add more options for 'S' scenario if needed
@@ -114,16 +123,20 @@ class OpTypeInputs extends StoredInputs {
                     // If it doesn't match any case, keep the default options
                     break;
             }
+    
+    
+            // Enable saviors selection only when an animal stack is selected.
+            saviorsSelect.disabled = ;
         });
         
-        super(sessionStorage, OP_TYPE_INPUTS_STORAGE_KEY, animals, saviors, modality);
+        super(sessionStorage, OP_TYPE_INPUTS_STORAGE_KEY, animalStackSelect, saviorsSelect, modalitySelect);
     
         /** @type {HTMLSelectElement} */
-        this.animals = animals;
+        this.animalsSelect = animalStackSelect;
         /** @type {HTMLSelectElement} */
-        this.saviors = saviors;
+        this.saviorsSelect = saviorsSelect;
         /** @type {HTMLSelectElement} */
-        this.modality = modality;
+        this.modality = modalitySelect;
     }
     
     /**
