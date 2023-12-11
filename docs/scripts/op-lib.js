@@ -661,6 +661,12 @@ export const AchievementType = {
  */
 export class OpType {
     
+    static build512Type(animalStack, saviors, modality) {
+        throw Error("Not implemented.")
+        return undefined;
+    }
+    
+    
     constructor(
         isSingleObserver,
         isSaviorDi,

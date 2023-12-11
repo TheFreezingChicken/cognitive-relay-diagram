@@ -1,5 +1,6 @@
 import {addAllImgLoadEventListener, DIAGRAM_SIZE, DiagramGroup, LegendGroup} from './relay-diagram.js';
 import * as OP from "./op-lib.js";
+import {OpType} from "./op-lib.js";
 
 
 const DIAGRAM_SETTINGS_STORAGE_KEY = 'diagram_settings';
@@ -69,9 +70,10 @@ class StoredInputs extends EventTarget {
 class DiagramSettings extends StoredInputs {
     
     constructor() {
-        const functionsStyle = document.getElementById('functions-style');
-        const
-        super();
+        const functionsStyleSelect = document.getElementById('functions-style');
+        const hideAnimalOrderCheckbox = document.getElementById('hide-numeric-animal-order');
+        
+        super(localStorage, DIAGRAM_SETTINGS_STORAGE_KEY, functionsStyleSelect, hideAnimalOrderCheckbox);
     }
     
 }
@@ -81,6 +83,7 @@ class DiagramSettings extends StoredInputs {
  * @class
  */
 class OpTypeInputs extends StoredInputs {
+    #lastFirstAnimal;
     
     constructor() {
         /** @type {HTMLSelectElement} */
@@ -91,59 +94,142 @@ class OpTypeInputs extends StoredInputs {
         const modalitySelect = document.getElementById('modality');
         // const socialType = document.getElementById('social').value;
     
-        animalStackSelect.addEventListener('change', function () {
-            // HERE Take the "NONE" through the first value of the options. Then fix the rest.
-            saviorsSelect.options[0].value
-            const isAnimalStackSelected = animalStackSelect.value !== "NONE"
-            const noneOptionText = ;
-            
-            saviorsSelect.innerHTML = '<option value="NONE">-- ☝🏻 --</option>';
+        // "NONE" (or similar neutral value) is always the first option in the list.
+        const noAnimalsValue = animalStackSelect.options[0].value;
+        const noSaviorsValue = saviorsSelect.options[0].value;
+    
+        // Listen for changes of animal stack selection and fill savior selection options accordingly.
+        animalStackSelect.addEventListener('change', () => {
             // Get the selected value from 'animals' select
-            const selectedAnimalStack = animalStackSelect.value;
+            const selectedStack = animalStackSelect.value;
+            
+            const isAnimalStackSelected = selectedStack !== noAnimalsValue;
+            const newFirstAnimal = selectedStack[0];
+            
+            // If new selection matches last selection don't do anything and return.
+            if (this.#lastFirstAnimal === newFirstAnimal) return;
+            this.#lastFirstAnimal = newFirstAnimal;
+            
+            // Determine appropriate "NONE" value text.
+            const noSaviorsText = isAnimalStackSelected ? '-- CHOOSE --' : '-- ☝🏻 --';
+            
+            // Reset <select> options.
+            saviorsSelect.innerHTML = '';
         
-            // Define options for 'saviors' based on the first character of selected value
-            switch (selectedAnimalStack[0]) {
+            // Add "NONE" value.
+            saviorsSelect.add(new Option(noSaviorsValue, noSaviorsText));
+            
+            const deciderGroup = document.createElement('optgroup');
+            const observerGroup = document.createElement('optgroup');
+            deciderGroup.label = 'Single Decider';
+            observerGroup.label = 'Single Observer';
+            
+            // Define options for savior groups based on the first character of selected animal.
+            switch (selectedStack[0]) {
                 case 'S':
-                    saviorsSelect.add(new Option('Option for S', 'value_for_S'));
-                    // Add more options for 'S' scenario if needed
+                    deciderGroup.appendChild(new Option('Fi/Si', 'Fi/Si'));
+                    deciderGroup.appendChild(new Option('Fi/Ni', 'Fi/Ni'));
+                    deciderGroup.appendChild(new Option('Ti/Si', 'Ti/Si'));
+                    deciderGroup.appendChild(new Option('Ti/Ni', 'Ti/Ni'));
+                    observerGroup.appendChild(new Option('Si/Fi', 'Si/Fi'));
+                    observerGroup.appendChild(new Option('Si/Ti', 'Si/Ti'));
+                    observerGroup.appendChild(new Option('Ni/Fi', 'Ni/Fi'));
+                    observerGroup.appendChild(new Option('Ni/Ti', 'Ni/Ti'));
                     break;
                 case 'C':
-                    saviorsSelect.add(new Option('Option for C', 'value_for_C'));
-                    // Add more options for 'C' scenario if needed
+                    deciderGroup.appendChild(new Option('Fi/Se', 'Fi/Se'));
+                    deciderGroup.appendChild(new Option('Fi/Ne', 'Fi/Ne'));
+                    deciderGroup.appendChild(new Option('Ti/Se', 'Ti/Se'));
+                    deciderGroup.appendChild(new Option('Ti/Ne', 'Ti/Ne'));
+                    observerGroup.appendChild(new Option('Se/Fi', 'Se/Fi'));
+                    observerGroup.appendChild(new Option('Se/Ti', 'Se/Ti'));
+                    observerGroup.appendChild(new Option('Ne/Fi', 'Ne/Fi'));
+                    observerGroup.appendChild(new Option('Ne/Ti', 'Ne/Ti'));
                     break;
                 case 'B':
-                    saviorsSelect.add(new Option('Option for B', 'value_for_B'));
-                    // Add more options for 'B' scenario if needed
+                    deciderGroup.appendChild(new Option('Fe/Si', 'Fe/Si'));
+                    deciderGroup.appendChild(new Option('Fe/Ni', 'Fe/Ni'));
+                    deciderGroup.appendChild(new Option('Te/Si', 'Te/Si'));
+                    deciderGroup.appendChild(new Option('Te/Ni', 'Te/Ni'));
+                    observerGroup.appendChild(new Option('Si/Fe', 'Si/Fe'));
+                    observerGroup.appendChild(new Option('Si/Te', 'Si/Te'));
+                    observerGroup.appendChild(new Option('Ni/Fe', 'Ni/Fe'));
+                    observerGroup.appendChild(new Option('Ni/Te', 'Ni/Te'));
                     break;
                 case 'P':
-                    saviorsSelect.add(new Option('Option for P', 'value_for_P'));
-                    // Add more options for 'P' scenario if needed
+                    deciderGroup.appendChild(new Option('Fe/Se', 'Fe/Se'));
+                    deciderGroup.appendChild(new Option('Fe/Ne', 'Fe/Ne'));
+                    deciderGroup.appendChild(new Option('Te/Se', 'Te/Se'));
+                    deciderGroup.appendChild(new Option('Te/Ne', 'Te/Ne'));
+                    observerGroup.appendChild(new Option('Se/Fe', 'Se/Fe'));
+                    observerGroup.appendChild(new Option('Se/Te', 'Se/Te'));
+                    observerGroup.appendChild(new Option('Ne/Fe', 'Ne/Fe'));
+                    observerGroup.appendChild(new Option('Ne/Te', 'Ne/Te'));
                     break;
                 default:
-                    // If it doesn't match any case, keep the default options
+                    // Keep empty.
                     break;
             }
     
-    
+            // Add option groups to saviors <select>.
+            saviorsSelect.add(deciderGroup);
+            saviorsSelect.add(observerGroup);
+            
             // Enable saviors selection only when an animal stack is selected.
-            saviorsSelect.disabled = ;
+            saviorsSelect.disabled = !isAnimalStackSelected;
         });
         
         super(sessionStorage, OP_TYPE_INPUTS_STORAGE_KEY, animalStackSelect, saviorsSelect, modalitySelect);
     
         /** @type {HTMLSelectElement} */
-        this.animalsSelect = animalStackSelect;
+        this.animalStackSelect = animalStackSelect;
         /** @type {HTMLSelectElement} */
         this.saviorsSelect = saviorsSelect;
         /** @type {HTMLSelectElement} */
-        this.modality = modalitySelect;
+        this.modalitySelect = modalitySelect;
     }
     
     /**
-     * @type {OpType}
+     *
+     * @returns {string|null}
+     */
+    get #animalStack() {
+        const value = this.animalStackSelect.value;
+        
+        return /[SCBP]/.test(value[0]) ? value : null;
+    }
+    
+    /**
+     *
+     * @returns {string|null}
+     */
+    get #saviors() {
+        const value = this.saviorsSelect.value;
+        return value.includes('/') ? value : null;
+    }
+    
+    /**
+     *
+     * @returns {string|null}
+     */
+    get #modality() {
+        const value = this.modalitySelect.value;
+        return /[FM]{2}/.test(value[0]) ? value : null;
+    }
+    
+    /**
+     * Returns true if there's enough data to build a 128-type.
+     */
+    get #is128Valid() {
+        return this.#animalStack != null && this.#saviors != null;
+    }
+    
+    
+    /**
+     * @type {OpType|undefined}
      */
     get opType() {
-        throw Error("Not implemented.")
+        return this.#is128Valid ? OpType.build512Type(this.#animalStack, this.#saviors, this.#modality) : undefined;
     }
 }
 
