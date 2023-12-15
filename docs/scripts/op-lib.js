@@ -1021,6 +1021,13 @@ export class OpType {
         // this._socialStack = socialStack;
     }
     
+    /**
+     * Returns true if indexOrFunction points to a savior function.
+     * @param indexOrFunction {number, string, CognitiveFunction} Either a Grant index or a function.
+     */
+    isSaviorFunction(indexOrFunction) {
+        throw Error("Not implemented.");
+    }
     
     get isPartial() {
         return !(

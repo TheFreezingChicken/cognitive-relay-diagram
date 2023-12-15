@@ -1,9 +1,13 @@
 import {getAnimalLetter, OpType} from "./op-lib.js";
 
-// Convention: every index follows the Grant stack positioning.
+let isLibraryReady = false;
+
+// To change the base size of each circle (before scaling is applied).
 const CIRCLE_BASE_RADIUS = 60;
+// Multiplier applied to CIRCLE_BASE_RADIUS to get the width of each circle stroke.
 const CIRCLE_STROKE_FACTOR = 0.15;
 const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
+// To change the distante between circles on the same "axis".
 const OPPOSITE_CIRCLE_DISTANCE = 350;
 
 export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
@@ -19,6 +23,7 @@ const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
 const THIRD_GRANT_FUNCTION_SCALE_FACTOR = 0.68;
 const LAST_GRANT_FUNCTION_SCALE_FACTOR = 0.53;
 
+// Offset of the semi-transparent colored triangles from the lines.
 const ANIMAL_BG_TRIANGLE_OFFSET = 17;
 
 const FIRST_ANIMAL_STROKE_WIDTH = 5;
@@ -82,30 +87,46 @@ const TFCStyleColor = {
 
 const IMG_DIR_PATH = './img';
 
-const BIG_DEMON_BG_IMG = new Image();
-BIG_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon4.png`;
 
-const LITTLE_DEMON_BG_IMG = new Image();
-LITTLE_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon3.png`;
-
-const MASCULINE_FUNCTION_BG_IMG = new Image();
-MASCULINE_FUNCTION_BG_IMG.src = `${IMG_DIR_PATH}/Muscles.png`
-
-/**
- *
- * @param {function(): void} listener
- */
-export function addAllImgLoadEventListener(listener) {
-    BIG_DEMON_BG_IMG.addEventListener('load', listener);
-    MASCULINE_FUNCTION_BG_IMG.addEventListener('load', listener);
+const DiagramResources = {
+    BIG_DEMON_BG_IMG: new Image(),
+    LITTLE_DEMON_BG_IMG: new Image(),
+    MASCULINE_FUNCTION_BG_IMG: new Image()
 }
+
+
+// HERE Checkout how Promises work before going on with this.
+class ResourceLoader extends EventTarget {
+    
+    constructor() {
+        super();
+    }
+    
+    /**
+     *
+     * @param images {HTMLImageElement[]}
+     * @param i {number}
+     */
+    #recursiveLoading(images, i) {
+        images[i].addEventListener('load', () => {
+        
+        });
+    }
+    
+    loadAllImages() {
+        const resArray = Object.values(DiagramResources);
+        this.#recursiveLoading(resArray, 0)
+        
+    }
+}
+
 
 /**
  * @enum {string}
  */
 const DiagramStateEvents = {
     OP_TYPE_CHANGE: 'opTypeChange',
-    APPEARANCE_SETTING_CHANGE: 'appearanceSettingChange'
+    DIAGRAM_SETTING_CHANGE: 'diagramSettingChange'
 }
 
 class DiagramGroupState extends EventTarget {
@@ -121,7 +142,7 @@ class DiagramGroupState extends EventTarget {
     // TODO Remember to fire an event right after firing any change event, which will be used to drawWithInputs the diagram.
 }
 
-export const mainDiagramGroup = new DiagramGroup();
+export const mainDiagramGroup = new MainRelayDiagram();
 
 class DebugRect extends Konva.Rect {
     
@@ -154,7 +175,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
     
     
     /**
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {number} grantIndex
      */
     constructor(rootDiagramGroup, grantIndex) {
@@ -213,7 +234,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
             let fillColor;
             let strokeColor;
             // Checking first character of the corresponding grant function.
-            switch (state.opType.grantStack[grantIndex][0]) {
+            switch (state.opType?.grantStack[grantIndex][0]) {
                 case 'F':
                     fillColor = TFCStyleColor.FEELING_FILL;
                     strokeColor = TFCStyleColor.FEELING_STROKE;
@@ -242,26 +263,27 @@ class CognitiveFunctionCircle extends Konva.Circle {
 }
 
 
-class CognitiveFunctionOutline extends CognitiveFunctionCircle {
-    /**
-     *
-     * @param {number} grantOrder
-     */
-    constructor(grantOrder) {
-        super(grantOrder);
-        
-        this.radius(CIRCLE_BASE_RADIUS + 15);
-        this.fill('limegreen');
-    }
-    
-    /**
-     *
-     * @param {Boolean} isSavior
-     */
-    updateSaviorState(isSavior) {
-        this.visible(isSavior);
-    }
-}
+// class CognitiveFunctionOutline extends CognitiveFunctionCircle {
+//     /**
+//      *
+//      * @param {number} grantOrder
+//      */
+//     constructor(grantOrder) {
+//         super(grantOrder);
+//
+//         this.radius(CIRCLE_BASE_RADIUS + 15);
+//         this.fill('limegreen');
+//     }
+//
+//     /**
+//      *
+//      * @param {Boolean} isSavior
+//      */
+//     updateSaviorState(isSavior) {
+//         this.visible(isSavior);
+//     }
+// }
+
 
 
 class CognitiveFunctionBackgroundImage extends Konva.Image {
@@ -273,6 +295,7 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     get _IMG_SCALE() { return 1; }
     
     /**
+     * Used as a multiplier on the _IMG_SCALE to stay proportional to the assigned circle.
      * @protected
      * @type {number}
      */
@@ -286,6 +309,7 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     
     
     
+    // REM grantOrder might not be needed but we're keeping it anyway.
     /**
      *
      * @param {HTMLImageElement} img
@@ -323,11 +347,8 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
      * @param {number} grantOrder
      */
     #onImgLoad(img, circle, grantOrder) {
-        this.#circleScale = circle.scaleX();
-    
         this.image(img);
         // this.opacity(grantOrder !== 3 ? 0.3 : 1);
-        // This crop removes the black border around the image.
         this.position(circle.position());
         // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
         this.offsetX(this.width() / 2);
@@ -335,9 +356,8 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     
         this._applyCustomAttributes(circle, grantOrder);
     }
-    
-    
 }
+
 
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
     get _IMG_SCALE() { return 0.4; }
@@ -345,7 +365,7 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
     
     /**
      *
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantIndex
      */
@@ -356,14 +376,9 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
         
         const state = rootDiagramGroup.state;
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            const cogFun = state.opType.grantStack[grantIndex];
-            const isSavior = state.opType.saviorFunctions.includes(cogFun);
+            const isSavior = state.opType?.isSaviorFunction(grantIndex);
             this.visible(!isSavior);
         });
-    }
-    
-    
-    updateDemonState(isDemon) {
     }
 }
 
@@ -375,7 +390,7 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     
     /**
      *
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantIndex
      */
@@ -397,7 +412,7 @@ class CognitiveFunctionText extends Konva.Text {
     
     /**
      *
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantIndex
      */
@@ -507,7 +522,7 @@ class CognitiveFunctionGroup extends Konva.Group {
     get cogFun() { return this.#cogFun; }
     
     /**
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {number} grantIndex
      */
     constructor(rootDiagramGroup, grantIndex) {
@@ -558,7 +573,7 @@ class AnimalBackgroundTriangle extends Konva.Line {
     }
     
     /**
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {AnimalPosition} animalPosition
      */
     constructor(rootDiagramGroup, animalPosition) {
@@ -839,7 +854,7 @@ class AnimalGroup extends Konva.Group {
     
     /**
      *
-     * @param {DiagramGroup} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagramGroup
      * @param {AnimalPosition} animalPosition
      */
     constructor(rootDiagramGroup, animalPosition) {
@@ -866,7 +881,13 @@ class AnimalGroup extends Konva.Group {
 
 
 
-export class DiagramGroup extends Konva.Group {
+export class MainRelayDiagram extends Konva.Group {
+    static initializeResources() {
+        BIG_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon4.png`;
+        LITTLE_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon3.png`;
+        MASCULINE_FUNCTION_BG_IMG.src = `${IMG_DIR_PATH}/Muscles.png`;
+    }
+    
     /**
      * @private
      * @type {CognitiveFunctionGroup[]}
@@ -900,7 +921,8 @@ export class DiagramGroup extends Konva.Group {
     
     constructor() {
         super();
-
+        if (!isLibraryReady) throw Error("Library must be initialized before using diagrams.");
+        
         this.#state = new DiagramGroupState();
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
