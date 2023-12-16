@@ -1,4 +1,4 @@
-import {getAnimalLetter, OpType} from "./op-lib.js";
+import {CognitiveFunction, getAnimalLetter, OpType} from "./op-lib.js";
 
 let isLibraryReady = false;
 
@@ -85,8 +85,11 @@ const TFCStyleColor = {
     INTUITION_STROKE: '#522c73',
 }
 
-const IMG_DIR_PATH = './img';
 
+
+
+
+const IMG_DIR_PATH = './img';
 
 const DiagramResources = {
     BIG_DEMON_BG_IMG: new Image(),
@@ -95,30 +98,48 @@ const DiagramResources = {
 }
 
 
-// HERE Checkout how Promises work before going on with this.
-class ResourceLoader extends EventTarget {
-    
-    constructor() {
-        super();
-    }
+class ResourceLoader {
     
     /**
-     *
-     * @param images {HTMLImageElement[]}
-     * @param i {number}
+     * Asynchronously initializes all resources needed to render diagrams.
+     * @returns {Promise<undefined[]>}
      */
-    #recursiveLoading(images, i) {
-        images[i].addEventListener('load', () => {
-        
-        });
-    }
+    async initializeAsync() {
+        /**
+         * Return a promise which resolves when image is loaded or failed.
+         * @param img {HTMLImageElement}
+         * @param path {string}
+         * @returns {Promise<undefined>}
+         */
+        const loadImg = (img, path) => new Promise((resolve, reject) => {
+            img.onload = () => {
+                img.onload = null;
+                img.onerror = null;
+                resolve();
+            };
     
-    loadAllImages() {
-        const resArray = Object.values(DiagramResources);
-        this.#recursiveLoading(resArray, 0)
-        
+            img.onerror = () => {
+                img.onload = null;
+                img.onerror = null;
+                reject()
+            };
+    
+            img.src = path;
+        });
+    
+        // Load all images concurrently. When all are finished set library as ready. Returns the end Promise.
+        return Promise.all([
+            loadImg(DiagramResources.LITTLE_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon3.png`),
+            loadImg(DiagramResources.BIG_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon4.png`),
+            loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`)
+        ]).then(() => { isLibraryReady = true });
     }
 }
+
+export const diagramResources = new ResourceLoader();
+
+
+
 
 
 /**
@@ -142,7 +163,6 @@ class DiagramGroupState extends EventTarget {
     // TODO Remember to fire an event right after firing any change event, which will be used to drawWithInputs the diagram.
 }
 
-export const mainDiagramGroup = new MainRelayDiagram();
 
 class DebugRect extends Konva.Rect {
     
@@ -320,10 +340,16 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         super();
         
         this.#circleScale = circle.scaleX();
-        
-        img.addEventListener('load', () => {
-            this.#onImgLoad(img, circle, grantOrder);
-        });
+    
+        // Based on how the library is structured, img should always be loaded when reaching this point.
+        this.image(img);
+        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
+        this.position(circle.position());
+        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
+        this.offsetX(this.width() / 2);
+        this.offsetY(this.height() / 2);
+    
+        this._applyCustomAttributes(circle, grantOrder);
     }
     
     
@@ -339,23 +365,6 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         this.scaleX(baseScale);
         this.scaleY(baseScale);
     }
-    
-    /**
-     *
-     * @param {HTMLImageElement} img
-     * @param {CognitiveFunctionCircle} circle
-     * @param {number} grantOrder
-     */
-    #onImgLoad(img, circle, grantOrder) {
-        this.image(img);
-        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
-        this.position(circle.position());
-        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
-        this.offsetX(this.width() / 2);
-        this.offsetY(this.height() / 2);
-    
-        this._applyCustomAttributes(circle, grantOrder);
-    }
 }
 
 
@@ -370,7 +379,7 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
      * @param {number} grantIndex
      */
     constructor(rootDiagramGroup, circle, grantIndex) {
-        const img = grantIndex === 3 ? BIG_DEMON_BG_IMG : LITTLE_DEMON_BG_IMG;
+        const img = grantIndex === 3 ? DiagramResources.BIG_DEMON_BG_IMG : DiagramResources.LITTLE_DEMON_BG_IMG;
         
         super(img, circle, grantIndex);
         
@@ -395,12 +404,11 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
      * @param {number} grantIndex
      */
     constructor(rootDiagramGroup, circle, grantIndex) {
-        super(MASCULINE_FUNCTION_BG_IMG, circle, grantIndex);
+        super(DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle, grantIndex);
     
         const state = rootDiagramGroup.state;
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            const cogFun = state.opType.grantStack[grantIndex];
-            const isMasculine = state.opType.masculineFunctions.includes(cogFun);
+            const isMasculine = state.opType?.isMasculineFunction(grantIndex);
             this.visible(isMasculine);
         });
     }
@@ -412,11 +420,11 @@ class CognitiveFunctionText extends Konva.Text {
     
     /**
      *
-     * @param {MainRelayDiagram} rootDiagramGroup
+     * @param {MainRelayDiagram} rootDiagram
      * @param {CognitiveFunctionCircle} circle
      * @param {number} grantIndex
      */
-    constructor(rootDiagramGroup, circle, grantIndex) {
+    constructor(rootDiagram, circle, grantIndex) {
         super(
             {
                 position: {
@@ -444,15 +452,16 @@ class CognitiveFunctionText extends Konva.Text {
         
         this.#circle = circle;
     
-        const state = rootDiagramGroup.state;
+        const state = rootDiagram.state;
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            const cogFun = state.opType.grantStack[grantIndex];
-            this.text(cogFun);
+            /** @type {CognitiveFunction|null} */
+            const cogFun = state.opType?.grantStack[grantIndex];
+            this.text(cogFun.name);
         });
     }
 }
 
-
+// HERE Keep checking event listeners from here.
 
 class CognitiveFunctionGroup extends Konva.Group {
     /**
@@ -465,15 +474,6 @@ class CognitiveFunctionGroup extends Konva.Group {
      */
     get circle() { return this.#circle; }
     
-    /**
-     * @type {CognitiveFunctionOutline}
-     */
-    #outline;
-    /**
-     *
-     * @returns {CognitiveFunctionOutline}
-     */
-    get outline() { return this.#outline; }
     
     /**
      * @type {DemonBackgroundImage}
@@ -882,10 +882,13 @@ class AnimalGroup extends Konva.Group {
 
 
 export class MainRelayDiagram extends Konva.Group {
-    static initializeResources() {
-        BIG_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon4.png`;
-        LITTLE_DEMON_BG_IMG.src = `${IMG_DIR_PATH}/Demon3.png`;
-        MASCULINE_FUNCTION_BG_IMG.src = `${IMG_DIR_PATH}/Muscles.png`;
+    
+    /**
+     * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
+     * @returns {Promise<undefined[]>}
+     */
+    async static initializeResources() {
+        return diagramResources.initializeAsync();
     }
     
     /**
@@ -920,8 +923,9 @@ export class MainRelayDiagram extends Konva.Group {
     
     
     constructor() {
+        if (!isLibraryReady) throw Error("Library resources must be initialized before using diagrams.");
+        
         super();
-        if (!isLibraryReady) throw Error("Library must be initialized before using diagrams.");
         
         this.#state = new DiagramGroupState();
         
@@ -952,4 +956,12 @@ export class MainRelayDiagram extends Konva.Group {
 }
 
 
-export class LegendGroup extends Konva.Group {}
+export class LegendGroup extends Konva.Group {
+    constructor() {
+        throw Error("Not implemented.");
+        super();
+    }
+}
+
+
+export const mainDiagramGroup = new MainRelayDiagram();

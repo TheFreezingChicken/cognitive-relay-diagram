@@ -1,5 +1,5 @@
-// import {addAllImgLoadEventListener, DIAGRAM_SIZE, MainRelayDiagram, LegendGroup} from './relay-diagram.js';
 import {OpType} from "./op-lib.js";
+import {diagramResources} from "./relay-diagram";
 
 
 class DiagramStage extends Konva.Stage {
@@ -139,8 +139,9 @@ class DiagramStage extends Konva.Stage {
 // sessionStorage.clear();
 // localStorage.clear();
 
-// HERE Settings seem to be 100% working and ready. Now's time to fix the diagram...
-
-// const diagramStage = new DiagramStage();
-// diagramStage.startListening()
+diagramResources.initializeAsync().then(() => {
+    new DiagramStage()
+}).catch(() => {
+    throw new Error("Diagram initialization went wrong.");
+});
 

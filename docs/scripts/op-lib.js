@@ -84,7 +84,7 @@ export function getAnimalLetter(cogFun1, cogFun2) {
 /**
  * @class
  */
-class CognitiveFunction {
+export class CognitiveFunction {
     /**
      * @param {string|CognitiveFunction} cogFunName
      */
@@ -1024,10 +1024,23 @@ export class OpType {
     /**
      * Returns true if indexOrFunction points to a savior function.
      * @param indexOrFunction {number, string, CognitiveFunction} Either a Grant index or a function.
+     * @return {boolean}
+     * @throws Will throw an error if the argument is not a function.
      */
     isSaviorFunction(indexOrFunction) {
         throw Error("Not implemented.");
     }
+    
+    /**
+     * Returns true if indexOrFunction points to a masculine function.
+     * @param indexOrFunction {number, string, CognitiveFunction} Either a Grant index or a function.
+     * @returns {boolean}
+     * @throws Will throw an error if the argument is not a function.
+     */
+    isMasculineFunction(indexOrFunction) {
+        throw Error("Not implemented.");
+    }
+    
     
     get isPartial() {
         return !(
