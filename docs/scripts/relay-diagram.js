@@ -66,12 +66,12 @@ class GrantIndexCouple {
  * @readonly
  * @enum {GrantIndexCouple}
  */
-const AnimalPosition = {
+const AnimalPositions = {
     UPPER_LEFT: new GrantIndexCouple(0, 1),
     UPPER_RIGHT: new GrantIndexCouple(0, 2),
     LOWER_LEFT: new GrantIndexCouple(3, 1),
     LOWER_RIGHT: new GrantIndexCouple(3, 2)
-}
+};
 
 
 const TFCStyleColor = {
@@ -551,8 +551,7 @@ class CognitiveFunctionGroup extends Konva.Group {
     }
 }
 
-// TODO Make all private fields use "#".
-
+// HERE Keep fixing circles passed in constructors and listeners
 
 class AnimalBackgroundTriangle extends Konva.Line {
     
@@ -573,18 +572,23 @@ class AnimalBackgroundTriangle extends Konva.Line {
     }
     
     /**
-     * @param {MainRelayDiagram} rootDiagramGroup
-     * @param {AnimalPosition} animalPosition
+     * @param {MainRelayDiagram} rootDiagram
+     * @param {CognitiveFunctionCircle} circle1
+     * @param {CognitiveFunctionCircle} circle2
+     * @param {AnimalPositions} animalPosition
      */
-    constructor(rootDiagramGroup, animalPosition) {
-        const c1 = rootDiagramGroup.getCogFunGroup(animalPosition.grantIdx1).circle;
-        const c2 = rootDiagramGroup.getCogFunGroup(animalPosition.grantIdx2).circle;
+    constructor(rootDiagram, circle1, circle2, animalPosition) {
         
         super({
             points: [
-                AnimalBackgroundTriangle.#offsetCoordinate(c1.x()), AnimalBackgroundTriangle.#offsetCoordinate(c1.y()),
-                AnimalBackgroundTriangle.#offsetCoordinate(c2.x()), AnimalBackgroundTriangle.#offsetCoordinate(c2.y()),
-                DIAGRAM_CENTER, DIAGRAM_CENTER
+                AnimalBackgroundTriangle.#offsetCoordinate(circle1.x()),
+                AnimalBackgroundTriangle.#offsetCoordinate(circle1.y()),
+                
+                AnimalBackgroundTriangle.#offsetCoordinate(circle2.x()),
+                AnimalBackgroundTriangle.#offsetCoordinate(circle2.y()),
+                
+                DIAGRAM_CENTER,
+                DIAGRAM_CENTER
             ],
             closed: true
         });
@@ -620,8 +624,6 @@ class AnimalBackgroundTriangle extends Konva.Line {
             }
         });
     }
-    
-    
 }
 
 class AnimalLine extends Konva.Line {
@@ -722,25 +724,25 @@ class AnimalText extends Konva.Text {
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
         switch (animalPosition) {
-            case AnimalPosition.UPPER_LEFT:
+            case AnimalPositions.UPPER_LEFT:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case AnimalPosition.UPPER_RIGHT:
+            case AnimalPositions.UPPER_RIGHT:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case AnimalPosition.LOWER_LEFT:
+            case AnimalPositions.LOWER_LEFT:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('bottom');
                 break;
-            case AnimalPosition.LOWER_RIGHT:
+            case AnimalPositions.LOWER_RIGHT:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
@@ -825,7 +827,7 @@ class AnimalGroup extends Konva.Group {
     #cogFun2Group;
     
     /**
-     * @type {AnimalPosition}
+     * @type {AnimalPositions}
      */
     #animalPosition;
     
@@ -854,24 +856,26 @@ class AnimalGroup extends Konva.Group {
     
     /**
      *
-     * @param {MainRelayDiagram} rootDiagramGroup
-     * @param {AnimalPosition} animalPosition
+     * @param {MainRelayDiagram} rootDiagram
+     * @param {CognitiveFunctionCircle} circle1
+     * @param {CognitiveFunctionCircle} circle2
+     * @param {AnimalPositions} animalPosition
      */
-    constructor(rootDiagramGroup, animalPosition) {
+    constructor(rootDiagram, circle1, circle2, animalPosition) {
         super();
         
         this.#animalPosition = animalPosition;
     
-        const bgTriangle = new AnimalBackgroundTriangle(rootDiagramGroup, animalPosition);
+        const bgTriangle = new AnimalBackgroundTriangle(rootDiagram, circle1, circle2, animalPosition);
         this.#backgroundTriangle = bgTriangle;
         
-        const line = new AnimalLine(rootDiagramGroup, animalPosition);
+        const line = new AnimalLine(rootDiagram, circle1, circle2, animalPosition);
         this.#line = line;
     
-        const letterText = new AnimalLetter(rootDiagramGroup, animalPosition);
+        const letterText = new AnimalLetter(rootDiagram, circle1, circle2, animalPosition);
         this.#letterText = letterText;
         
-        const orderText = new AnimalOrderNumber(rootDiagramGroup, animalPosition);
+        const orderText = new AnimalOrderNumber(rootDiagram, circle1, circle2, animalPosition);
         this.#stackOrderText = orderText;
         
         
@@ -931,6 +935,7 @@ export class MainRelayDiagram extends Konva.Group {
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
         const cogFunStackGroup = new Konva.Group();
+        /** @type {CognitiveFunctionGroup[]} */
         const cogFunGroups = new Array(4);
         for (let grantIndex = 0; grantIndex < 4; grantIndex++) {
             const cfg = new CognitiveFunctionGroup(this, grantIndex);
@@ -943,8 +948,10 @@ export class MainRelayDiagram extends Konva.Group {
         const animalStackGroup = new Konva.Group();
         const animalGroups = [];
         // Iterating AnimalPositions (through property names) to create AnimalGroups.
-        for (const ap in AnimalPosition) {
-            const ag = new AnimalGroup(this, AnimalPosition[ap]);
+        for (const ap of Object.values(AnimalPositions)) {
+            const circle1 = cogFunGroups[ap.grantIdx1].circle;
+            const circle2 = cogFunGroups[ap.grantIdx2].circle;
+            const ag = new AnimalGroup(this, circle1, circle2, AnimalPositions[ap]);
             animalGroups.push(ag);
             animalStackGroup.add(ag);
         }

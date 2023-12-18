@@ -1,86 +1,3 @@
-// String must be either a single uppercase letter or a full name with first letter uppercase.
-export function invertAnimal(animal) {
-    let result;
-    const error = new Error("Invalid animal.");
-    
-    
-    // Blast is the opposite of Consume, and Sleep is the opposite of Play.
-    switch (animal[0]) {
-        case "S":
-            if (animal.length > 1) {
-                if (animal === "Sleep") result = "Play";
-                else throw error;
-            } else {
-                result = "P";
-            }
-            break;
-        case "C":
-            if (animal.length > 1) {
-                if (animal === "Consume") result = "Blast";
-                else throw error;
-            } else {
-                result = "B";
-            }
-            break;
-        case "B":
-            if (animal.length > 1) {
-                if (animal === "Blast") result = "Consume";
-                else throw error;
-            } else {
-                result = "C";
-            }
-            break;
-        case "P":
-            if (animal.length > 1) {
-                if (animal === "Play") result = "Sleep";
-                else throw error;
-            } else {
-                result = "S";
-            }
-            break;
-        default:
-            throw error; // Invalid input if the first character doesn't match any case.
-    }
-    
-    return result;
-}
-
-/**
- *
- * @param {string} cogFun1
- * @param {string} cogFun2
- * @returns {string}
- */
-export function getAnimalLetter(cogFun1, cogFun2) {
-    if (cogFun1.length + cogFun2.length < 4) throw new Error(
-        "Invalid cognitive functions. Each one must be 2 characters."
-    );
-    
-    const isFirstGroupDecider = cogFun1[0].match("F|T");
-    
-    let animal;
-    // Using introversion/extroversion letters to identify animal.
-    switch (cogFun1[1] + cogFun2[1]) {
-        case "ii":
-            animal = "S";
-            break;
-        case "ee":
-            animal = "P";
-            break;
-        // For the next two cases we need to check the first letter as well.
-        case "ie":
-            if (isFirstGroupDecider) animal = "C";
-            else animal = "B";
-            break;
-        case "ei":
-            if (isFirstGroupDecider) animal = "B";
-            else animal = "C";
-            break;
-    }
-    
-    return animal;
-}
-
 /**
  * @class
  */
@@ -539,7 +456,7 @@ export class Animal {
     
     /**
      *
-     * @returns {CognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction}
      */
     get decidingFunction() {
         return this._dFunction;
@@ -547,7 +464,7 @@ export class Animal {
     
     /**
      *
-     * @returns {CognitiveFunction|CognitiveFunction}
+     * @returns {CognitiveFunction}
      */
     get observingFunction() {
         return this._oFunction;
@@ -559,6 +476,14 @@ export class Animal {
      */
     get name() {
         return this._name;
+    }
+    
+    /**
+     *
+     * @return {string}
+     */
+    get letter() {
+        return this.name[0];
     }
     
     /**
