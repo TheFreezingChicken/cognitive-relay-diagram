@@ -3,53 +3,74 @@
  */
 export class CognitiveFunction {
     /**
-     * @param {string|CognitiveFunction} cogFunName
+     * @param {string|CognitiveFunction} cognitiveFunction A {@link CognitiveFunction} to copy or a letter+charge
+     *     string.
      */
-    constructor(cogFunName) {
-        if (cogFunName instanceof CognitiveFunction) cogFunName = cogFunName.name;
-        if (typeof cogFunName !== 'string') throw new TypeError('Not a string.');
+    constructor(cognitiveFunction) {
+        if (cognitiveFunction instanceof CognitiveFunction) cognitiveFunction = cognitiveFunction.shortName;
+        if (typeof cognitiveFunction !== 'string') throw new TypeError("Invalid type.");
     
     
         // Check length for validity.
-        if (cogFunName.length < 1 || cogFunName.length > 2) throw new Error('Invalid length.');
+        if (cognitiveFunction.length < 1 || cognitiveFunction.length > 2) throw new Error("Invalid length.");
     
     
         // If it's a one-letter function add a question mark for the introversion/extroversion
-        if (cogFunName.length === 1) cogFunName = cogFunName + '?';
+        if (cognitiveFunction.length === 1) cognitiveFunction = cognitiveFunction + '?';
     
         // Check first letter for validity.
-        if (/[^FTSNDO]/.test(cogFunName[0])) throw new Error('Invalid first letter.');
+        if (/[^FTSNDO]/.test(cognitiveFunction[0])) throw new Error("Invalid first letter.");
     
         // Check second letter for validity.
-        if (/[^ie?]/.test(cogFunName[1])) throw new Error('Invalid second letter.');
+        if (/[^ie?]/.test(cognitiveFunction[1])) throw new Error("Invalid second letter.");
         
         
-        this._name = cogFunName
+        this._shortName = cognitiveFunction
     }
     
     
     /**
      * @returns {string}
      */
-    get name() { return this._name; }
+    get shortName() { return this._shortName; }
+    
+    // SLEEP
+    // get longName() { throw new Error("Not implemented."); }
+    
+    
+    
+    /**
+     * Equivalent to shortName[0].
+     * @return {string} One of 'F', 'T', 'S', 'N', 'D', 'O'.
+     */
+    get rawLetter() {
+        return this.shortName[0];
+    }
     
     /**
      *
-     * @returns {undefined|string}
+     * @returns {undefined|string} 'F', 'T', 'S', 'N' or undefined
      */
     get letter() {
-        const letter = this.name[0];
-        return /[OD]/.test(letter) ? undefined : letter;
+        return /[OD]/.test(this.rawLetter) ? undefined : this.rawLetter;
+    }
+    
+    
+    /**
+     * Equivalent to shortName[1].
+     * @return {string} 'i', 'e' or '?'.
+     */
+    get rawCharge() {
+        return this.shortName[1];
     }
     
     /**
-     *
-     * @returns {undefined|string}
+     * @returns {undefined|string} 'i', 'e' or undefined
      */
     get charge() {
-        const charge = this.name[1];
-        return charge === '?' ? undefined : charge;
+        return this.rawCharge === '?' ? undefined : this.rawCharge;
     }
+    
     
     
     /**
@@ -65,16 +86,26 @@ export class CognitiveFunction {
      * @returns {boolean|undefined}
      */
     get isExtroverted() {
-        return this.charge && !this.isIntroverted;
+        return this.charge && this.charge === 'e';
+    }
+    
+    
+    
+    /**
+     * @returns {boolean}
+     */
+    get isObserving() {
+        return /[SNO]/.test(this.rawLetter);
     }
     
     /**
-     *
-     * @returns {boolean|undefined}
+     * @returns {boolean}
      */
-    get isObserving() {
-        return /[SNO]/.test(this.name[0]);
+    get isDeciding() {
+        return /[FTD]/.test(this.rawLetter);
     }
+    
+    
     
     /**
      *
@@ -82,68 +113,31 @@ export class CognitiveFunction {
      */
     get isOi() { return this.isIntroverted && this.isObserving; }
     
-    
     /**
      *
      * @returns {boolean|undefined}
      */
     get isOe() { return this.isExtroverted && this.isObserving; }
     
+    
+    
     /**
      *
-     * @returns {boolean|undefined}
+     * @returns {boolean}
      */
     get isSensing() {
-        if (/[?O]/.test(this.name[0])) {
-            return undefined
-        } else {
-            return this.name[0] === 'S';
-        }
+        return this.letter === 'S';
     }
     
     /**
      *
-     * @returns {boolean|undefined}
+     * @returns {boolean}
      */
     get isIntuition() {
-        if (/[?O]/.test(this.name[0])) {
-            return undefined
-        } else return this.name[0] === 'N';
+        return this.letter === 'N';
     }
     
     
-    
-    /**
-     *
-     * @returns {boolean|undefined}
-     */
-    get isDeciding() {
-        if (this.name[0] === '?') {
-            return undefined
-        } else {
-            return /[FT]/.test(this.name[0]);
-        }
-    }
-    
-    get isFeeling() {
-        if (/[?D]/.test(this.name[0])) {
-            return undefined
-        } else {
-            return this.name[0] === 'F';
-        }
-    }
-    
-    /**
-     *
-     * @returns {boolean|undefined}
-     */
-    get isThinking() {
-        if (/[?D]/.test(this.name[0])) {
-            return undefined
-        } else {
-            return this.name[0] === 'T';
-        }
-    }
     
     /**
      *
@@ -158,12 +152,29 @@ export class CognitiveFunction {
     get isDe() { return this.isExtroverted && this.isDeciding; }
     
     
+    
+    /** @returns {boolean} */
+    get isFeeling() {
+        return this.letter === 'F'
+    }
+    
+    /** @returns {boolean} */
+    get isThinking() {
+        return this.letter === 'T'
+    }
+    
+    
+    
+    
+    
     /**
-     * @returns {CognitiveFunction|CognitiveFunction}
+     * Return a copy of this function with both letter and charge inverted.
+     * The axis is always maintained, which means that the 'O' and 'D' of a partial function are never changed.
+     * @returns {CognitiveFunction}
      */
     opposite() {
-        let letter = this.name[0];
-        let charge = this.name[1];
+        let letter = this.rawLetter;
+        let charge = this.rawCharge;
         
         switch (letter) {
             case 'F':
@@ -183,20 +194,29 @@ export class CognitiveFunction {
                 break;
         }
         
-        if (charge === 'i') charge = 'e' ; else charge = 'i';
-        
-        const result = letter + charge;
-    
-        return new CognitiveFunction(result);
+        switch (charge) {
+            case 'i':
+                charge = 'e';
+                break;
+            case 'e':
+                charge = 'i';
+                break;
+            default:
+                // Do nothing.
+                break;
+        }
+
+        return new CognitiveFunction(letter + charge);
     }
     
     /**
-     *
-     * @returns {CognitiveFunction|CognitiveFunction}
+     * Returns a copy of this function with its letter inverted.
+     * Axis is always maintained, so 'O' and 'D' partial functions will stay the same.
+     * @returns {CognitiveFunction}
      */
     withOppositeLetter() {
-        let letter = this.name[0];
-        
+        let letter = this.rawLetter;
+    
         switch (letter) {
             case 'F':
                 letter = 'T';
@@ -215,20 +235,29 @@ export class CognitiveFunction {
                 break;
         }
     
-        const result = letter + this.name[1];
-    
-        return new CognitiveFunction(result);
+        return new CognitiveFunction(letter + this.rawCharge);
     }
     
+    /**
+     * Returns a copy of this function with its charge inverted.
+     * @return {CognitiveFunction}
+     */
     withOppositeCharge() {
-        let charge = this.name[1];
-        
-        if (charge === '?') return new CognitiveFunction(this);
-        
-        if (charge === 'i') charge = 'e' ; else charge = 'i';
-        const result = this.name[0] + charge;
+        let charge = this.rawCharge;
     
-        return new CognitiveFunction(result);
+        switch (charge) {
+            case 'i':
+                charge = 'e';
+                break;
+            case 'e':
+                charge = 'i';
+                break;
+            default:
+                // Do nothing.
+                break;
+        }
+    
+        return new CognitiveFunction(this.rawLetter + charge);
     }
     
     
@@ -238,14 +267,15 @@ export class CognitiveFunction {
      * @returns {boolean}
      */
     get isPartial() {
-        return /[OD?]/.test(this.name);
+        return /[OD?]/.test(this.shortName);
     }
     
     /**
-     * @param {any | CognitiveFunction} otherFunction
+     * @param {any|string|CognitiveFunction} otherFunction
      * @returns {boolean|undefined}
      */
     equalsTo(otherFunction) {
+        // Convert to CognitiveFunction if string, but also catch invalid strings and return undefined for them.
         try {
             if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
         } catch (e) {
@@ -254,22 +284,19 @@ export class CognitiveFunction {
         
         if (!(otherFunction instanceof CognitiveFunction)) return undefined;
         
-        return this.name === otherFunction.name;
-    }
-    
-    hasAffinityWith(otherFunction) {
-        // HERE Code
-        throw new Error('not implemented.');
+        return this.shortName === otherFunction.shortName;
     }
     
     /**
-     * @param otherFunction
-     * @returns {boolean|undefined}
+     * @param otherFunction {CognitiveFunction|string|any}
+     * @returns {boolean} True if D/O coin matches, false if it doesn't.
      */
-    isSameAxisOf(otherFunction) {
+    hasAxisAffinity(otherFunction) {
+        // No need to check for string validity because we want an error if the argument is not a function.
         if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
         if (!(otherFunction instanceof CognitiveFunction)) throw new Error('Invalid argument. Not a function.');
         
+        // DEBT (maybe) Assumes even partial functions always have a D/O letter.
         return this.isDeciding && otherFunction.isDeciding || this.isObserving && otherFunction.isObserving;
     }
     
@@ -278,10 +305,12 @@ export class CognitiveFunction {
      * @returns {string}
      */
     toString() {
-        return this.name;
+        return this.shortName;
     }
 }
 
+
+// HERE Doing a complete run-down of each class. Keep fixing from here.
 
 /**
  * @class
@@ -411,12 +440,135 @@ export const Quadras = {
     delta: new Quadra("Fi", "Si"),
 };
 
+
 export const AnimalNames = {
     Sleep: 'Sleep',
     Consume: 'Consume',
     Blast: 'Blast',
     Play: 'Play'
 }
+
+
+
+
+/**
+ * @class
+ */
+class GrantIndexCouple {
+    #idx1;
+    #idx2;
+    
+    get grantIdx1() { return this.#idx1; }
+    
+    get grantIdx2() { return this.#idx2; }
+    
+    
+    constructor(idx1, idx2) {
+        this.#idx1 = idx1;
+        this.#idx2 = idx2;
+    }
+}
+
+
+/**
+ * @readonly
+ * @class
+ */
+export class AbsoluteAnimalPositions {
+    static #Args = class Args {
+        constructor(grantIndex1, grantIndex2) {
+            this.grantIndex1 = grantIndex1;
+            this.grantIndex2 = grantIndex2;
+        }
+    }
+    
+    /** @type {Readonly<AbsoluteAnimalPositions>} */
+    static UPPER_INFO = this.#buildInstance(0, 1);
+    
+    /** @type {Readonly<AbsoluteAnimalPositions>} */
+    static UPPER_ENERGY = this.#buildInstance(0, 2);
+    
+    /** @type {Readonly<AbsoluteAnimalPositions>} */
+    static LOWER_INFO = this.#buildInstance(2, 3);
+    
+    /** @type {Readonly<AbsoluteAnimalPositions>} */
+    static LOWER_ENERGY = this.#buildInstance(1, 3);
+    
+    // SLEEP When we have an IDE that doesn't suck ass convert this to a static initializer.
+    /**
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     * @return {AbsoluteAnimalPositions}
+     */
+    static #buildInstance(grantIndex1, grantIndex2) {
+        return new AbsoluteAnimalPositions(new this.#Args(grantIndex1, grantIndex2));
+    }
+    
+    
+    /**
+     *
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     * @return {AbsoluteAnimalPositions}
+     */
+    static getInstance(grantIndex1, grantIndex2) {
+        /**
+         * @param i {number}
+         * @param name {string}
+         */
+        function checkIndex(i, name) {
+            if (typeof i !== 'number') throw new TypeError(
+                `${name} is not a number.`
+            );
+    
+            if (!Number.isInteger(i)) throw new Error(
+                `${name} is not an integer.`
+            );
+            
+            if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
+        }
+        
+        checkIndex(grantIndex1, "Grant index 1");
+        checkIndex(grantIndex2, "Grant index 2");
+        
+        if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
+        
+        // Return the appropriate immutable instance based on the provided indexes.
+        switch (grantIndex1 + grantIndex2) {
+            // 0 + 1.
+            case 1:
+                return this.UPPER_INFO;
+            // 0 + 2.
+            case 2:
+                return this.UPPER_ENERGY;
+            // 1 + 3.
+            case 4:
+                return this.LOWER_ENERGY;
+            // 2 + 3.
+            case 5:
+                return this.LOWER_INFO;
+            default:
+                throw new Error("Invalid index couple (same axis not allowed).");
+        }
+    }
+    
+    
+    /**
+     *
+     * @param args {AbsoluteAnimalPositions.Args}
+     */
+    constructor(args) {
+        if (!(args instanceof AbsoluteAnimalPositions.#Args)) throw new Error(
+            "Private constructor. Use static methods or properties to obtain instances."
+        );
+        
+        this.grantIndex1 = args.grantIndex1;
+        this.grantIndex2 = args.grantIndex2;
+    
+        Object.freeze(this);
+    }
+}
+
 
 /**
  * @class
@@ -432,7 +584,7 @@ export class Animal {
         if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction))
             throw new Error('Invalid argument. Must be cognitive function name or CognitiveFunction.');
         
-        if (cogFun1.isSameAxisOf(cogFun2)) throw new Error(
+        if (cogFun1.hasAxisAffinity(cogFun2)) throw new Error(
             "Invalid argument. Functions must be on different axes D+O."
         );
         
@@ -499,7 +651,7 @@ export class Animal {
         const oppositeObserver = this.observingFunction.opposite()
         const oppositeDecider = this.observingFunction.opposite()
         
-        return Animal.bestInstance(oppositeObserver.name, oppositeDecider.name);
+        return new Animal(oppositeObserver.shortName, oppositeDecider.shortName);
     }
     
     
@@ -508,12 +660,21 @@ export class Animal {
         
         return otherAnimal.name === this.name;
     }
-    
-    
 }
 
 
-
+export class PersonalAnimal extends Animal {
+    /**
+     * @param opType {OpType}
+     * @param cogFun1 {CognitiveFunction|string}
+     * @param cogFun2 {CognitiveFunction|string}
+     * @param sexualCharge1 {SexualCharge}
+     * @param sexualCharge2 {SexualCharge}
+     */
+    constructor(opType, cogFun1, cogFun2, sexualCharge1, sexualCharge2) {
+        super(cogFun1, cogFun2)
+    }
+}
 
 
 export const MainUnbalances = {
@@ -549,10 +710,10 @@ export const CognitiveFunctions = {
 
 
 export const Animals = {
-    S: new Animal("Di", "Oi"),
-    C: new Animal("Di", "Oe"),
-    B: new Animal("De", "Oi"),
-    P: new Animal("De", "Oe"),
+    S: new Animal('Di', 'Oi'),
+    C: new Animal('Di', 'Oe'),
+    B: new Animal('De', 'Oi'),
+    P: new Animal('De', 'Oe'),
 }
 
 export const AnimalDominance = {
@@ -565,16 +726,25 @@ export const SocialEnergy = {
     E: 'E'
 }
 
+/**
+ * @enum {string}
+ */
 export const SexualCharge = {
     M: 'M',
     F: 'F'
 }
 
+/**
+ * @enum {string}
+ */
 export const RespectType = {
     Flex: 'Flex',
     Friends: 'Friends'
 }
 
+/**
+ * @enum {string}
+ */
 export const AchievementType = {
     Responsibility: 'Responsibility',
     Specialize: 'Specialize'

@@ -1,4 +1,4 @@
-import {CognitiveFunction, getAnimalLetter, OpType} from "./op-lib.js";
+import {Animal, CognitiveFunction, OpType} from "./op-lib.js";
 
 let isLibraryReady = false;
 
@@ -44,34 +44,6 @@ const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
 
-/**
- * @class
- */
-class GrantIndexCouple {
-    #idx1;
-    #idx2;
-    
-    get grantIdx1() { return this.#idx1; }
-    
-    get grantIdx2() { return this.#idx2; }
-    
-    
-    constructor(idx1, idx2) {
-        this.#idx1 = idx1;
-        this.#idx2 = idx2;
-    }
-}
-
-/**
- * @readonly
- * @enum {GrantIndexCouple}
- */
-const AnimalPositions = {
-    UPPER_LEFT: new GrantIndexCouple(0, 1),
-    UPPER_RIGHT: new GrantIndexCouple(0, 2),
-    LOWER_LEFT: new GrantIndexCouple(3, 1),
-    LOWER_RIGHT: new GrantIndexCouple(3, 2)
-};
 
 
 const TFCStyleColor = {
@@ -456,12 +428,12 @@ class CognitiveFunctionText extends Konva.Text {
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
             /** @type {CognitiveFunction|null} */
             const cogFun = state.opType?.grantStack[grantIndex];
-            this.text(cogFun.name);
+            this.text(cogFun.shortName);
         });
     }
 }
 
-// HERE Keep checking event listeners from here.
+
 
 class CognitiveFunctionGroup extends Konva.Group {
     /**
@@ -479,11 +451,6 @@ class CognitiveFunctionGroup extends Konva.Group {
      * @type {DemonBackgroundImage}
      */
     #demonBgImg;
-    /**
-     *
-     * @returns {DemonBackgroundImage}
-     */
-    get demonBgImg() { return this.#demonBgImg; }
     
     /**
      * @type {MasculineBackgroundImage}
@@ -551,7 +518,7 @@ class CognitiveFunctionGroup extends Konva.Group {
     }
 }
 
-// HERE Keep fixing circles passed in constructors and listeners
+
 
 class AnimalBackgroundTriangle extends Konva.Line {
     
@@ -575,7 +542,7 @@ class AnimalBackgroundTriangle extends Konva.Line {
      * @param {MainRelayDiagram} rootDiagram
      * @param {CognitiveFunctionCircle} circle1
      * @param {CognitiveFunctionCircle} circle2
-     * @param {AnimalPositions} animalPosition
+     * @param {AbsoluteAnimalPositions} animalPosition
      */
     constructor(rootDiagram, circle1, circle2, animalPosition) {
         
@@ -594,14 +561,21 @@ class AnimalBackgroundTriangle extends Konva.Line {
         });
     
     
-        const state = rootDiagramGroup.state;
+        const state = rootDiagram.state;
         state.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            const cf1 = state.opType.grantStack[animalPosition.grantIdx1];
-            const cf2 = state.opType.grantStack[animalPosition.grantIdx2];
+            const opType = state.opType;
             
-            const animal = getAnimalLetter(cf1, cf2);
+            if (opType == null) {}
+            
+            const cf1 = ?.grantStack[animalPosition.grantIdx1];
+            const cf2 = state.opType?.grantStack[animalPosition.grantIdx2];
+            
+            const animal = cf1 && cf2 && new Animal(cf1, cf2);
+        
+            if (animal == null) this.visible(false);
     
-    
+            // HERE use animal position and keep fixing circle constructors afterawrds
+            
             switch (stackIndex) {
                 case 0:
                     this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
@@ -724,25 +698,25 @@ class AnimalText extends Konva.Text {
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
         switch (animalPosition) {
-            case AnimalPositions.UPPER_LEFT:
+            case AbsoluteAnimalPositions.UPPER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case AnimalPositions.UPPER_RIGHT:
+            case AbsoluteAnimalPositions.UPPER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case AnimalPositions.LOWER_LEFT:
+            case AbsoluteAnimalPositions.LOWER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('bottom');
                 break;
-            case AnimalPositions.LOWER_RIGHT:
+            case AbsoluteAnimalPositions.LOWER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
@@ -827,7 +801,7 @@ class AnimalGroup extends Konva.Group {
     #cogFun2Group;
     
     /**
-     * @type {AnimalPositions}
+     * @type {AbsoluteAnimalPositions}
      */
     #animalPosition;
     
@@ -859,7 +833,7 @@ class AnimalGroup extends Konva.Group {
      * @param {MainRelayDiagram} rootDiagram
      * @param {CognitiveFunctionCircle} circle1
      * @param {CognitiveFunctionCircle} circle2
-     * @param {AnimalPositions} animalPosition
+     * @param {AbsoluteAnimalPositions} animalPosition
      */
     constructor(rootDiagram, circle1, circle2, animalPosition) {
         super();
@@ -948,10 +922,10 @@ export class MainRelayDiagram extends Konva.Group {
         const animalStackGroup = new Konva.Group();
         const animalGroups = [];
         // Iterating AnimalPositions (through property names) to create AnimalGroups.
-        for (const ap of Object.values(AnimalPositions)) {
+        for (const ap of Object.values(AbsoluteAnimalPositions)) {
             const circle1 = cogFunGroups[ap.grantIdx1].circle;
             const circle2 = cogFunGroups[ap.grantIdx2].circle;
-            const ag = new AnimalGroup(this, circle1, circle2, AnimalPositions[ap]);
+            const ag = new AnimalGroup(this, circle1, circle2, AbsoluteAnimalPositions[ap]);
             animalGroups.push(ag);
             animalStackGroup.add(ag);
         }
