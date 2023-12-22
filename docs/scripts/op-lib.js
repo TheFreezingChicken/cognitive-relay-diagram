@@ -1,3 +1,5 @@
+
+
 /**
  * @class
  */
@@ -291,14 +293,15 @@ export class CognitiveFunction {
      * @param otherFunction {CognitiveFunction|string|any}
      * @returns {boolean} True if D/O coin matches, false if it doesn't.
      */
-    hasAxisAffinity(otherFunction) {
+    hasAxisAffinityWith(otherFunction) {
         // No need to check for string validity because we want an error if the argument is not a function.
         if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
         if (!(otherFunction instanceof CognitiveFunction)) throw new Error('Invalid argument. Not a function.');
         
-        // DEBT (maybe) Assumes even partial functions always have a D/O letter.
+        // DEBT (low chance) Assumes even partial functions always have a D/O letter.
         return this.isDeciding && otherFunction.isDeciding || this.isObserving && otherFunction.isObserving;
     }
+    
     
     /**
      * @override
@@ -310,164 +313,147 @@ export class CognitiveFunction {
 }
 
 
-// HERE Doing a complete run-down of each class. Keep fixing from here.
 
 /**
+ * @readonly
  * @class
  */
 class Quadra {
+    static #isConstructorLocked = false;
+    static ALPHA = new Quadra("Ti", "Si");
+    static BETA = new Quadra("Ti", "Ni");
+    static GAMMA = new Quadra("Fi", "Ni");
+    static DELTA = new Quadra("Fi", "Si");
+    static #isConstructorLocked = true;
     
     /**
-     *
-     * @param {CognitiveFunction|string} diFunction
-     * @param {CognitiveFunction|string} oiFunction
+     * Array containing all the Quadras.
+     * @type {Quadra[]}
+     */
+    static All = [Quadra.ALPHA, Quadra.BETA, Quadra.GAMMA, Quadra.DELTA];
+    
+    
+    static getInstance(cognitiveFun1, cognitiveFun2) {
+        function checkFunction(cogFun, argName) {
+            if (typeof cogFun === 'string') cogFun = new CognitiveFunction(cogFun);
+    
+            // REM It makes no sense to have partial quadras for now, so we're enforcing non-null + complete functions.
+    
+            if (!(cogFun instanceof CognitiveFunction)) {
+                throw new TypeError(`Invalid ${argName} type.`);
+            }
+    
+            if (cogFun.isPartial) throw new Error(`${argName} is a partial function.`);
+    
+            return cogFun
+        }
+    
+        cognitiveFun1 = checkFunction(cognitiveFun1, "cognitiveFun1");
+        cognitiveFun2 = checkFunction(cognitiveFun2, "cognitiveFun2");
+        
+        if (cognitiveFun1.hasAxisAffinityWith(cognitiveFun2)) {
+            throw new Error("Provided functions must be on different axis.");
+        }
+    
+        for (const quadra of this.All) {
+            if (quadra.includes(cognitiveFun1) && quadra.includes(cognitiveFun2)) return quadra;
+        }
+    }
+    
+    
+    /**
+     * @param cognitiveFuns {...CognitiveFunction|string}
+     * @return {boolean}
+     */
+    includes(...cognitiveFuns) {
+        let count = 0;
+    
+        for (const qCogFun of this.allFunctions) {
+            for (let argCogFun of cognitiveFuns) {
+                // This will throw an error if the element is not a cognitive function.
+                argCogFun = new CognitiveFunction(argCogFun);
+            
+                if (qCogFun.equalsTo(argCogFun)) count++;
+            }
+        }
+    
+        return count === cognitiveFuns.length;
+    }
+    
+    /**
+     * DON'T USE. Use {@link ALPHA}, {@link BETA}, {@link GAMMA}, {@link DELTA}, or {@link getInstance},
+     * @private
      */
     constructor(diFunction, oiFunction) {
-        // SLEEP Make constructor recognize the two functions automatically, regardless of order of the arguments.
-        if (typeof diFunction === 'string') diFunction = new CognitiveFunction(diFunction);
-        if (typeof oiFunction === 'string') oiFunction = new CognitiveFunction(oiFunction);
-    
-    
-        if (diFunction && !(diFunction instanceof CognitiveFunction)) {
-            throw new TypeError("Invalid diFunction argument.");
-        }
-    
-        if (oiFunction && !(oiFunction instanceof CognitiveFunction)) {
-            throw new TypeError("Invalid oiFunction argument.");
-        }
+        if (Quadra.#isConstructorLocked) throw new Error("Private constructor, use static properties or methods.");
         
-        if (diFunction && !(diFunction.isIntroverted && diFunction.isDeciding)) {
-            throw new Error("diFunction is not Di.");
-        }
-    
-        if (oiFunction && !(oiFunction.isIntroverted && oiFunction.isObserving)) {
-            throw new Error("oiFunction is not Oi.");
-        }
+        // Initialized statically, no need to check values.
+        diFunction = new CognitiveFunction(diFunction);
+        oiFunction = new CognitiveFunction(oiFunction);
         
-        this._diFunction = diFunction;
-        this._oiFunction = oiFunction;
+        this.diFunction = diFunction;
+        this.oiFunction = oiFunction;
+        
+        this.deFunction = diFunction.opposite();
+        this.oeFunction = oiFunction.opposite();
+        this.feelingFunction = diFunction.isFeeling ? diFunction : this.deFunction;
+        this.thinkingFunction = this.feelingFunction.opposite();
+        this.sensingFunction = oiFunction.isSensing ? oiFunction : this.oeFunction;
+        this.intuitionFunction = this.sensingFunction.opposite();
+        
+        /** @type {CognitiveFunction[]} */
+        const allFunctions = [this.feelingFunction, this.thinkingFunction, this.sensingFunction, this.intuitionFunction];
+        Object.freeze(allFunctions);
+        this.allFunctions = allFunctions;
         
         
-        this._deFunction = diFunction?.opposite();
-        this._oeFunction = oiFunction?.opposite();
-        this._feelingFunction = diFunction && (diFunction.isFeeling ? diFunction : this._deFunction);
-        this._thinkingFunction = this._feelingFunction?.opposite();
-        this._sensingFunction = oiFunction && (oiFunction.isSensing ? oiFunction : this._oeFunction);
-        this._intuitionFunction = this._sensingFunction?.opposite();
-    }
-    
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get diFunction() {
-        return this._diFunction;
+        Object.freeze(this);
+        this.intuitionFunction = "";
+        throw new Error("We shouldn't even be able to reach this.");
     }
     
     /**
-     *
-     * @returns {CognitiveFunction}
+     * @return {string}
      */
-    get oiFunction() {
-        return this._oiFunction;
+    get name() {
+        switch (this) {
+            case Quadra.ALPHA:
+                return "Alpha";
+            case Quadra.BETA:
+                return "Beta";
+            case Quadra.GAMMA:
+                return "Gamma";
+            case Quadra.DELTA:
+                return "Delta";
+            default:
+                throw new Error("This shouldn't be possible.");
+        }
     }
     
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get deFunction() {
-        return this._deFunction;
-    }
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get oeFunction() {
-        return this._oeFunction;
-    }
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get feelingFunction() {
-        return this._feelingFunction;
-    }
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get thinkingFunction() {
-        return this._thinkingFunction;
-    }
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get sensingFunction() {
-        return this._sensingFunction;
-    }
-    
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
-    get intuitionFunction() {
-        return this._intuitionFunction;
-    }
     
     /**
      *
      * @returns {Quadra}
      */
-    opposite() { return new Quadra(this.diFunction.withOppositeLetter(), this.oiFunction.withOppositeLetter()); }
+    opposite() {
+        switch (this) {
+            case Quadra.ALPHA:
+                return Quadra.GAMMA;
+            case Quadra.BETA:
+                return Quadra.DELTA;
+            case Quadra.GAMMA:
+                return Quadra.ALPHA;
+            case Quadra.DELTA:
+                return Quadra.BETA;
+            default:
+                throw new Error("This shouldn't be possible.");
+        }
+    }
     
     // SLEEP Add oppositeObserverAxis and oppositeDeciderAxis.
 }
 
-/**
- * @enum {Quadra}
- */
-export const Quadras = {
-    alpha: new Quadra("Ti", "Si"),
-    beta: new Quadra("Ti", "Ni"),
-    gamma: new Quadra("Fi", "Ni"),
-    delta: new Quadra("Fi", "Si"),
-};
 
-
-export const AnimalNames = {
-    Sleep: 'Sleep',
-    Consume: 'Consume',
-    Blast: 'Blast',
-    Play: 'Play'
-}
-
-
-
-
-/**
- * @class
- */
-class GrantIndexCouple {
-    #idx1;
-    #idx2;
-    
-    get grantIdx1() { return this.#idx1; }
-    
-    get grantIdx2() { return this.#idx2; }
-    
-    
-    constructor(idx1, idx2) {
-        this.#idx1 = idx1;
-        this.#idx2 = idx2;
-    }
-}
 
 
 /**
@@ -475,6 +461,8 @@ class GrantIndexCouple {
  * @class
  */
 export class AbsoluteAnimalPositions {
+    // SLEEP Copy what we did for Quadra.
+    
     static #Args = class Args {
         constructor(grantIndex1, grantIndex2) {
             this.grantIndex1 = grantIndex1;
@@ -570,6 +558,8 @@ export class AbsoluteAnimalPositions {
 }
 
 
+// HERE Keep going with the re-visiting of the entire lib. Adding static Animals next.
+
 /**
  * @class
  */
@@ -584,7 +574,7 @@ export class Animal {
         if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction))
             throw new Error('Invalid argument. Must be cognitive function name or CognitiveFunction.');
         
-        if (cogFun1.hasAxisAffinity(cogFun2)) throw new Error(
+        if (cogFun1.hasAxisAffinityWith(cogFun2)) throw new Error(
             "Invalid argument. Functions must be on different axes D+O."
         );
         
