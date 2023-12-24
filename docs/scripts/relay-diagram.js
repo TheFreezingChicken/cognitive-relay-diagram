@@ -698,25 +698,25 @@ class AnimalText extends Konva.Text {
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
         switch (animalPosition) {
-            case AbsoluteAnimalPositions.UPPER_INFO:
+            case AbsoluteAnimalPositions.#UPPER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case AbsoluteAnimalPositions.UPPER_ENERGY:
+            case AbsoluteAnimalPositions.#UPPER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case AbsoluteAnimalPositions.LOWER_INFO:
+            case AbsoluteAnimalPositions.#LOWER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('bottom');
                 break;
-            case AbsoluteAnimalPositions.LOWER_ENERGY:
+            case AbsoluteAnimalPositions.#LOWER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');

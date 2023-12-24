@@ -318,19 +318,58 @@ export class CognitiveFunction {
  * @readonly
  * @class
  */
-class Quadra {
+export class Quadra {
     static #isConstructorLocked = false;
-    static ALPHA = new Quadra("Ti", "Si");
-    static BETA = new Quadra("Ti", "Ni");
-    static GAMMA = new Quadra("Fi", "Ni");
-    static DELTA = new Quadra("Fi", "Si");
+    static #_ALPHA = new Quadra("Ti", "Si");
+    static #_BETA = new Quadra("Ti", "Ni");
+    static #_GAMMA = new Quadra("Fi", "Ni");
+    static #_DELTA = new Quadra("Fi", "Si");
     static #isConstructorLocked = true;
+    
+    static #_All = [Quadra.#_ALPHA, Quadra.#_BETA, Quadra.#_GAMMA, Quadra.#_DELTA];
+    
+    /**
+     * Si, Fe, Ti, Ne
+     * @type {Quadra}
+     */
+    static get ALPHA() {
+        return this.#_ALPHA;
+    }
+    
+    /**
+     * Se, Fe, Ti, Ni
+     * @return {Quadra}
+     */
+    static get BETA() {
+        return this.#_BETA;
+    }
+    
+    /**
+     * Se, Fi, Te, Ni
+     * @return {Quadra}
+     */
+    static get GAMMA() {
+        return this.#_GAMMA;
+    }
+    
+    /**
+     * Si, Fi, Te, Ne
+     * @type {Quadra}
+     */
+    static get DELTA() {
+        return this.#_DELTA;
+    }
+    
+    
+    
     
     /**
      * Array containing all the Quadras.
      * @type {Quadra[]}
      */
-    static All = [Quadra.ALPHA, Quadra.BETA, Quadra.GAMMA, Quadra.DELTA];
+    static get All() {
+        return this.#_All;
+    }
     
     
     static getInstance(cognitiveFun1, cognitiveFun2) {
@@ -355,7 +394,7 @@ class Quadra {
             throw new Error("Provided functions must be on different axis.");
         }
     
-        for (const quadra of this.All) {
+        for (const quadra of this.#_All) {
             if (quadra.includes(cognitiveFun1) && quadra.includes(cognitiveFun2)) return quadra;
         }
     }
@@ -381,34 +420,27 @@ class Quadra {
     }
     
     /**
-     * DON'T USE. Use {@link ALPHA}, {@link BETA}, {@link GAMMA}, {@link DELTA}, or {@link getInstance},
+     * DON'T USE. Use {@link _ALPHA}, {@link _BETA}, {@link _GAMMA}, {@link _DELTA}, or {@link getInstance},
      * @private
      */
-    constructor(diFunction, oiFunction) {
+    constructor(sensingFunction, feelingFunction, intuitionFunction, thinkingFunction) {
         if (Quadra.#isConstructorLocked) throw new Error("Private constructor, use static properties or methods.");
+    
+        // HERE Keep fixing this constructor (and the calls above)
         
-        // Initialized statically, no need to check values.
-        diFunction = new CognitiveFunction(diFunction);
-        oiFunction = new CognitiveFunction(oiFunction);
-        
-        this.diFunction = diFunction;
-        this.oiFunction = oiFunction;
-        
-        this.deFunction = diFunction.opposite();
-        this.oeFunction = oiFunction.opposite();
-        this.feelingFunction = diFunction.isFeeling ? diFunction : this.deFunction;
-        this.thinkingFunction = this.feelingFunction.opposite();
-        this.sensingFunction = oiFunction.isSensing ? oiFunction : this.oeFunction;
-        this.intuitionFunction = this.sensingFunction.opposite();
+        this.sensingFunction = sensingFunction;
+        this.feelingFunction = feelingFunction;
+        this.intuitingFunction = intuitionFunction;
+        this.thinkingFunction = thinkingFunction;
         
         /** @type {CognitiveFunction[]} */
-        const allFunctions = [this.feelingFunction, this.thinkingFunction, this.sensingFunction, this.intuitionFunction];
+        const allFunctions = [this.feelingFunction, this.thinkingFunction, this.sensingFunction, this.intuitingFunction];
         Object.freeze(allFunctions);
         this.allFunctions = allFunctions;
         
         
         Object.freeze(this);
-        this.intuitionFunction = "";
+        this.intuitingFunction = "";
         throw new Error("We shouldn't even be able to reach this.");
     }
     
@@ -461,7 +493,7 @@ class Quadra {
  * @class
  */
 export class AbsoluteAnimalPositions {
-    // SLEEP Copy what we did for Quadra.
+    // SLEEP Remove "buildInstance" and copy what we did for Quadra.
     
     static #Args = class Args {
         constructor(grantIndex1, grantIndex2) {
@@ -470,17 +502,34 @@ export class AbsoluteAnimalPositions {
         }
     }
     
-    /** @type {Readonly<AbsoluteAnimalPositions>} */
-    static UPPER_INFO = this.#buildInstance(0, 1);
+    static #_UPPER_INFO = this.#buildInstance(0, 1);
+    
+    static #_UPPER_ENERGY = this.#buildInstance(0, 2);
+    
+    static #_LOWER_INFO = this.#buildInstance(2, 3);
+    
+    static #_LOWER_ENERGY = this.#buildInstance(1, 3);
+    
     
     /** @type {Readonly<AbsoluteAnimalPositions>} */
-    static UPPER_ENERGY = this.#buildInstance(0, 2);
+    static get UPPER_INFO() {
+        return this.#_UPPER_INFO;
+    }
     
     /** @type {Readonly<AbsoluteAnimalPositions>} */
-    static LOWER_INFO = this.#buildInstance(2, 3);
+    static get UPPER_ENERGY() {
+        return this.#_UPPER_ENERGY;
+    }
     
     /** @type {Readonly<AbsoluteAnimalPositions>} */
-    static LOWER_ENERGY = this.#buildInstance(1, 3);
+    static get LOWER_INFO() {
+        return this.#_LOWER_INFO;
+    }
+    
+    /** @type {Readonly<AbsoluteAnimalPositions>} */
+    static get LOWER_ENERGY() {
+        return this.#_LOWER_ENERGY;
+    }
     
     // SLEEP When we have an IDE that doesn't suck ass convert this to a static initializer.
     /**
@@ -525,16 +574,16 @@ export class AbsoluteAnimalPositions {
         switch (grantIndex1 + grantIndex2) {
             // 0 + 1.
             case 1:
-                return this.UPPER_INFO;
+                return this.#_UPPER_INFO;
             // 0 + 2.
             case 2:
-                return this.UPPER_ENERGY;
+                return this.#_UPPER_ENERGY;
             // 1 + 3.
             case 4:
-                return this.LOWER_ENERGY;
+                return this.#_LOWER_ENERGY;
             // 2 + 3.
             case 5:
-                return this.LOWER_INFO;
+                return this.#_LOWER_INFO;
             default:
                 throw new Error("Invalid index couple (same axis not allowed).");
         }
@@ -561,9 +610,16 @@ export class AbsoluteAnimalPositions {
 // HERE Keep going with the re-visiting of the entire lib. Adding static Animals next.
 
 /**
+ * @readonly
  * @class
  */
 export class Animal {
+    
+    static SLEEP = new Animal("Oi", "Di");
+    static CONSUME = new Animal("Oe", "Di");
+    static BLAST = new Animal("Oi", "De");
+    static PLAY = new Animal("Oe", "De");
+    
     /**
      * @param {CognitiveFunction|string} cogFun1
      * @param {CognitiveFunction|string} cogFun2
@@ -594,11 +650,13 @@ export class Animal {
                 else name = AnimalNames.Consume;
         }
         this._name = name;
+        
+        Object.freeze(this);
     }
     
     /**
      *
-     * @returns {CognitiveFunction}
+     * @return {CognitiveFunction}
      */
     get decidingFunction() {
         return this._dFunction;
