@@ -1,3 +1,5 @@
+const PRIVATE_OPERATION = Symbol();
+
 
 
 /**
@@ -166,6 +168,9 @@ export class CognitiveFunction {
     }
     
     
+    // SLEEP Add humanNeedOnly() function to return a copy function reduced to "Oi, Oe, Di, De" or undefined.
+    
+    
     
     
     
@@ -312,6 +317,37 @@ export class CognitiveFunction {
     }
 }
 
+/**
+ * @class
+ */
+export class PersonalCognitiveFunction extends CognitiveFunction {
+    
+    /**
+     * @param cognitiveFunction {string|CognitiveFunction}
+     * @param parentOpType {OpType}
+     */
+    constructor(cognitiveFunction, parentOpType) {
+        super(cognitiveFunction);
+    
+        if (!(parentOpType instanceof OpType)) throw new TypeError("opType is not an instance of OpType.");
+        
+        this._parentOpType = parentOpType;
+    }
+    
+    
+    get parentOpType() {
+        return this._parentOpType;
+    }
+    
+    get isMasculine() {
+        return this.parentOpType.isMasculineFunction(this);
+    }
+    
+    get isDoubleActivated() {
+        return this.parentOpType.isDoubleActivatedFunction(this);
+    }
+}
+
 
 
 /**
@@ -320,10 +356,10 @@ export class CognitiveFunction {
  */
 export class Quadra {
     static #isConstructorLocked = false;
-    static #_ALPHA = new Quadra("Ti", "Si");
-    static #_BETA = new Quadra("Ti", "Ni");
-    static #_GAMMA = new Quadra("Fi", "Ni");
-    static #_DELTA = new Quadra("Fi", "Si");
+    static #_ALPHA = new Quadra("Si", "Fe", "Ne", "Ti");
+    static #_BETA = new Quadra("Se", "Fe", "Ni", "Ti");
+    static #_GAMMA = new Quadra("Se", "Fi", "Ni", "Te");
+    static #_DELTA = new Quadra("Si", "Fi", "Ne", "Te");
     static #isConstructorLocked = true;
     
     static #_All = [Quadra.#_ALPHA, Quadra.#_BETA, Quadra.#_GAMMA, Quadra.#_DELTA];
@@ -372,6 +408,31 @@ export class Quadra {
     }
     
     
+    // REM We Don't need to use getters for instance properties because we Object.freeze() each instance.
+    
+    /** @type {CognitiveFunction} */
+    sensingFunction;
+    /** @type {CognitiveFunction} */
+    feelingFunction;
+    /** @type {CognitiveFunction} */
+    intuitingFunction;
+    /** @type {CognitiveFunction} */
+    thinkingFunction;
+    
+    /** @type {CognitiveFunction} */
+    oiFunction;
+    /** @type {CognitiveFunction} */
+    oeFunction;
+    /** @type {CognitiveFunction} */
+    diFunction;
+    /** @type {CognitiveFunction} */
+    deFunction;
+    
+    /** @type {CognitiveFunction[]} */
+    allFourFunctions;
+    
+    
+    
     static getInstance(cognitiveFun1, cognitiveFun2) {
         function checkFunction(cogFun, argName) {
             if (typeof cogFun === 'string') cogFun = new CognitiveFunction(cogFun);
@@ -407,7 +468,7 @@ export class Quadra {
     includes(...cognitiveFuns) {
         let count = 0;
     
-        for (const qCogFun of this.allFunctions) {
+        for (const qCogFun of this.allFourFunctions) {
             for (let argCogFun of cognitiveFuns) {
                 // This will throw an error if the element is not a cognitive function.
                 argCogFun = new CognitiveFunction(argCogFun);
@@ -425,8 +486,11 @@ export class Quadra {
      */
     constructor(sensingFunction, feelingFunction, intuitionFunction, thinkingFunction) {
         if (Quadra.#isConstructorLocked) throw new Error("Private constructor, use static properties or methods.");
-    
-        // HERE Keep fixing this constructor (and the calls above)
+        
+        sensingFunction = new CognitiveFunction(sensingFunction);
+        feelingFunction = new CognitiveFunction(feelingFunction);
+        intuitionFunction = new CognitiveFunction(intuitionFunction);
+        thinkingFunction = new CognitiveFunction(thinkingFunction);
         
         this.sensingFunction = sensingFunction;
         this.feelingFunction = feelingFunction;
@@ -434,10 +498,26 @@ export class Quadra {
         this.thinkingFunction = thinkingFunction;
         
         /** @type {CognitiveFunction[]} */
-        const allFunctions = [this.feelingFunction, this.thinkingFunction, this.sensingFunction, this.intuitingFunction];
+        const allFunctions = [this.sensingFunction, this.feelingFunction, this.intuitingFunction, this.thinkingFunction];
         Object.freeze(allFunctions);
-        this.allFunctions = allFunctions;
-        
+        this.allFourFunctions = allFunctions;
+    
+        for (const cogFun of allFunctions) {
+            switch (true) {
+                case cogFun.isOi:
+                    this.oiFunction = cogFun;
+                    break;
+                case cogFun.isOe:
+                    this.oeFunction = cogFun;
+                    break;
+                case cogFun.isDi:
+                    this.diFunction = cogFun;
+                    break;
+                case cogFun.isDe:
+                    this.deFunction = cogFun;
+                    break;
+            }
+        }
         
         Object.freeze(this);
         this.intuitingFunction = "";
@@ -607,47 +687,76 @@ export class AbsoluteAnimalPositions {
 }
 
 
-// HERE Keep going with the re-visiting of the entire lib. Adding static Animals next.
 
 /**
  * @readonly
  * @class
  */
 export class Animal {
+    static #_SLEEP = new Animal("Oi", "Di");
+    static #_CONSUME = new Animal("Oe", "Di");
+    static #_BLAST = new Animal("Oi", "De");
+    static #_PLAY = new Animal("Oe", "De");
     
-    static SLEEP = new Animal("Oi", "Di");
-    static CONSUME = new Animal("Oe", "Di");
-    static BLAST = new Animal("Oi", "De");
-    static PLAY = new Animal("Oe", "De");
+    /** @type {Animal} */
+    static get SLEEP() {
+        return this.#_SLEEP;
+    }
     
+    /** @type {Animal} */
+    static get CONSUME() {
+        return this.#_CONSUME;
+    }
+    
+    /** @type {Animal} */
+    static get BLAST() {
+        return this.#_BLAST;
+    }
+    
+    /** @type {Animal} */
+    static get PLAY() {
+        return this.#_PLAY;
+    }
+    
+    // SLEEP Consider dividing constructor in fromName(), fromFunctions(), and copy(), make constructor private, and
+    //       fix equality functions accordingly.
     /**
-     * @param {CognitiveFunction|string} cogFun1
-     * @param {CognitiveFunction|string} cogFun2
+     * @param {CognitiveFunction|string} cogFun1 Two characters string or CognitiveFunction
+     * @param {CognitiveFunction|string} cogFun2 Two characters string or CognitiveFunction
      */
     constructor(cogFun1, cogFun2) {
         if (typeof cogFun1 === 'string') cogFun1 = new CognitiveFunction(cogFun1);
         if (typeof cogFun2 === 'string') cogFun2 = new CognitiveFunction(cogFun2);
-        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction))
-            throw new Error('Invalid argument. Must be cognitive function name or CognitiveFunction.');
+        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) throw new TypeError(
+            "One or more arguments is not a cognitive function."
+        );
+        
+        if (!(cogFun1.charge && cogFun2.charge)) throw new Error(
+            "Missing charge on one or both functions, which is required for Animals."
+        );
         
         if (cogFun1.hasAxisAffinityWith(cogFun2)) throw new Error(
-            "Invalid argument. Functions must be on different axes D+O."
+            "Invalid arguments. Functions must be on different axes D+O."
         );
         
         this._dFunction = cogFun1.isDeciding ? cogFun1 : cogFun2;
         this._oFunction = cogFun1.isObserving ? cogFun1 : cogFun2;
         
-        let name;
-        switch (true) {
-            case cogFun1.isExtroverted && cogFun2.isExtroverted:
-                name = AnimalNames.Play;
+        let name = cogFun1.charge + cogFun2.charge;
+        switch (name) {
+            case 'ee':
+                name = 'Play'
                 break;
-            case cogFun1.isIntroverted && cogFun2.isIntroverted:
-                name = AnimalNames.Sleep;
+            case 'ii':
+                name = 'Sleep'
+                break;
+            case 'ei':
+            case 'ie':
+                if (this._oFunction.isIntroverted) name = 'Blast'
+                else name = 'Consume';
                 break;
             default:
-                if (this._oFunction.isIntroverted) name = AnimalNames.Blast
-                else name = AnimalNames.Consume;
+                throw new Error("Impossible. Invalid charge. Abort.");
         }
         this._name = name;
         
@@ -695,57 +804,94 @@ export class Animal {
     }
     
     
-    invert() {
+    opposite() {
         const oppositeObserver = this.observingFunction.opposite()
         const oppositeDecider = this.observingFunction.opposite()
         
-        return new Animal(oppositeObserver.shortName, oppositeDecider.shortName);
+        return new Animal(oppositeObserver, oppositeDecider);
     }
     
+    /**
+     * @param otherAnimal {Animal}
+     * @return {boolean}
+     */
+    isSameAnimalOf(otherAnimal);
     
-    isSameAnimalOf(otherAnimal) {
-        if (!(otherAnimal instanceof Animal)) return undefined;
+    /**
+     *
+     * @param cogFun1 {CognitiveFunction|string}
+     * @param cogFun2 {CognitiveFunction|string}
+     * @return {boolean}
+     */
+    isSameAnimalOf(cogFun1, cogFun2) {
+        // If second arg is not null, assume it's two functions and make Animal, otherwise use first arg as Animal.
+        const otherAnimal = cogFun2 != null ? new Animal(cogFun1, cogFun2) : cogFun1;
+        if (!(otherAnimal instanceof Animal)) throw new TypeError("Not an instance of Animal.");
         
         return otherAnimal.name === this.name;
+    }
+    
+    /**
+     * @param animalName {string} First letter or full name of the animal.
+     * @return {boolean}
+     */
+    matches(animalName) {
+        switch (animalName) {
+            case 'Sleep':
+            case 'S':
+            case 'Consume':
+            case 'C':
+            case 'Blast':
+            case 'B':
+            case 'Play':
+            case 'P':
+                break;
+            default:
+                throw new Error("Invalid Animal name.");
+        }
+        
+        return this.letter === animalName[0];
     }
 }
 
 
 export class PersonalAnimal extends Animal {
     /**
-     * @param opType {OpType}
-     * @param cogFun1 {CognitiveFunction|string}
-     * @param cogFun2 {CognitiveFunction|string}
-     * @param sexualCharge1 {SexualCharge}
-     * @param sexualCharge2 {SexualCharge}
+     * @param cogFun1 {PersonalCognitiveFunction}
+     * @param cogFun2 {PersonalCognitiveFunction}
      */
-    constructor(opType, cogFun1, cogFun2, sexualCharge1, sexualCharge2) {
+    constructor(cogFun1, cogFun2) {
         super(cogFun1, cogFun2)
     }
+    
 }
 
 
-export const MainUnbalances = {
+
+// HERE Finish without "Personal" variations first, and then see if we actually need them.
+// HERE Divide CognitiveFunction into Letter + HumanNeed, and make HumanNeed as Axis + Charge.
+
+export const MainUnbalances = Object.freeze({
     O: new CognitiveFunction('O'),
     D: new CognitiveFunction('D')
-}
+});
 
-export const HumanNeeds = {
+export const HumanNeeds = Object.freeze({
     Di: new CognitiveFunction('Di'),
     De: new CognitiveFunction('De'),
     Oi: new CognitiveFunction('Oi'),
     Oe: new CognitiveFunction('Oe')
-}
+});
 
 
-export const Letters = {
+export const Letters = Object.freeze({
     F: new CognitiveFunction('F'),
     T: new CognitiveFunction('T'),
     S: new CognitiveFunction('S'),
     N: new CognitiveFunction('N'),
-}
+});
 
-export const CognitiveFunctions = {
+export const CognitiveFunctions = Object.freeze({
     Fi: new CognitiveFunction('Fi'),
     Fe: new CognitiveFunction('Fe'),
     Ti: new CognitiveFunction('Ti'),
@@ -754,25 +900,18 @@ export const CognitiveFunctions = {
     Se: new CognitiveFunction('Se'),
     Ni: new CognitiveFunction('Ni'),
     Ne: new CognitiveFunction('Ne')
-}
+});
 
-
-export const Animals = {
-    S: new Animal('Di', 'Oi'),
-    C: new Animal('Di', 'Oe'),
-    B: new Animal('De', 'Oi'),
-    P: new Animal('De', 'Oe'),
-}
 
 export const AnimalDominance = {
     Info: 'Info',
     Energy: 'Energy'
-}
+};
 
 export const SocialEnergy = {
     I: 'I',
     E: 'E'
-}
+};
 
 /**
  * @enum {string}
@@ -780,7 +919,7 @@ export const SocialEnergy = {
 export const SexualCharge = {
     M: 'M',
     F: 'F'
-}
+};
 
 /**
  * @enum {string}
@@ -921,12 +1060,12 @@ export class OpType {
             case 'C':
             case 'Consume':
             case true:
-                this._coinInfoAnimal = Animals.C;
+                this._coinInfoAnimal = Animal.CONSUME;
                 break;
             case 'B':
             case 'Blast':
             case false:
-                this._coinInfoAnimal = Animals.B;
+                this._coinInfoAnimal = Animal.BLAST;
                 break;
             case null:
             case undefined:
@@ -941,12 +1080,12 @@ export class OpType {
             case 'S':
             case 'Sleep':
             case true:
-                this._coinEnergyAnimal = Animals.S;
+                this._coinEnergyAnimal = Animal.SLEEP;
                 break;
             case 'P':
             case 'Play':
             case false:
-                this._coinEnergyAnimal = Animals.P;
+                this._coinEnergyAnimal = Animal.PLAY;
                 break;
             case null:
             case undefined:
@@ -1177,11 +1316,16 @@ export class OpType {
     /**
      * Returns true if indexOrFunction points to a masculine function.
      * @param indexOrFunction {number, string, CognitiveFunction} Either a Grant index or a function.
-     * @returns {boolean}
+     * @returns {boolean|undefined}
      * @throws Will throw an error if the argument is not a function.
      */
     isMasculineFunction(indexOrFunction) {
-        throw Error("Not implemented.");
+        throw new Error("Not implemented.");
+    }
+    
+    
+    isDoubleActivatedFunction(indexOrFunction) {
+        throw new Error("Not implemented.");
     }
     
     
@@ -1245,7 +1389,7 @@ export class OpType {
         try {
             saviorAnimal = new Animal(this._coinDeciderCharge, this._coinObserverCharge);
         } catch (e) {  }
-        let oppositeSaviorAnimal = saviorAnimal && saviorAnimal.invert();
+        let oppositeSaviorAnimal = saviorAnimal && saviorAnimal.opposite();
         
         
         // Find the animal that can't be Savior because it must be Last.
