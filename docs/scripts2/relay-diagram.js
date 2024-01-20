@@ -1,5 +1,3 @@
-import {OpType} from "./op-lib.js";
-
 let isLibraryReady = false;
 
 // To change the base size of each circle (before scaling is applied).
@@ -77,6 +75,8 @@ class ResourceLoader {
      * @returns {Promise<undefined[]>}
      */
     async initializeAsync() {
+        console.log("Initializing resources...")
+        
         /**
          * Return a promise which resolves when image is loaded or failed.
          * @param img {HTMLImageElement}
@@ -104,19 +104,153 @@ class ResourceLoader {
             loadImg(DiagramResources.LITTLE_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon3.png`),
             loadImg(DiagramResources.BIG_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon4.png`),
             loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`)
-        ]).then(() => { isLibraryReady = true });
+        ]).then(() => {
+            console.log("Resources fully initialized.")
+            isLibraryReady = true
+        });
     }
 }
 
 export const diagramResources = new ResourceLoader();
 
 
-const AnimalPosition = Object.freeze({
-    UPPER_INFO: 0,
-    UPPER_ENERGY: 1,
-    LOWER_INFO: 2,
-    LOWER_ENERGY: 3
-});
+
+
+/**
+ * @readonly
+ * @class
+ */
+class AnimalPosition {
+    // SLEEP Remove "buildInstance" and copy what we did for Quadra.
+    
+    static #Args = class Args {
+        constructor(grantIndex1, grantIndex2) {
+            this.grantIndex1 = grantIndex1;
+            this.grantIndex2 = grantIndex2;
+        }
+    }
+    
+    static #_UPPER_INFO = this.#buildInstance(0, 1);
+    
+    static #_UPPER_ENERGY = this.#buildInstance(0, 2);
+    
+    static #_LOWER_INFO = this.#buildInstance(2, 3);
+    
+    static #_LOWER_ENERGY = this.#buildInstance(1, 3);
+    
+    
+    /** @type {Readonly<AnimalPosition>} */
+    static get UPPER_INFO() {
+        return this.#_UPPER_INFO;
+    }
+    
+    /** @type {Readonly<AnimalPosition>} */
+    static get UPPER_ENERGY() {
+        return this.#_UPPER_ENERGY;
+    }
+    
+    /** @type {Readonly<AnimalPosition>} */
+    static get LOWER_INFO() {
+        return this.#_LOWER_INFO;
+    }
+    
+    /** @type {Readonly<AnimalPosition>} */
+    static get LOWER_ENERGY() {
+        return this.#_LOWER_ENERGY;
+    }
+    
+    
+    static #all = Object.freeze([
+        AnimalPosition.UPPER_INFO,
+        AnimalPosition.UPPER_ENERGY,
+        AnimalPosition.LOWER_INFO,
+        AnimalPosition.LOWER_ENERGY
+    ]);
+    
+    /**
+     * @returns {Readonly<AnimalPosition>[]}
+     */
+    static get all() {
+        return this.#all;
+    }
+    
+    
+    
+    // SLEEP When we have an IDE that doesn't suck ass convert this to a static initializer.
+    /**
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     * @return {AnimalPosition}
+     */
+    static #buildInstance(grantIndex1, grantIndex2) {
+        return new AnimalPosition(new this.#Args(grantIndex1, grantIndex2));
+    }
+    
+    
+    /**
+     *
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     * @return {AnimalPosition}
+     */
+    static getInstance(grantIndex1, grantIndex2) {
+        /**
+         * @param i {number}
+         * @param name {string}
+         */
+        function checkIndex(i, name) {
+            if (typeof i !== 'number') throw new TypeError(
+                `${name} is not a number.`
+            );
+            
+            if (!Number.isInteger(i)) throw new Error(
+                `${name} is not an integer.`
+            );
+            
+            if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
+        }
+        
+        checkIndex(grantIndex1, "Grant index 1");
+        checkIndex(grantIndex2, "Grant index 2");
+        
+        if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
+        
+        // Return the appropriate immutable instance based on the provided indexes.
+        switch (grantIndex1 + grantIndex2) {
+            // 0 + 1.
+            case 1:
+                return this.#_UPPER_INFO;
+            // 0 + 2.
+            case 2:
+                return this.#_UPPER_ENERGY;
+            // 1 + 3.
+            case 4:
+                return this.#_LOWER_ENERGY;
+            // 2 + 3.
+            case 5:
+                return this.#_LOWER_INFO;
+            default:
+                throw new Error("Invalid index couple (same axis not allowed).");
+        }
+    }
+    
+    
+    /**
+     *
+     * @param args {AnimalPosition.Args}
+     */
+    constructor(args) {
+        if (!(args instanceof AnimalPosition.#Args)) throw new Error(
+            "Private constructor. Use static methods or properties to obtain instances."
+        );
+        
+        this.grantIndex1 = args.grantIndex1;
+        this.grantIndex2 = args.grantIndex2;
+        
+        Object.freeze(this);
+    }
+}
+
 
 
 /**
@@ -126,65 +260,165 @@ const DiagramStateEvents = {
 }
 
 class DiagramGroupState extends EventTarget {
+    #cogFunStates;
+    /** @type {Map} */
+    #animalStates;
+    
+    constructor() {
+        super();
+        
+        const cogFunStates = new Array(4);
+        const animalStates = new Map();
+        this.#cogFunStates = cogFunStates;
+        this.#animalStates = animalStates;
+    
+        for (let i = 0; i < 4; i++) {
+            cogFunStates[i] = new CognitiveFunctionState(i);
+        }
+    
+        for (const ap of AnimalPosition.all) {
+            animalStates.set(ap, new AnimalState(ap))
+        }
+    }
+    
+    getCogFunState(grantOrder) {
+        return this.#cogFunStates[grantOrder];
+    }
+    
     /**
-     * @type {OpType}
+     * @param animalPosition {AnimalPosition}
+     * @returns {AnimalState}
      */
-    #opType;
-    /**
-     *
-     * @returns {OpType}
-     */
-    get opType() { return this.#opType; }
-    // TODO Remember to fire an event right after firing any change event, which will be used to drawWithInputs the diagram.
+    getAnimalState(animalPosition) {
+        return this.#animalStates.get(animalPosition);
+    }
 }
 
 class CognitiveFunctionState extends EventTarget {
+    #grantOrder;
+    #name;
+    #isDemon;
+    #isMasculine;
+    
+    /**
+     *
+     * @param grantOrder {number}
+     */
+    constructor(grantOrder) {
+        super();
+        this.#grantOrder = grantOrder;
+        
+        switch (grantOrder) {
+            case 0:
+                this.#name = 'N';
+                break
+            case 1:
+                this.#name = 'T';
+                break
+            case 2:
+                this.#name = 'F';
+                break
+            case 3:
+                this.#name = 'S';
+                break
+        }
+        
+        this.#isDemon = false;
+        this.#isMasculine = false;
+    }
+    
+    
     /**
      * @returns {number}
      */
-    get grantIndex() {
-        throw new Error("Not implemented.");
+    get grantOrder() {
+        return this.#grantOrder;
     }
     
     /**
      * @returns {string}
      */
     get name() {
-        throw new Error("Not implemented.");
+        return this.#name;
     }
     
     /**
      * @returns {boolean}
      */
     get isDemon() {
-        throw new Error("Not implemented.");
+        return this.#isDemon;
     }
     
+    /**
+     * @returns {boolean}
+     */
     get isMasculine() {
-        throw new Error("Not implemented.");
+        return this.#isMasculine;
     }
 }
 
 
 class AnimalState extends EventTarget {
-    get isSet() {
-        throw new Error("Not implemented.");
+    #diagramPosition;
+    #isSet;
+    #stackOrder;
+    #name;
+    #isDoubleActivated;
+    
+    /**
+     *
+     * @param diagramPosition {AnimalPosition}
+     */
+    constructor(diagramPosition) {
+        super();
+        
+        this.#diagramPosition = diagramPosition;
+        
+        this.#isSet = false;
+        this.#stackOrder = -1;
+        this.#name = "";
+        this.#isDoubleActivated = false;
     }
     
-    get stackOrder() {
-        throw new Error("Not implemented.");
-    }
     
-    get name() {
-        throw new Error("Not implemented.");
-    }
-    
-    get isDoubleActivated() {
-        throw new Error("Not implemented.");
-    }
-    
+    /**
+     *
+     * @returns {AnimalPosition}
+     */
     get diagramPosition() {
-        throw new Error("Not implemented.");
+        return this.#diagramPosition;
+    }
+    
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isSet() {
+        return this.#isSet;
+    }
+    
+    /**
+     *
+     * @returns {number}
+     */
+    get stackOrder() {
+        return this.#stackOrder;
+    }
+    
+    /**
+     *
+     * @returns {string}
+     */
+    get name() {
+        return this.#name;
+    }
+    
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isDoubleActivated() {
+        return this.#isDoubleActivated;
     }
 }
 
@@ -229,7 +463,7 @@ export class MainRelayDiagram extends Konva.Group {
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
      * @returns {Promise<undefined[]>}
      */
-    async static initializeResources() {
+    static async initializeResources() {
         return diagramResources.initializeAsync();
     }
     
@@ -241,31 +475,33 @@ export class MainRelayDiagram extends Konva.Group {
         super();
         
         const state = new DiagramGroupState();
-        // HERE FIX Pass sub-states into the constructors of the visual elements.
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
         const cogFunStackGroup = new Konva.Group();
         /** @type {CognitiveFunctionGroup[]} */
         const cogFunGroups = new Array(4);
-        for (let grantIndex = 0; grantIndex < 4; grantIndex++) {
-            const cfg = new CognitiveFunctionGroup(this, grantIndex);
-            cogFunGroups[grantIndex] = cfg;
+        for (let i = 0; i < 4; i++) {
+            const cfg = new CognitiveFunctionGroup(state.getCogFunState(i));
+            
+            cogFunGroups[i] = cfg;
             cogFunStackGroup.add(cfg);
         }
-        this.#cogFunGroups = cogFunGroups;
-        
-        // Do the same things for animals.
+    
         const animalStackGroup = new Konva.Group();
-        const animalGroups = [];
+        // Do the same things for animals.
         // Iterating AnimalPositions (through property names) to create AnimalGroups.
-        for (const ap of Object.values(AbsoluteAnimalPositions)) {
-            const circle1 = cogFunGroups[ap.grantIdx1].circle;
-            const circle2 = cogFunGroups[ap.grantIdx2].circle;
-            const ag = new AnimalGroup(this, circle1, circle2, AbsoluteAnimalPositions[ap]);
-            animalGroups.push(ag);
+        for (const ap of AnimalPosition.all) {
+            console.log(ap)
+            const circle1 = cogFunGroups[ap.grantIndex1].circle;
+            const circle2 = cogFunGroups[ap.grantIndex2].circle;
+            // noinspection JSCheckFunctionSignatures
+            const ag = new AnimalGroup(
+                state.getAnimalState(ap),
+                circle1,
+                circle2
+            );
             animalStackGroup.add(ag);
         }
-        this.#animalGroups = animalGroups;
         
         // Add the two stack-groups. Animals are visually below, so they're added first.
         this.add(animalStackGroup, cogFunStackGroup);
@@ -279,6 +515,8 @@ export class MainRelayDiagram extends Konva.Group {
 
 
 class CognitiveFunctionGroup extends Konva.Group {
+    #circle;
+    
     
     /**
      * @param {CognitiveFunctionState} cogFunState
@@ -287,11 +525,18 @@ class CognitiveFunctionGroup extends Konva.Group {
         super();
         
         const circle = new CognitiveFunctionCircle(cogFunState);
+        this.#circle = circle;
+        
         const demonBgImg = new DemonBackgroundImage(cogFunState, circle);
         const masculineBgImg = new MasculineBackgroundImage(cogFunState, circle);
-        const text = new CognitiveFunctionText(cogFunState);
+        const text = new CognitiveFunctionText(cogFunState, circle);
         
         this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text);
+    }
+    
+    
+    get circle() {
+        return this.#circle;
     }
 }
 
@@ -305,7 +550,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         let position;
         let scaleFactor;
     
-        switch (cogFunState.grantIndex) {
+        switch (cogFunState.grantOrder) {
             case 0:
                 position = {
                     x: DIAGRAM_CENTER,
@@ -346,39 +591,45 @@ class CognitiveFunctionCircle extends Konva.Circle {
         });
         
         
+        this.#updateDrawing(cogFunState);
+        
         cogFunState.addEventListener("change", () => {
-            let fillColor;
-            let strokeColor;
-            // Select colors based on first character of function.
-            switch (cogFunState.name[0]) {
-                case 'F':
-                    fillColor = TFCStyleColor.FEELING_FILL;
-                    strokeColor = TFCStyleColor.FEELING_STROKE;
-                    break;
-                case 'T':
-                    fillColor = TFCStyleColor.THINKING_FILL;
-                    strokeColor = TFCStyleColor.THINKING_STROKE;
-                    break;
-                case 'S':
-                    fillColor = TFCStyleColor.SENSING_FILL;
-                    strokeColor = TFCStyleColor.SENSING_STROKE;
-                    break;
-                case 'N':
-                    fillColor = TFCStyleColor.INTUITION_FILL;
-                    strokeColor = TFCStyleColor.INTUITION_STROKE;
-                    break;
-                default:
-                    fillColor = 'white';
-                    strokeColor = 'black';
-            }
-    
-            this.fill(fillColor);
-            this.stroke(strokeColor);
-    
-            // If not generic diagram use scaling, otherwise don't.
-            this.scaleX(cogFunState.name.length === 2 ? scaleFactor : 1);
-            this.scaleY(cogFunState.name.length === 2 ? scaleFactor : 1);
+            this.#updateDrawing(cogFunState)
         });
+    }
+    
+    #updateDrawing(cogFunState) {
+        let fillColor;
+        let strokeColor;
+        // Select colors based on first character of function.
+        switch (cogFunState.name[0]) {
+            case 'F':
+                fillColor = TFCStyleColor.FEELING_FILL;
+                strokeColor = TFCStyleColor.FEELING_STROKE;
+                break;
+            case 'T':
+                fillColor = TFCStyleColor.THINKING_FILL;
+                strokeColor = TFCStyleColor.THINKING_STROKE;
+                break;
+            case 'S':
+                fillColor = TFCStyleColor.SENSING_FILL;
+                strokeColor = TFCStyleColor.SENSING_STROKE;
+                break;
+            case 'N':
+                fillColor = TFCStyleColor.INTUITION_FILL;
+                strokeColor = TFCStyleColor.INTUITION_STROKE;
+                break;
+            default:
+                fillColor = 'white';
+                strokeColor = 'black';
+        }
+    
+        this.fill(fillColor);
+        this.stroke(strokeColor);
+    
+        // If not generic diagram use scaling, otherwise don't.
+        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : 1);
+        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : 1);
     }
 }
 
@@ -405,44 +656,6 @@ class CognitiveFunctionCircle extends Konva.Circle {
 // }
 
 
-class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _IMG_SCALE() { return 0.4; }
-    
-    
-    /**
-     * @param {CognitiveFunctionState} cogFunState
-     * @param {CognitiveFunctionCircle} circle
-     */
-    constructor(cogFunState, circle) {
-        const img = cogFunState.grantIndex === 3 ?
-            DiagramResources.BIG_DEMON_BG_IMG : DiagramResources.LITTLE_DEMON_BG_IMG;
-        
-        super(cogFunState, img, circle);
-        
-        cogFunState.addEventListener("change", () => {
-            this.visible(cogFunState.isDemon);
-        });
-    }
-}
-
-
-class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _IMG_SCALE() {
-        return 0.43;
-    }
-    
-    /**
-     * @param {CognitiveFunctionState} cogFunState
-     * @param {CognitiveFunctionCircle} circle
-     */
-    constructor(cogFunState, circle) {
-        super(cogFunState, DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle);
-        
-        cogFunState.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
-            this.visible(cogFunState.isMasculine);
-        });
-    }
-}
 
 class CognitiveFunctionBackgroundImage extends Konva.Image {
     
@@ -478,7 +691,7 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         super();
         
         this.#circleScale = circle.scaleX();
-    
+        
         // Based on how the library is structured, img should always be loaded when reaching this point.
         this.image(img);
         // this.opacity(grantOrder !== 3 ? 0.3 : 1);
@@ -486,8 +699,8 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
-    
-        this._applyCustomAttributes(circle, cogFunState.grantIndex);
+        
+        this._applyCustomAttributes(circle, cogFunState.grantOrder);
     }
     
     
@@ -502,6 +715,58 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         const baseScale = this._BASE_SCALE;
         this.scaleX(baseScale);
         this.scaleY(baseScale);
+    }
+}
+
+
+class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
+    get _IMG_SCALE() { return 0.4; }
+    
+    
+    /**
+     * @param {CognitiveFunctionState} cogFunState
+     * @param {CognitiveFunctionCircle} circle
+     */
+    constructor(cogFunState, circle) {
+        const img = cogFunState.grantOrder === 3 ?
+            DiagramResources.BIG_DEMON_BG_IMG : DiagramResources.LITTLE_DEMON_BG_IMG;
+        
+        super(cogFunState, img, circle);
+    
+        this.#updateDrawing(cogFunState)
+        cogFunState.addEventListener("change", () => {
+            this.#updateDrawing(cogFunState)
+        });
+    }
+    
+    
+    #updateDrawing(cogFunState) {
+        this.visible(cogFunState.isDemon);
+    }
+}
+
+
+class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
+    get _IMG_SCALE() {
+        return 0.43;
+    }
+    
+    /**
+     * @param {CognitiveFunctionState} cogFunState
+     * @param {CognitiveFunctionCircle} circle
+     */
+    constructor(cogFunState, circle) {
+        super(cogFunState, DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle);
+        
+        this.#updateDrawing(cogFunState)
+        cogFunState.addEventListener(DiagramStateEvents.OP_TYPE_CHANGE, () => {
+            this.#updateDrawing(cogFunState)
+        });
+    }
+    
+    
+    #updateDrawing(cogFunState) {
+        this.visible(cogFunState.isMasculine);
     }
 }
 
@@ -522,7 +787,7 @@ class CognitiveFunctionText extends Konva.Text {
                     y: circle.getClientRect().y,
                 },
                 offset: {
-                    x: -2 * circle.scaleY(),
+                    x: -2 * circle.scaleY() + 1.3,
                     y: -4 * circle.scaleY()
                 },
                 height: circle.getClientRect().height,
@@ -541,9 +806,15 @@ class CognitiveFunctionText extends Konva.Text {
         );
     
         
+        this.#updateDrawing(cogFunState)
         cogFunState.addEventListener("change", () => {
-            this.text(cogFunState.name);
+            this.#updateDrawing(cogFunState)
         });
+    }
+    
+    
+    #updateDrawing(cogFunState) {
+        this.text(cogFunState.name);
     }
 }
 
@@ -613,29 +884,35 @@ class AnimalBackgroundTriangle extends Konva.Line {
         });
     
     
+        this.#updateDrawing(animalState)
         animalState.addEventListener("change", () => {
-            this.visible(animalState.isSet);
-            
-            switch (animalState.stackOrder) {
-                case 0:
-                    this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
-                    this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
-                    break;
-                case 1:
-                    this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
-                    this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
-                    break;
-                case 2:
-                    this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
-                    this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
-                    break;
-                case 3:
-                    this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
-                    this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
-                    break;
-                default:
-            }
+            this.#updateDrawing(animalState)
         });
+    }
+    
+    
+    #updateDrawing(animalState) {
+        this.visible(animalState.isSet);
+    
+        switch (animalState.stackOrder) {
+            case 0:
+                this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                break;
+            case 1:
+                this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                break;
+            case 2:
+                this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                break;
+            case 3:
+                this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                break;
+            default:
+        }
     }
 }
 
@@ -658,89 +935,45 @@ class AnimalLine extends Konva.Line {
             strokeWidth: '5'
         });
         
-        this.#circle1 = circle1;
-        this.#circle2 = circle2;
-        
+        this.#updateDrawing(animalState)
         animalState.addEventListener('change', () => {
-            switch (animalState.stackOrder) {
-                case 0:
-                    this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
-                    this.dashEnabled(false);
-                    this.opacity(1);
-                    break;
-                case 1:
-                    this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
-                    this.dashEnabled(false);
-                    this.opacity(1);
-                    break;
-                case 2:
-                    this.strokeWidth(THIRD_ANIMAL_STROKE_WIDTH);
-                    this.dash(THIRD_ANIMAL_DASH_PATTERN);
-                    this.dashEnabled(true);
-                    this.opacity(1);
-                    break;
-                case 3:
-                    this.strokeWidth(LAST_ANIMAL_STROKE_WIDTH);
-                    this.dash(LAST_ANIMAL_DASH_PATTERN);
-                    this.dashEnabled(true);
-                    this.opacity(LAST_ANIMAL_LINE_OPACITY);
-                    break;
-                default:
-                    this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
-                    this.dashEnabled(false);
-                    this.opacity(1);
-            }
+            this.#updateDrawing(animalState)
         });
+    }
+    
+    
+    #updateDrawing(animalState) {
+        switch (animalState.stackOrder) {
+            case 0:
+                this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
+                this.dashEnabled(false);
+                this.opacity(1);
+                break;
+            case 1:
+                this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
+                this.dashEnabled(false);
+                this.opacity(1);
+                break;
+            case 2:
+                this.strokeWidth(THIRD_ANIMAL_STROKE_WIDTH);
+                this.dash(THIRD_ANIMAL_DASH_PATTERN);
+                this.dashEnabled(true);
+                this.opacity(1);
+                break;
+            case 3:
+                this.strokeWidth(LAST_ANIMAL_STROKE_WIDTH);
+                this.dash(LAST_ANIMAL_DASH_PATTERN);
+                this.dashEnabled(true);
+                this.opacity(LAST_ANIMAL_LINE_OPACITY);
+                break;
+            default:
+                this.strokeWidth(SECOND_ANIMAL_STROKE_WIDTH);
+                this.dashEnabled(false);
+                this.opacity(1);
+        }
     }
 }
 
-
-class AnimalLetter extends AnimalText {
-    /**
-     * @override
-     * @returns {number}
-     * @private
-     */
-    get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
-    
-    
-    /**
-     *
-     * @param {AnimalState} animalState
-     */
-    constructor(animalState) {
-        super(animalState);
-        
-        animalState.addEventListener('change', () => {
-            const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-            let animal = animalState.name
-            
-            if (animalState.stackOrder === 3) {
-                animal = `(${animal})`;
-                this.width(baseSize + 20);
-            } else {
-                this.width(baseSize);
-            }
-    
-            super._updateText(animal, animalState.stackOrder, animalState.isDoubleActivated);
-        });
-    }
-}
-
-
-class AnimalOrderNumber extends AnimalText {
-    /**
-     *
-     * @param {AnimalState} animalState
-     */
-    constructor(animalState) {
-        super(animalState);
-    
-        animalState.addEventListener('change', () => {
-            super._updateText(animalState.stackOrder + 1, animalState.stackOrder, animalState.isDoubleActivated);
-        });
-    }
-}
 
 
 class AnimalText extends Konva.Text {
@@ -812,13 +1045,13 @@ class AnimalText extends Konva.Text {
     /**
      *
      * @param {string} text
-     * @param {number} stackOrder
-     * @param {Boolean} isDoubleActivated
+     * @param {AnimalState} animalState
      */
-    _updateText(text, stackOrder, isDoubleActivated) {
+    _updateText(text, animalState) {
+        this.visible(animalState.isSet);
         this.text(text);
-        this.fontStyle(isDoubleActivated ? "bold" : "normal");
-        this.strokeEnabled(isDoubleActivated);
+        this.fontStyle(animalState.isDoubleActivated ? "bold" : "normal");
+        this.strokeEnabled(animalState.isDoubleActivated);
         
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
@@ -827,6 +1060,61 @@ class AnimalText extends Konva.Text {
 
 
 
+class AnimalLetter extends AnimalText {
+    /**
+     * @override
+     * @returns {number}
+     * @private
+     */
+    get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
+    
+    
+    /**
+     *
+     * @param {AnimalState} animalState
+     */
+    constructor(animalState) {
+        super(animalState);
+        
+        this.#updateDrawing(animalState)
+        animalState.addEventListener('change', () => {
+            this.#updateDrawing(animalState)
+        });
+    }
+    
+    
+    #updateDrawing(animalState) {
+        const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
+        let animalName = animalState.name
+    
+        if (animalState.stackOrder === 3) {
+            animalName = `(${animalName})`;
+            this.width(baseSize + 20);
+        } else {
+            this.width(baseSize);
+        }
+    
+        super._updateText(animalName, animalState);
+    }
+}
 
 
-export const mainDiagramGroup = new MainRelayDiagram();
+class AnimalOrderNumber extends AnimalText {
+    /**
+     *
+     * @param {AnimalState} animalState
+     */
+    constructor(animalState) {
+        super(animalState);
+    
+        this.#updateDrawing(animalState)
+        animalState.addEventListener('change', () => {
+            this.#updateDrawing(animalState)
+        });
+    }
+    
+    
+    #updateDrawing(animalState) {
+        super._updateText((animalState.stackOrder + 1).toString(), animalState);
+    }
+}

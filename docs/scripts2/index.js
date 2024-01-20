@@ -1,5 +1,4 @@
-import {OpType} from "./op-lib.js";
-import {diagramResources} from "./relay-diagram";
+import {DIAGRAM_SIZE, diagramResources, MainRelayDiagram} from "./relay-diagram.js";
 
 
 class DiagramStage extends Konva.Stage {
@@ -44,11 +43,6 @@ class DiagramStage extends Konva.Stage {
             height: DIAGRAM_SIZE
         });
     
-    
-        const diagramSettings = new DiagramSettings();
-        const diagramInputs = new OpTypeInputs();
-        this.#diagramSettings = diagramSettings;
-        this.#typeInputs = diagramInputs;
         
         const diagramGroup = new MainRelayDiagram();
         this.#diagramGroup = diagramGroup;
@@ -58,74 +52,31 @@ class DiagramStage extends Konva.Stage {
         this.#diagramLayer = diagramLayer;
     
     
-        const fillHintLayer = new Konva.Layer();
-        fillHintLayer.add(
-            new Konva.Text({
-                x: 0,
-                y: 50,
-                width: this.width(),
-            
-                fontSize: 25,
-                fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
-                fontStyle: 'bold',
-                fill: 'black',
-                stroke: 'white',
-                strokeWidth: 1,
-            
-                align: 'center',
-                verticalAlign: 'middle',
-            
-                text: "Fill all the dropdown menus...",
-            })
-        )
-        this._fillHintLayer = fillHintLayer;
+        // const fillHintLayer = new Konva.Layer();
+        // fillHintLayer.add(
+        //     new Konva.Text({
+        //         x: 0,
+        //         y: 50,
+        //         width: this.width(),
+        //
+        //         fontSize: 25,
+        //         fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+        //         fontStyle: 'bold',
+        //         fill: 'black',
+        //         stroke: 'white',
+        //         strokeWidth: 1,
+        //
+        //         align: 'center',
+        //         verticalAlign: 'middle',
+        //
+        //         text: "Fill all the dropdown menus...",
+        //     })
+        // )
+        // this._fillHintLayer = fillHintLayer;
     
     
-        this.add(diagramLayer, fillHintLayer);
+        this.add(diagramLayer);
     }
-    
-    
-    startListening() {
-        this.#diagramSettings.addEventListener('change', () => {
-            this.#drawWithInputs()
-        });
-        this.#typeInputs.addEventListener('change', () => {
-            this.#drawWithInputs()
-        });
-        throw Error("Not implemented.")
-    }
-    
-    #resetToHint() {
-        this.#diagramLayer.visible(false);
-        this._fillHintLayer.visible(true);
-        this.draw();
-    }
-    
-    /**
-     * @param opType {OpType}
-     */
-    #drawType(opType) {
-    
-    
-        this.#diagramGroup.updateType(opType);
-    
-        this.#diagramLayer.visible(true);
-        this._fillHintLayer.visible(false);
-        this.draw();
-    }
-    
-    #drawWithInputs() {
-        const settings = this.#diagramSettings;
-        const typeInputs = this.#typeInputs;
-        if (typeInputs.areRequiredMissing) {
-            this.#resetToHint();
-        } else this.#drawType(typeInputs.opType);
-    }
-    
-    
-    
-    
-    
 }
 
 
@@ -140,8 +91,6 @@ class DiagramStage extends Konva.Stage {
 // localStorage.clear();
 
 diagramResources.initializeAsync().then(() => {
-    new DiagramStage()
-}).catch(() => {
-    throw new Error("Diagram initialization went wrong.");
-});
-
+    console.log("Resources were marked ready, drawing diagram...");
+    new DiagramStage();
+})
