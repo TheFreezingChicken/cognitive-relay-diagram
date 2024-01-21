@@ -325,6 +325,30 @@ class CognitiveFunctionState extends EventTarget {
         
         this.#isDemon = false;
         this.#isMasculine = false;
+        
+        this.#devInit()
+    }
+    
+    
+    #devInit() {
+        switch (this.#grantOrder) {
+            case 0:
+                this.#name = 'Se';
+                break
+            case 1:
+                this.#name = 'Fi';
+                this.#isDemon = true;
+                break
+            case 2:
+                this.#name = 'Te';
+                this.#isMasculine = true;
+                break
+            case 3:
+                this.#name = 'Ni';
+                this.#isDemon = true;
+                this.#isMasculine = true;
+                break
+        }
     }
     
     
@@ -378,6 +402,39 @@ class AnimalState extends EventTarget {
         this.#stackOrder = -1;
         this.#name = "";
         this.#isDoubleActivated = false;
+        
+        this.#devInit()
+    }
+    
+    
+    
+    
+    #devInit() {
+        switch (this.#diagramPosition) {
+            case AnimalPosition.UPPER_INFO:
+                this.#name = 'C';
+                this.#isSet = true;
+                this.#stackOrder = 1;
+                this.#isDoubleActivated = true;
+                break;
+            case AnimalPosition.UPPER_ENERGY:
+                this.#name = 'P';
+                this.#isSet = true;
+                this.#stackOrder = 0;
+                break;
+            case AnimalPosition.LOWER_INFO:
+                this.#name = 'B';
+                this.#isSet = true;
+                this.#stackOrder = 3;
+                break;
+            case AnimalPosition.LOWER_ENERGY:
+                this.#name = 'S';
+                this.#isSet = true;
+                this.#stackOrder = 2;
+                break;
+            default:
+                throw new Error("Invalid Animal Position");
+        }
     }
     
     
@@ -590,15 +647,14 @@ class CognitiveFunctionCircle extends Konva.Circle {
             strokeWidth: CIRCLE_STROKE_WIDTH
         });
         
-        
-        this.#updateDrawing(cogFunState);
+        this.#updateDrawing(cogFunState, scaleFactor);
         
         cogFunState.addEventListener("change", () => {
-            this.#updateDrawing(cogFunState)
+            this.#updateDrawing(cogFunState, scaleFactor)
         });
     }
     
-    #updateDrawing(cogFunState) {
+    #updateDrawing(cogFunState, scaleFactor) {
         let fillColor;
         let strokeColor;
         // Select colors based on first character of function.
@@ -943,6 +999,7 @@ class AnimalLine extends Konva.Line {
     
     
     #updateDrawing(animalState) {
+        this.visible(animalState.isSet);
         switch (animalState.stackOrder) {
             case 0:
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
@@ -1024,15 +1081,17 @@ class AnimalText extends Konva.Text {
             case AnimalPosition.LOWER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
-                this.align('left');
+                this.align('right');
                 this.verticalAlign('bottom');
                 break;
             case AnimalPosition.LOWER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
-                this.align('right');
+                this.align('left');
                 this.verticalAlign('bottom');
                 break;
+            default:
+                throw new Error("Invalid Animal Position.");
         }
         this.width(baseSize);
         this.height(baseSize + 12);
