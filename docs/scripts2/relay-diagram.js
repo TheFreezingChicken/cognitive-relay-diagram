@@ -61,10 +61,12 @@ const TFCStyleColor = {
 
 const IMG_DIR_PATH = './img';
 
+// REM Leave "new Image" in case we need to use different types of resources.
 const DiagramResources = {
     BIG_DEMON_BG_IMG: new Image(),
     LITTLE_DEMON_BG_IMG: new Image(),
-    MASCULINE_FUNCTION_BG_IMG: new Image()
+    MASCULINE_FUNCTION_BG_IMG: new Image(),
+    FUNCTION_POINTER_GRID_IMG: new Image()
 }
 
 
@@ -103,8 +105,10 @@ class ResourceLoader {
         return Promise.all([
             loadImg(DiagramResources.LITTLE_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon3.png`),
             loadImg(DiagramResources.BIG_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon4.png`),
-            loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`)
+            loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`),
+            loadImg(DiagramResources.FUNCTION_POINTER_GRID_IMG, `${IMG_DIR_PATH}/pointer-grid.png`)
         ]).then(() => {
+            // REM Add any other resource initialization here.
             console.log("Resources fully initialized.")
             isLibraryReady = true
         });
@@ -326,27 +330,23 @@ class CognitiveFunctionState extends EventTarget {
         this.#isDemon = false;
         this.#isMasculine = false;
         
-        this.#devInit()
+        //this.#devInit()
     }
     
     
     #devInit() {
         switch (this.#grantOrder) {
             case 0:
-                this.#name = 'Se';
+                this.#name = 'Fi';
                 break
             case 1:
-                this.#name = 'Fi';
-                this.#isDemon = true;
+                this.#name = 'Ne';
                 break
             case 2:
-                this.#name = 'Te';
-                this.#isMasculine = true;
+                this.#name = 'Si';
                 break
             case 3:
-                this.#name = 'Ni';
-                this.#isDemon = true;
-                this.#isMasculine = true;
+                this.#name = 'Te';
                 break
         }
     }
@@ -379,6 +379,51 @@ class CognitiveFunctionState extends EventTarget {
     get isMasculine() {
         return this.#isMasculine;
     }
+    
+    
+    
+    fireChangeEvent() {
+        this.dispatchEvent(new Event('change'));
+    }
+    
+    
+    previousLetter() {
+        let letter = this.name[0];
+        let charge = this.name[1] ?? '';
+        switch (letter) {
+            case 'F':
+                // HERE Consider already implementing the proper menu (tapping shows circles, and sends event to main
+                //      state, then the entire diagram becomes almost invisible)
+                letter = 'N';
+                break;
+            case 'T':
+                letter = 'F';
+                break;
+            case 'S':
+                letter = 'T';
+                break;
+            case 'N':
+                letter = 'S';
+                break;
+            default:
+                throw new Error("Invalid letter");
+        }
+        
+        this.#name = letter + charge;
+        this.fireChangeEvent()
+    }
+    
+    nextLetter() {
+    
+    }
+    
+    makeIntroverted() {
+    
+    }
+    
+    makeExtroverted() {
+    
+    }
 }
 
 
@@ -403,7 +448,7 @@ class AnimalState extends EventTarget {
         this.#name = "";
         this.#isDoubleActivated = false;
         
-        this.#devInit()
+        //this.#devInit()
     }
     
     
@@ -587,13 +632,64 @@ class CognitiveFunctionGroup extends Konva.Group {
         const demonBgImg = new DemonBackgroundImage(cogFunState, circle);
         const masculineBgImg = new MasculineBackgroundImage(cogFunState, circle);
         const text = new CognitiveFunctionText(cogFunState, circle);
+        const pointerCircle = new CognitiveFunctionPointerCircle(cogFunState, circle);
         
-        this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text);
+        
+        this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text, pointerCircle);
     }
     
     
     get circle() {
         return this.#circle;
+    }
+}
+
+
+class CognitiveFunctionPointerCircle extends Konva.Circle {
+    /**
+     *
+     * @param {CognitiveFunctionState} cogFunState
+     * @param {CognitiveFunctionCircle} circle
+     */
+    constructor(cogFunState, circle) {
+        super(circle.getAttrs());
+        this.fill(null);
+        this.stroke(null);
+        this.opacity(0);
+        // noinspection JSCheckFunctionSignatures
+        this.fillPatternImage(DiagramResources.FUNCTION_POINTER_GRID_IMG);
+        this.fillPatternScale(2);
+        this.fillPatternOffsetX(-150);
+        this.fillPatternOffsetY(-150);
+        this.fillPatternScaleX(0.8);
+        this.fillPatternScaleY(0.8);
+    
+        this.on('mouseover', () => {
+            this.opacity(0.7);
+        });
+        
+        this.on('mouseout', () => {
+            this.opacity(0);
+        });
+        
+        this.on('click', () => {
+            const pos = this.getRelativePointerPosition();
+            console.log(pos);
+            switch (true) {
+                case pos.y < 0 && pos.x < 0:
+                    cogFunState.previousLetter();
+                    break;
+                case pos.y < 0 && pos.x > 0:
+                    cogFunState.nextLetter();
+                    break;
+                case pos.y > 0 && pos.x < 0:
+                    cogFunState.makeIntroverted();
+                    break;
+                case pos.y > 0 && pos.x > 0:
+                    cogFunState.makeExtroverted();
+                    break;
+            }
+        });
     }
 }
 
@@ -652,6 +748,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         cogFunState.addEventListener("change", () => {
             this.#updateDrawing(cogFunState, scaleFactor)
         });
+        
     }
     
     #updateDrawing(cogFunState, scaleFactor) {
@@ -683,9 +780,11 @@ class CognitiveFunctionCircle extends Konva.Circle {
         this.fill(fillColor);
         this.stroke(strokeColor);
     
+        const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
+        
         // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : 1);
-        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : 1);
+        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
     }
 }
 
@@ -999,7 +1098,6 @@ class AnimalLine extends Konva.Line {
     
     
     #updateDrawing(animalState) {
-        this.visible(animalState.isSet);
         switch (animalState.stackOrder) {
             case 0:
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
