@@ -270,7 +270,7 @@ export class CognitiveFunction {
     
     
     /**
-     * Equivalent to shortName[0].
+     * Equivalent to rawName[0].
      * @return {string} One of 'F', 'T', 'S', 'N', 'D', 'O'.
      */
     get rawLetter() {
@@ -287,7 +287,7 @@ export class CognitiveFunction {
     
     
     /**
-     * Equivalent to shortName[1].
+     * Equivalent to rawName[1].
      * @return {string} 'i', 'e' or '?'.
      */
     get rawCharge() {
