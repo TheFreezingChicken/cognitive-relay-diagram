@@ -262,7 +262,7 @@ export class CognitiveFunction {
     /**
      * @returns {string}
      */
-    get shortName() { return this._shortName; }
+    get shortName() { return this._internalName; }
     
     // SLEEP
     // get longName() { throw new Error("Not implemented."); }
@@ -1497,7 +1497,7 @@ export class OpType {
         grantStack[3] = grantStack[0]?.opposite();
         // If introversion/extroversion characters of first and second savior functions are matching, then the correct
         // second Grant function is the opposite of the second savior function, otherwise it's the savior function itself.
-        const matchingSaviorsExtroversion = saviorFunctions[0]?.charge === saviorFunctions[1]?.charge;
+        const matchingSaviorsExtroversion = saviorFunctions[0]?.#charge === saviorFunctions[1]?.#charge;
         grantStack[1] = matchingSaviorsExtroversion ? saviorFunctions[1]?.opposite() : saviorFunctions[1];
         grantStack[2] = grantStack[1]?.opposite();
         this._grantStack = grantStack;

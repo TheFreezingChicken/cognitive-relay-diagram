@@ -5,9 +5,10 @@ const CIRCLE_BASE_RADIUS = 60;
 // Multiplier applied to CIRCLE_BASE_RADIUS to get the width of each circle stroke.
 const CIRCLE_STROKE_FACTOR = 0.15;
 const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
+
+
 // To change the distante between circles on the same "axis".
 const OPPOSITE_CIRCLE_DISTANCE = 350;
-
 export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
 const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
 
@@ -281,7 +282,6 @@ class OpTypeState extends EventTarget {
         this.#cogFunStates = cogFunStates;
         this.#animalStates = animalStates;
     
-        // HERE Figure out how to listen for changes to letters/charges and propagate other changes accordingly.
         
         for (let i = 0; i < 4; i++) {
             cogFunStates[i] = new CognitiveFunctionState(this, i);
@@ -350,8 +350,10 @@ class CognitiveFunctionState extends EventTarget {
                 // HERE I was making the latest changes here, but now I need to figure out where to start if I wanna
                 //      have simple controls.
                 //      ---- PC ----
+                //      Use fire(...), to fire events and bubble them.
+                //
                 //      Hovering on the area inside the diagram (invisible square above everything) shows the controls.
-                //      Clicking on first function left side changes the letter, clicking on right side changes the charge.
+                //      Clicking on first function left side changes the letter (same axis), clicking on right side changes the charge.
                 //      When the charge is changed, the middle axis is swapped (so the axis itself stays the same).
                 //      Another control is shown nearby the upper-left animal, to switch the axis (O vs D), which in terms of
                 //      MBTI is equivalent from switching from E to I (thefore maintaining the same axis).
@@ -717,8 +719,17 @@ export class MainRelayDiagram extends Konva.Group {
             animalStackGroup.add(ag);
         }
         
+        const controlsSquare = new ControlsArea(state);
+        
         // Add the two stack-groups. Animals are visually below, so they're added first.
-        this.add(animalStackGroup, cogFunStackGroup);
+        this.add(animalStackGroup, cogFunStackGroup, controlsSquare);
+        this.on('mouseover', (e) => {
+            this.opacity(0.3);
+        });
+        
+        this.on('mouseout', (e) => {
+            this.opacity(1);
+        });
     }
 }
 
@@ -895,7 +906,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         let fillColor;
         let strokeColor;
         // Select colors based on first character of function.
-        switch (cogFunState.name[0]) {
+        switch (cogFunState.#name[0]) {
             case 'F':
                 fillColor = TFCStyleColor.FEELING_FILL;
                 strokeColor = TFCStyleColor.FEELING_STROKE;
@@ -923,8 +934,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
         const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
         
         // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
-        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleX(cogFunState.#name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleY(cogFunState.#name.length === 2 ? scaleFactor : genericScaleFactor);
     }
 }
 
@@ -1109,7 +1120,7 @@ class CognitiveFunctionText extends Konva.Text {
     
     
     #updateDrawing(cogFunState, circle) {
-        this.text(cogFunState.name);
+        this.text(cogFunState.#name);
         this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
     }
 }
@@ -1383,7 +1394,7 @@ class AnimalLetter extends AnimalText {
     
     #updateDrawing(animalState) {
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-        let animalName = animalState.name
+        let animalName = animalState.#name
     
         if (animalState.stackOrder === 3) {
             animalName = `(${animalName})`;
@@ -1414,5 +1425,17 @@ class AnimalOrderNumber extends AnimalText {
     
     #updateDrawing(animalState) {
         super._updateText((animalState.stackOrder + 1).toString(), animalState);
+    }
+}
+
+
+
+class ControlsArea extends Konva.Rect {
+    /**
+     *
+     * @param opTypeState {OpTypeState}
+     */
+    constructor(opTypeState) {
+        super();
     }
 }

@@ -1,3 +1,5 @@
+import {Axis, CognitiveFunction, HumanNeed} from "../scripts/op-lib";
+
 const PRIVATE_OPERATION = Symbol();
 
 /**
@@ -32,7 +34,7 @@ export const Axis = {
      * @return {Axis}
      */
     oppositeOf: function (letter) {
-        const axis = this.fromLetter(letter);
+        const axis = this?.fromLetter(letter) ?? throw Error("Missing function.");
         
         if (axis === this.OBSERVING) return this.DECIDING
         else return this.OBSERVING;
@@ -93,92 +95,197 @@ Charge.All = [Charge.INTROVERTED, Charge.EXTROVERTED];
 Object.freeze(Charge);
 
 
-//
-//
-// export class HumanNeed {
-//     static #canConstruct = true;
-//     static #_DI_SELF = new HumanNeed('Di');
-//     static #_DE_TRIBE = new HumanNeed('De');
-//     static #_OI_ORGANIZE = new HumanNeed('Oi');
-//     static #_OE_GATHER = new HumanNeed('Oe');
-//     static #canConstruct = false;
-//
-//     /**
-//      * @return {HumanNeed}
-//      */
-//     static get DI_SELF() {
-//         return this.#_DI_SELF;
-//     }
-//
-//     /**
-//      * @return {HumanNeed}
-//      */
-//     static get DE_TRIBE() {
-//         return this.#_DE_TRIBE;
-//     }
-//
-//
-//     /**
-//      * @return {HumanNeed}
-//      */
-//     static get OI_ORGANIZE() {
-//         return this.#_OI_ORGANIZE;
-//     }
-//
-//     /**
-//      * @return {HumanNeed}
-//      */
-//     static get OE_GATHER() {
-//         return this.#_OE_GATHER;
-//     }
-//
-//     /**
-//      * @return {HumanNeed[]}
-//      */
-//     static get All() {
-//         return [this.DI_SELF, this.DE_TRIBE, this.OI_ORGANIZE, this.OE_GATHER];
-//     }
-//
-//     /**
-//      * @param name {string}
-//      * @return {HumanNeed}
-//      */
-//     static fromName(name) {
-//         return this.All.find((value) => {
-//             return value.name === name || value.rawName === name;
-//         });
-//     }
-//
-//
-//     /**
-//      * @param humanNeedShortName {string}
-//      */
-//     constructor(humanNeedShortName) {
-//         if (new.target === HumanNeed && !HumanNeed.#canConstruct) throw new Error(
-//             "Private constructor. Use static properties and methods."
-//         );
-//
-//         this.rawName = humanNeedShortName;
-//
-//         switch (humanNeedShortName) {
-//             case 'Di':
-//                 this.name = 'Self';
-//                 break;
-//             case 'De':
-//                 this.name = 'Tribe';
-//                 break;
-//             case 'Oi':
-//                 this.name = 'Organize';
-//                 break;
-//             case 'Oe':
-//                 this.name = 'Gather';
-//                 break;
-//             default:
-//                 throw new Error("Impossible. Invalid human need short name.");
-//         }
-//
-//         if (new.target === HumanNeed) {
-//             Object.freeze(this);
+
+
+/**
+ * @readonly
+ * @enum {HumanNeedConfig}
+ */
+export const HumanNeed = {
+    DI_SELF: new HumanNeedConfig(Axis.DECIDING, Charge.INTROVERTED),
+    DE_TRIBE: new HumanNeedConfig(Axis.DECIDING, Charge.EXTROVERTED),
+    OI_ORGANIZE: new HumanNeedConfig(Axis.OBSERVING, Charge.INTROVERTED),
+    OE_GATHER: new HumanNeedConfig(Axis.OBSERVING, Charge.EXTROVERTED)
+
+
+    // /**
+    //  * @param humanNeedShortName {string}
+    //  */
+    // constructor(humanNeedShortName) {
+    //     if (new.target === HumanNeed && !HumanNeed.#canConstruct) throw new Error(
+    //         "Private constructor. Use static properties and methods."
+    //     );
+    //
+    //     this.rawName = humanNeedShortName;
+    //
+    //     switch (humanNeedShortName) {
+    //         case 'Di':
+    //             this.name = 'Self';
+    //             break;
+    //         case 'De':
+    //             this.name = 'Tribe';
+    //             break;
+    //         case 'Oi':
+    //             this.name = 'Organize';
+    //             break;
+    //         case 'Oe':
+    //             this.name = 'Gather';
+    //             break;
+    //         default:
+    //             throw new Error("Impossible. Invalid human need short name.");
+    //     }
+    //
+    //     if (new.target === HumanNeed) {
+    //         Object.freeze(this);
+    //     }
+    // }
+}
+/** @type {HumanNeed[]} */
+HumanNeed.All = [HumanNeed.DI_SELF, HumanNeed.DE_TRIBE, HumanNeed.OI_ORGANIZE, HumanNeed.OE_GATHER];
+Object.freeze(HumanNeed);
+
+
+/** @class */
+class HumanNeedConfig extends Object{
+    
+    /**
+     *
+     * @param axis {Axis}
+     * @param charge {Charge}
+     */
+    constructor(axis, charge) {
+        super();
+        
+        this._axis = axis;
+        this._charge = charge;
+        this._name = axis + charge;
+    }
+    
+    
+    get axis() {
+        return this._axis;
+    }
+    
+    get charge() {
+        return this._charge;
+    }
+    
+    get name() {
+        return this._name;
+    }
+    
+    
+    get longName() {
+        switch (this.name) {
+            case 'Di':
+                return 'Self';
+            case 'De':
+                return 'Tribe';
+            case 'Oi':
+                return 'Organize';
+            case 'Oe':
+                return 'Gather';
+            default:
+                throw new Error("Impossible. Invalid human need short name.");
+        }
+    }
+    
+    
+    toString() {
+        return this.name;
+    }
+}
+
+
+
+
+
+/**
+ * @readonly
+ * @enum {LetterConfig}
+ */
+export const Letter = {
+    S: new LetterConfig(Axis.OBSERVING, RealityScope.CONCRETE),
+    N: new LetterConfig(Axis.OBSERVING, RealityScope.ABSTRACT),
+    F: new LetterConfig(Axis.DECIDING, RealityScope.CONCRETE),
+    T: new LetterConfig(Axis.DECIDING, RealityScope.ABSTRACT)
+}
+/** @type {Letter[]} */
+Letter.All = []
+for (const l in Letter) {
+    Letter.All.push(Letter[l]);
+}
+Object.freeze(Letter);
+
+/**
+ * @class
+ */
+class LetterConfig extends Object {
+    
+    /**
+     *
+     * @param axis {Axis}
+     * @param realityScope {RealityScope}
+     */
+    constructor(axis, realityScope) {
+        super();
+        
+        this._axis = axis;
+        this._realityScope = realityScope;
+        this._name = realityScope[axis === Axis.OBSERVING ? 0 : 1];
+    }
+    
+    
+    get axis() {
+        return this._axis;
+    }
+    
+    get realityScope() {
+        return this._realityScope;
+    }
+    
+    /** @returns {string} */
+    get name() {
+        return this._name;
+    }
+    
+    get longName() {
+        switch (this.name) {
+            case 'S':
+                return 'Sensing';
+            case 'N':
+                return 'Intuiting';
+            case 'F':
+                return 'Feeling';
+            case 'T':
+                return 'Thinking';
+            default:
+                throw new Error("Impossible. Invalid human letter");
+        }
+    }
+    
+    
+    toString() {
+        return this.name;
+    }
+}
+
+
+// /**
+//  * @readonly
+//  * @enum {CognitiveFunctionConfig}
+//  */
+// export const CognitiveFunction = {
+// }
+// /** @type {CognitiveFunction[]} */
+// CognitiveFunction.All = [];
+// for (const ltr of Letter.All) {
+//     for (const need of HumanNeed.All) {
+//         if (need.axis === ltr.axis) {
+//             const cf = new CognitiveFunctionConfig(ltr, need);
+//             CognitiveFunction[ltr.name + need.charge] = cf;
+//             // noinspection JSCheckFunctionSignatures
+//             CognitiveFunction.All.push(cf);
 //         }
 //     }
 // }
@@ -193,7 +300,7 @@ export class CognitiveFunction {
      *     string.
      */
     constructor(cognitiveFunction) {
-        if (cognitiveFunction instanceof CognitiveFunction) cognitiveFunction = cognitiveFunction.rawName;
+        if (cognitiveFunction instanceof CognitiveFunction) cognitiveFunction = cognitiveFunction._internalName;
         if (typeof cognitiveFunction !== 'string') throw new TypeError("Invalid type.");
     
     
@@ -210,15 +317,15 @@ export class CognitiveFunction {
         // Check second letter for validity.
         if (/[^ie?]/.test(cognitiveFunction[1])) throw new Error("Invalid second letter.");
         
-        
-        this._shortName = cognitiveFunction
+        /**
+         * Used exclusively internally. Uses '?' for missing charge/need for ease of use.
+         * @type {string}
+         * @protected
+         */
+        this._internalName = cognitiveFunction;
     }
     
     
-    /**
-     * @returns {string}
-     */
-    get rawName() { return this._shortName; }
     
     /**
      * @returns {string}
@@ -230,15 +337,7 @@ export class CognitiveFunction {
     // SLEEP
     // get longName() { throw new Error("Not implemented."); }
     
-    
-    
-    /**
-     * Equivalent to rawName[0].
-     * @return {string} One of 'F', 'T', 'S', 'N', 'D', 'O'.
-     */
-    get rawLetter() {
-        return this.rawName[0];
-    }
+    // HERE
     
     /**
      *
@@ -248,14 +347,6 @@ export class CognitiveFunction {
         return /[OD]/.test(this.rawLetter) ? undefined : this.rawLetter;
     }
     
-    
-    /**
-     * Equivalent to rawName[1].
-     * @return {string} 'i', 'e' or '?'.
-     */
-    get rawCharge() {
-        return this.rawName[1];
-    }
     
     /**
      * @returns {undefined|string} 'i', 'e' or undefined
