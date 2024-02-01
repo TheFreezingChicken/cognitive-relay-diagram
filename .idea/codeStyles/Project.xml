@@ -3,6 +3,7 @@
     <option name="AUTODETECT_INDENTS" value="false" />
     <JSCodeStyleSettings version="0">
       <option name="REFORMAT_C_STYLE_COMMENTS" value="true" />
+      <option name="INDENT_CHAINED_CALLS" value="false" />
     </JSCodeStyleSettings>
     <codeStyleSettings language="JavaScript">
       <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
@@ -22,6 +23,68 @@
       <indentOptions>
         <option name="KEEP_INDENTS_ON_EMPTY_LINES" value="true" />
       </indentOptions>
+      <arrangement>
+        <rules>
+          <section>
+            <rule>
+              <match>
+                <AND>
+                  <FIELD>true</FIELD>
+                  <STATIC>true</STATIC>
+                </AND>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <AND>
+                  <PROPERTY>true</PROPERTY>
+                  <STATIC>true</STATIC>
+                </AND>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <AND>
+                  <METHOD>true</METHOD>
+                  <STATIC>true</STATIC>
+                </AND>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <FIELD>true</FIELD>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <CONSTRUCTOR>true</CONSTRUCTOR>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <PROPERTY>true</PROPERTY>
+              </match>
+            </rule>
+          </section>
+          <section>
+            <rule>
+              <match>
+                <METHOD>true</METHOD>
+              </match>
+            </rule>
+          </section>
+        </rules>
+      </arrangement>
     </codeStyleSettings>
   </code_scheme>
 </component>
