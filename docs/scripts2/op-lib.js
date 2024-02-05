@@ -10,7 +10,7 @@ class PrivateConstructorObject extends Object {
     constructor() {
         super();
         const subClass = this.constructor;
-        if (!subClass._canConstruct) throw Error(
+        if (!subClass._canConstruct) throw new Error(
             "Private constructor. Use class methods or constants to get instances."
         );
     }
@@ -36,7 +36,7 @@ class Enum extends PrivateConstructorObject {
 /**
  * @readonly
  */
-class Axis extends Enum {
+export class Axis extends Enum {
     static _canConstruct = true;
     
     static #OBSERVING = new Axis('O');
@@ -179,7 +179,7 @@ class RealityScope extends Enum {
             case 'D':
                 return this._label[1];
             default:
-                throw Error("Invalid axis argument.");
+                throw new Error("Invalid axis argument.");
         }
     }
     
@@ -255,8 +255,14 @@ class Charge extends PrivateConstructorObject {
     
     
     opposite() {
-        if(this === Charge.INTROVERTED) return Charge.EXTROVERTED
-        else return Charge.INTROVERTED
+        switch (this) {
+            case Charge.INTROVERTED:
+                return Charge.EXTROVERTED;
+            case Charge.EXTROVERTED:
+                return Charge.INTROVERTED;
+            default:
+                throw new Error("Impossible. Foreign Charge instance.");
+        }
     }
     
     
@@ -307,15 +313,19 @@ class HumanNeed extends PrivateConstructorObject {
     static fromString(humanNeedLabel) {
         switch (humanNeedLabel) {
             case 'Di':
+            case 'Self':
                 return this.DI_SELF;
             case 'De':
+            case 'Tribe':
                 return this.DE_TRIBE;
             case 'Oi':
+            case 'Organize':
                 return this.OI_ORGANIZE;
             case 'Oe':
+            case 'Gather':
                 return this.OE_GATHER;
             default:
-                throw new Error("Impossible. Invalid human need short label.");
+                throw new Error("Invalid human need string.");
         }
     }
     
@@ -343,17 +353,17 @@ class HumanNeed extends PrivateConstructorObject {
     }
     
     get longName() {
-        switch (this.label) {
-            case 'Di':
+        switch (this) {
+            case HumanNeed.DI_SELF:
                 return 'Self';
-            case 'De':
+            case HumanNeed.DE_TRIBE:
                 return 'Tribe';
-            case 'Oi':
+            case HumanNeed.OI_ORGANIZE:
                 return 'Organize';
-            case 'Oe':
+            case HumanNeed.OE_GATHER:
                 return 'Gather';
             default:
-                throw new Error("Impossible. Invalid human need short label.");
+                throw new Error("Impossible. Foreign Human Need instance.");
         }
     }
     
@@ -380,24 +390,24 @@ class Letter extends PrivateConstructorObject {
     }
     
     
-    static get S() {
+    static get Sensing() {
         return this.#S;
     }
     
-    static get N() {
+    static get Intuiting() {
         return this.#N;
     }
     
-    static get F() {
+    static get Feeling() {
         return this.#F;
     }
     
-    static get T() {
+    static get Thinking() {
         return this.#T;
     }
     
     
-    static #All = [this.S,this.N,this.F,this.T];
+    static #All = [this.Sensing,this.Intuiting,this.Feeling,this.Thinking];
     static get All() {
         return this.#All;
     }
@@ -406,15 +416,15 @@ class Letter extends PrivateConstructorObject {
     static fromCharacter(character) {
         switch (character) {
             case 'S':
-                return this.S;
+                return this.Sensing;
             case 'N':
-                return this.N;
+                return this.Intuiting;
             case 'F':
-                return this.F;
+                return this.Feeling;
             case 'T':
-                return this.T;
+                return this.Thinking;
             default:
-                throw Error("String is not a valid letter.");
+                throw new Error("String is not a valid letter.");
         }
     }
     
@@ -446,22 +456,39 @@ class Letter extends PrivateConstructorObject {
     }
     
     get longName() {
-        switch (this.label) {
-            case 'S':
+        switch (this) {
+            case Letter.Sensing:
                 return 'Sensing';
-            case 'N':
+            case Letter.Intuiting:
                 return 'Intuiting';
-            case 'F':
+            case Letter.Feeling:
                 return 'Feeling';
-            case 'T':
+            case Letter.Thinking:
                 return 'Thinking';
             default:
-                throw new Error("Impossible. Invalid human letter");
+                throw new Error("Impossible. Foreign Letter instance.");
         }
     }
     
     toString() {
         return this.label;
+    }
+    
+    
+    
+    opposite() {
+        switch (this) {
+            case Letter.Sensing:
+                return Letter.Intuiting;
+            case Letter.Intuiting:
+                return Letter.Sensing;
+            case Letter.Feeling:
+                return Letter.Thinking;
+            case Letter.Thinking:
+                return Letter.Feeling;
+            default:
+                throw new Error("Impossible. Foreign Letter instance.");
+        }
     }
 }
 
@@ -506,6 +533,9 @@ export class CognitiveFunction {
     
         // If it's a one-letter function add a question mark for the introversion/extroversion
         if (cognitiveFunction.length === 1) cognitiveFunction = cognitiveFunction + '?';
+        
+        // Normalize case.
+        cognitiveFunction = cognitiveFunction[0].toUpperCase() + cognitiveFunction[1].toLowerCase();
     
         // Check first letter for validity.
         if (/[^FTSNDO]/.test(cognitiveFunction[0])) throw new Error("Invalid first letter.");
@@ -527,7 +557,10 @@ export class CognitiveFunction {
     //   - we always have the first letter (O or D at the very least)
     //   - missing charge == '?'
     
-    
+    /**
+     *
+     * @return {undefined|Letter}
+     */
     get letter() {
         const char1 = this._internalName[0];
         
@@ -624,13 +657,13 @@ export class CognitiveFunction {
      *
      * @returns {boolean|undefined}
      */
-    get isOi() { return this.isIntroverted && this.isObserving; }
+    get isOi() { return this.humanNeed === HumanNeed.OI_ORGANIZE; }
     
     /**
      *
      * @returns {boolean|undefined}
      */
-    get isOe() { return this.isExtroverted && this.isObserving; }
+    get isOe() { return this.humanNeed === HumanNeed.OE_GATHER; }
     
     
     
@@ -639,7 +672,7 @@ export class CognitiveFunction {
      * @returns {boolean}
      */
     get isSensing() {
-        return this.letter === 'S';
+        return this.letter === Letter.Sensing;
     }
     
     /**
@@ -647,7 +680,7 @@ export class CognitiveFunction {
      * @returns {boolean}
      */
     get isIntuition() {
-        return this.letter === 'N';
+        return this.letter === Letter.Intuiting;
     }
     
     
@@ -656,28 +689,28 @@ export class CognitiveFunction {
      *
      * @returns {boolean|undefined}
      */
-    get isDi() { return this.isIntroverted && this.isDeciding; }
+    get isDi() { return this.humanNeed === HumanNeed.DI_SELF; }
     
     /**
      *
      * @returns {boolean|undefined}
      */
-    get isDe() { return this.isExtroverted && this.isDeciding; }
+    get isDe() { return this.humanNeed === HumanNeed.DE_TRIBE; }
     
     
     
     /** @returns {boolean} */
     get isFeeling() {
-        return this.letter === 'F'
+        return this.letter === Letter.Feeling;
     }
     
     /** @returns {boolean} */
     get isThinking() {
-        return this.letter === 'T'
+        return this.letter === Letter.Thinking;
     }
     
     
-    // SLEEP Add humanNeedOnly() function to return a copy function reduced to "Oi, Oe, Di, De" or undefined.
+    
     
     
     
@@ -689,40 +722,10 @@ export class CognitiveFunction {
      * @returns {CognitiveFunction}
      */
     opposite() {
-        let letter = this.rawLetter;
-        let charge = this.rawCharge;
-        
-        switch (letter) {
-            case 'F':
-                letter = 'T';
-                break;
-            case 'T':
-                letter = 'F';
-                break;
-            case 'S':
-                letter = 'N';
-                break;
-            case 'N':
-                letter = 'S';
-                break;
-            default:
-                // Do nothing.
-                break;
-        }
-        
-        switch (charge) {
-            case 'i':
-                charge = 'e';
-                break;
-            case 'e':
-                charge = 'i';
-                break;
-            default:
-                // Do nothing.
-                break;
-        }
+        const letterStr = this.letter?.opposite()?.label ?? this.axis.label;
+        const chargeStr = this.charge?.opposite()?.label ?? '';
 
-        return new CognitiveFunction(letter + charge);
+        return new CognitiveFunction(letterStr + chargeStr);
     }
     
     /**
@@ -731,27 +734,10 @@ export class CognitiveFunction {
      * @returns {CognitiveFunction}
      */
     withOppositeLetter() {
-        let letter = this.rawLetter;
-    
-        switch (letter) {
-            case 'F':
-                letter = 'T';
-                break;
-            case 'T':
-                letter = 'F';
-                break;
-            case 'S':
-                letter = 'N';
-                break;
-            case 'N':
-                letter = 'S';
-                break;
-            default:
-                // Do nothing.
-                break;
-        }
-    
-        return new CognitiveFunction(letter + this.rawCharge);
+        const letterStr = this.letter?.opposite()?.label ?? this.axis.label;
+        const chargeStr = this._internalName[1];
+        
+        return new CognitiveFunction(letterStr + chargeStr);
     }
     
     /**
@@ -759,21 +745,10 @@ export class CognitiveFunction {
      * @return {CognitiveFunction}
      */
     withOppositeCharge() {
-        let charge = this.rawCharge;
-    
-        switch (charge) {
-            case 'i':
-                charge = 'e';
-                break;
-            case 'e':
-                charge = 'i';
-                break;
-            default:
-                // Do nothing.
-                break;
-        }
-    
-        return new CognitiveFunction(this.rawLetter + charge);
+        const letterStr = this._internalName[0];
+        const chargeStr = this.charge?.opposite()?.label ?? '';
+        
+        return new CognitiveFunction(letterStr + chargeStr);
     }
     
     
@@ -783,37 +758,79 @@ export class CognitiveFunction {
      * @returns {boolean}
      */
     get isPartial() {
-        return /[OD?]/.test(this.rawName);
+        return /[OD?]/.test(this._internalName);
     }
     
     /**
-     * @param {any|string|CognitiveFunction} otherFunction
+     * @param {string|CognitiveFunction} otherFunction
      * @returns {boolean|undefined}
      */
     equalsTo(otherFunction) {
-        // Convert to CognitiveFunction if string, but also catch invalid strings and return undefined for them.
         try {
             if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
         } catch (e) {
-            return undefined
+            throw new Error("String argument isn't a valid cognitive function.");
         }
         
-        if (!(otherFunction instanceof CognitiveFunction)) return undefined;
+        if (!(otherFunction instanceof CognitiveFunction)) throw TypeError("Invalid argument type.");
         
-        return this.rawName === otherFunction.rawName;
+        return this.label === otherFunction.label;
     }
     
+    
     /**
-     * @param otherFunction {CognitiveFunction|string|any}
-     * @returns {boolean} True if D/O coin matches, false if it doesn't.
+     * Same as [equalsTo] but doesn't accept strings.
+     *
+     * @param otherFunction {CognitiveFunction}
+     * @return {boolean|undefined}
      */
-    hasAxisAffinityWith(otherFunction) {
-        // No need to check for string validity because we want an error if the argument is not a function.
-        if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
-        if (!(otherFunction instanceof CognitiveFunction)) throw new Error('Invalid argument. Not a function.');
+    strictlyEqualsTo(otherFunction) {
+        if (!(otherFunction instanceof CognitiveFunction)) throw TypeError("Not an instance of CognitiveFunction.");
         
-        // DEBT (low chance) Assumes even partial functions always have a D/O letter.
-        return this.isDeciding && otherFunction.isDeciding || this.isObserving && otherFunction.isObserving;
+        return this.equalsTo(otherFunction);
+    }
+    
+    
+    /**
+     * @param otherFunction {CognitiveFunction|string}
+     * @returns {boolean} True if both functions can appear in a single type. False otherwise.
+     */
+    isCompatibleWith(otherFunction) {
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            throw new Error("String argument isn't a valid cognitive function.");
+        }
+        if (!(otherFunction instanceof CognitiveFunction)) throw new TypeError('Invalid argument type.');
+        
+        if (this.axis !== otherFunction.axis) return true;
+        
+        return !(
+            this.charge != null && this.charge === otherFunction.charge ||
+            this.letter != null && this.letter === otherFunction.letter
+        );
+    }
+    
+    
+    
+    /**
+     * @param otherFunction {CognitiveFunction|string}
+     * @returns {boolean} True if both functions can be Savior functions in a single type. False otherwise.
+     */
+    canBeSaviorWith(otherFunction) {
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            throw new Error("String argument isn't a valid cognitive function.");
+        }
+        if (!(otherFunction instanceof CognitiveFunction)) throw new TypeError('Invalid argument type.');
+        
+        if (this.axis === otherFunction.axis) return false;
+        
+        return !(
+            this.charge != null && this.charge === otherFunction.charge ||
+            this.letter != null && this.letter === otherFunction.letter
+        );
     }
     
     
@@ -1168,169 +1185,181 @@ export class CognitiveFunction {
 
 
 
+
+
 /**
  * @readonly
- * @class
  */
-export class Animal {
-    static #_SLEEP = new Animal("Oi", "Di");
-    static #_CONSUME = new Animal("Oe", "Di");
-    static #_BLAST = new Animal("Oi", "De");
-    static #_PLAY = new Animal("Oe", "De");
+export class Animal extends Enum {
+    static _canConstruct = true;
     
-    /** @type {Animal} */
+    static #SLEEP = new Animal(HumanNeed.OI_ORGANIZE, HumanNeed.DI_SELF);
+    static #CONSUME = new Animal(HumanNeed.OE_GATHER, HumanNeed.DI_SELF);
+    static #BLAST = new Animal(HumanNeed.OI_ORGANIZE, HumanNeed.DE_TRIBE);
+    static #PLAY = new Animal(HumanNeed.OE_GATHER, HumanNeed.DE_TRIBE);
+    
+    static {
+        this._canConstruct = false;
+    }
+    
+    
     static get SLEEP() {
-        return this.#_SLEEP;
+        return this.#SLEEP;
     }
     
-    /** @type {Animal} */
     static get CONSUME() {
-        return this.#_CONSUME;
+        return this.#CONSUME;
     }
     
-    /** @type {Animal} */
     static get BLAST() {
-        return this.#_BLAST;
+        return this.#BLAST;
     }
     
-    /** @type {Animal} */
     static get PLAY() {
-        return this.#_PLAY;
+        return this.#PLAY;
     }
     
-    // SLEEP Consider dividing constructor in fromName(), fromFunctions(), and copy(), make constructor private, and
-    //       fix equality functions accordingly.
+    
     /**
-     * @param {CognitiveFunction|string} cogFun1 Two characters string or CognitiveFunction
-     * @param {CognitiveFunction|string} cogFun2 Two characters string or CognitiveFunction
+     * @param humanNeed1 {string|HumanNeed|CognitiveFunction}
+     * @param humanNeed2 {string|HumanNeed|CognitiveFunction}
+     * @return {Animal}
      */
-    constructor(cogFun1, cogFun2) {
-        if (typeof cogFun1 === 'string') cogFun1 = new CognitiveFunction(cogFun1);
-        if (typeof cogFun2 === 'string') cogFun2 = new CognitiveFunction(cogFun2);
-        if (!(cogFun1 instanceof CognitiveFunction && cogFun2 instanceof CognitiveFunction)) throw new TypeError(
-            "One or more arguments is not a cognitive function."
-        );
+    static fromHumanNeeds(humanNeed1, humanNeed2) {
+        // Reducing other types to human needs first.
         
-        if (!(cogFun1.charge && cogFun2.charge)) throw new Error(
-            "Missing charge on one or both functions, which is required for Animals."
-        );
-        
-        if (cogFun1.hasAxisAffinityWith(cogFun2)) throw new Error(
-            "Invalid arguments. Functions must be on different axes D+O."
-        );
-        
-        this._dFunction = cogFun1.isDeciding ? cogFun1 : cogFun2;
-        this._oFunction = cogFun1.isObserving ? cogFun1 : cogFun2;
-        
-        let name = cogFun1.charge + cogFun2.charge;
-        switch (name) {
-            case 'ee':
-                name = 'Play'
-                break;
-            case 'ii':
-                name = 'Sleep'
-                break;
-            case 'ei':
-            case 'ie':
-                if (this._oFunction.isIntroverted) name = 'Blast'
-                else name = 'Consume';
-                break;
-            default:
-                throw new Error("Impossible. Invalid charge. Abort.");
+        try {
+            if (typeof humanNeed1 === 'string') humanNeed1 = new CognitiveFunction(humanNeed1);
+            if (typeof humanNeed2 === 'string') humanNeed2 = new CognitiveFunction(humanNeed2);
+        } catch (e) {
+            throw new Error("The provided string argument isn't a valid CognitiveFunction.");
         }
-        this._name = name;
         
-        Object.freeze(this);
+        if (humanNeed1 instanceof CognitiveFunction) humanNeed1 = humanNeed1.humanNeed;
+        if (humanNeed2 instanceof CognitiveFunction) humanNeed2 = humanNeed2.humanNeed;
+        
+        if (!(humanNeed1 instanceof HumanNeed && humanNeed2 instanceof HumanNeed)) throw new TypeError(
+            "Invalid type for one or more arguments."
+        );
+        
+        if (humanNeed1.axis === humanNeed2.axis) throw new Error(
+            "Can't have two human needs on the same axis for an Animal."
+        );
+        
+        switch (humanNeed1.label[1] + humanNeed2.label[2]) {
+            case 'ee':
+                return this.PLAY;
+            case 'ii':
+                return this.SLEEP;
+            case 'ei':
+                return humanNeed1.axis === Axis.OBSERVING ? this.CONSUME : this.BLAST;
+            case 'ie':
+                return humanNeed1.axis === Axis.OBSERVING ? this.BLAST : this.CONSUME;
+            default:
+                throw new Error("Impossible. Foreign HumanNeed instance.");
+        }
     }
     
+    
     /**
-     *
-     * @return {CognitiveFunction}
+     * 
+     * @param animalString {string}
+     * @return {Animal}
      */
+    static fromAnimalString(animalString) {
+        switch (animalString) {
+            case 'S':
+            case 'SLEEP':
+                return this.SLEEP;
+            case 'C':
+            case 'CONSUME':
+                return this.CONSUME;
+            case 'B':
+            case 'BLAST':
+                return this.BLAST;
+            case 'P':
+            case 'PLAY':
+                return this.PLAY;
+            default:
+                throw new Error("Invalid Animal string.");
+        }
+    }
+    
+    
+    /**
+     * @param observingHumanNeed {HumanNeed}
+     * @param decidingHumanNeed {HumanNeed}
+     */
+    constructor(observingHumanNeed, decidingHumanNeed) {
+        super();
+        
+        let label;
+        if (observingHumanNeed === HumanNeed.OI_ORGANIZE) {
+            label = decidingHumanNeed === HumanNeed.DI_SELF ? 'S' : 'B';
+        } else {
+            label = decidingHumanNeed === HumanNeed.DI_SELF ? 'C' : 'P';
+        }
+        
+        this._observingHumanNeed = observingHumanNeed;
+        this._decidingHumanNeed = decidingHumanNeed;
+        this._label = label;
+    }
+    
+    
+    
+    get label() {
+        return this._label;
+    }
+    
     get decidingFunction() {
-        return this._dFunction;
+        return this._decidingHumanNeed;
     }
     
-    /**
-     *
-     * @returns {CognitiveFunction}
-     */
     get observingFunction() {
-        return this._oFunction;
+        return this._observingHumanNeed;
     }
     
-    /**
-     *
-     * @returns {string}
-     */
-    get name() {
-        return this._name;
-    }
     
-    /**
-     *
-     * @return {string}
-     */
-    get letter() {
-        return this.name[0];
-    }
     
+    // noinspection JSDuplicatedDeclaration
+    /**
+     * @param otherAnimal {string|Animal}
+     */
+    equalsTo(otherAnimal);
+    
+    // noinspection JSDuplicatedDeclaration
     /**
      *
-     * @returns {boolean}
+     * @param humanNeed1 {string|HumanNeed|CognitiveFunction}
+     * @param humanNeed2 {string|HumanNeed|CognitiveFunction}
      */
-    get isPartial() {
-        return this.decidingFunction.isPartial || this.observingFunction.isPartial
-    }
+    equalsTo(humanNeed1, humanNeed2) {
+        let otherAnimal = humanNeed1;
+        if (!(otherAnimal instanceof Animal)) otherAnimal = Animal.fromHumanNeeds(humanNeed1, humanNeed2);
+        
+        return this.label === otherAnimal.label;
+    };
+    
     
     
     opposite() {
-        const oppositeObserver = this.observingFunction.opposite()
-        const oppositeDecider = this.observingFunction.opposite()
-        
-        return new Animal(oppositeObserver, oppositeDecider);
-    }
-    
-    /**
-     * @param otherAnimal {Animal}
-     * @return {boolean}
-     */
-    isSameAnimalOf(otherAnimal) {};
-    
-    /**
-     *
-     * @param cogFun1 {CognitiveFunction|string}
-     * @param cogFun2 {CognitiveFunction|string}
-     * @return {boolean}
-     */
-    isSameAnimalOf(cogFun1, cogFun2) {
-        // If second arg is not null, assume it's two functions and make Animal, otherwise use first arg as Animal.
-        const otherAnimal = cogFun2 != null ? new Animal(cogFun1, cogFun2) : cogFun1;
-        if (!(otherAnimal instanceof Animal)) throw new TypeError("Not an instance of Animal.");
-        
-        return otherAnimal.name === this.name;
-    }
-    
-    /**
-     * @param animalName {string} First letter or full name of the animal.
-     * @return {boolean}
-     */
-    matches(animalName) {
-        switch (animalName) {
-            case 'Sleep':
-            case 'S':
-            case 'Consume':
-            case 'C':
-            case 'Blast':
-            case 'B':
-            case 'Play':
-            case 'P':
-                break;
+        switch (this) {
+            case Animal.SLEEP:
+                return Animal.PLAY;
+            case Animal.CONSUME:
+                return Animal.BLAST;
+            case Animal.BLAST:
+                return Animal.CONSUME;
+            case Animal.PLAY:
+                return Animal.SLEEP;
             default:
-                throw new Error("Invalid Animal name.");
+                throw new Error("Impossible. Foreign animal instance.");
         }
-        
-        return this.letter === animalName[0];
+    };
+    
+    
+    toString() {
+        return this.label;
     }
 }
 
@@ -1344,7 +1373,7 @@ export class Animal {
 // export class OpType {
 //
 //     static build512Type(animalStack, saviors, modality) {
-//         throw Error("Not implemented.")
+//         throw new Error("Not implemented.")
 //         return undefined;
 //     }
 //
@@ -1380,7 +1409,7 @@ export class Animal {
 //                 this._coinMainUnbalance = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSingleObserver.");
+//                 throw new Error("Invalid argument for isSingleObserver.");
 //         }
 //
 //         switch (isSaviorDi) {
@@ -1397,7 +1426,7 @@ export class Animal {
 //                 this._coinDeciderCharge = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorDi.");
+//                 throw new Error("Invalid argument for isSaviorDi.");
 //         }
 //
 //
@@ -1415,7 +1444,7 @@ export class Animal {
 //                 this._coinObserverCharge = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorOi.");
+//                 throw new Error("Invalid argument for isSaviorOi.");
 //         }
 //
 //
@@ -1433,7 +1462,7 @@ export class Animal {
 //                 this._coinObserverLetter = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorSensing.");
+//                 throw new Error("Invalid argument for isSaviorSensing.");
 //         }
 //
 //
@@ -1452,7 +1481,7 @@ export class Animal {
 //                 this._coinDeciderLetter = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorFeeling.");
+//                 throw new Error("Invalid argument for isSaviorFeeling.");
 //         }
 //
 //
@@ -1472,7 +1501,7 @@ export class Animal {
 //                 this._coinInfoAnimal = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorConsume.");
+//                 throw new Error("Invalid argument for isSaviorConsume.");
 //         }
 //
 //
@@ -1492,7 +1521,7 @@ export class Animal {
 //                 this._coinEnergyAnimal = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isSaviorSleep.");
+//                 throw new Error("Invalid argument for isSaviorSleep.");
 //         }
 //
 //
@@ -1512,7 +1541,7 @@ export class Animal {
 //                 this._coinAnimalDominance = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isInfoDom.");
+//                 throw new Error("Invalid argument for isInfoDom.");
 //         }
 //
 //
@@ -1534,7 +1563,7 @@ export class Animal {
 //                 this._coinSocialEnergy = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isIntroverted.");
+//                 throw new Error("Invalid argument for isIntroverted.");
 //         }
 //
 //
@@ -1556,7 +1585,7 @@ export class Animal {
 //                 this._coinSensorySexual = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for hasMasculineSensory.");
+//                 throw new Error("Invalid argument for hasMasculineSensory.");
 //         }
 //
 //
@@ -1576,7 +1605,7 @@ export class Animal {
 //                 this._coinDeSexual = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for hasMasculineDe.");
+//                 throw new Error("Invalid argument for hasMasculineDe.");
 //         }
 //
 //
@@ -1594,7 +1623,7 @@ export class Animal {
 //                 this._coinRespect = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isFlex.");
+//                 throw new Error("Invalid argument for isFlex.");
 //         }
 //
 //
@@ -1613,7 +1642,7 @@ export class Animal {
 //                 this._coinAchievements = undefined;
 //                 break;
 //             default:
-//                 throw Error("Invalid argument for isResponsibility.");
+//                 throw new Error("Invalid argument for isResponsibility.");
 //         }
 //
 //
@@ -1710,7 +1739,7 @@ export class Animal {
 //      * @throws Will throw an error if the argument is not a function.
 //      */
 //     isSaviorFunction(indexOrFunction) {
-//         throw Error("Not implemented.");
+//         throw new Error("Not implemented.");
 //     }
 //
 //     /**
@@ -1809,7 +1838,7 @@ export class Animal {
 //                     incompatibleAnimal = Animals.C;
 //                     break;
 //                 default:
-//                     throw Error("Impossible case.")
+//                     throw new Error("Impossible case.")
 //             }
 //         }
 //

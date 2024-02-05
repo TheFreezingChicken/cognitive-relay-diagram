@@ -9,6 +9,7 @@ const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
 
 // To change the distante between circles on the same "axis".
 const OPPOSITE_CIRCLE_DISTANCE = 350;
+// Width and height of the diagram stage.
 export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
 const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
 
@@ -264,9 +265,13 @@ class AnimalPosition {
  * @enum {string}
  */
 const OpTypeStateEvents = Object.freeze({
-    CONSISTENCY_CHECK: 'consistencyCheck',
-    LETTER_CHANGE: 'letterChange',
-    CHARGE_CHANGE: 'chargeChange',
+    FIRST_FUN_LETTER_SWITCH: 'letterSwitch',
+    FIRST_FUN_CHARGE_SWITCH: 'chargeSwitch',
+    MIDDLE_AXIS_SWITCH: 'middleAxisSwitch',
+    // Send 'details' with the event when firing to know the grant index.
+    MAKE_MASCULINE: 'makeMasculine',
+    MODALITY_RESET: 'modalityReset',
+    TYPE_RESET: 'typeReset'
 });
 
 class OpTypeState extends EventTarget {
@@ -694,6 +699,10 @@ export class MainRelayDiagram extends Konva.Group {
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
         const cogFunStackGroup = new Konva.Group();
+        const cogFunCutoutsGroup = new Konva.Group({
+            globalCompositeOperation: 'destination-out'
+        });
+        
         /** @type {CognitiveFunctionGroup[]} */
         const cogFunGroups = new Array(4);
         for (let i = 0; i < 4; i++) {
@@ -701,6 +710,7 @@ export class MainRelayDiagram extends Konva.Group {
             
             cogFunGroups[i] = cfg;
             cogFunStackGroup.add(cfg);
+            cogFunCutoutsGroup.add(new CognitiveFunctionCircle(state.getCogFunState(i)));
         }
     
         const animalStackGroup = new Konva.Group();
@@ -719,17 +729,31 @@ export class MainRelayDiagram extends Konva.Group {
             animalStackGroup.add(ag);
         }
         
-        const controlsSquare = new ControlsArea(state);
+        const invisibleRectangle = new Konva.Rect({
+            width: DIAGRAM_SIZE,
+            height: DIAGRAM_SIZE,
+            opacity: 0
+        });
+        const controlsSquare = new ControlsGroup(state);
         
+        
+        // HERE Fucking cutout works, now figure out how to insert the other two without fucking everything up.
         // Add the two stack-groups. Animals are visually below, so they're added first.
-        this.add(animalStackGroup, cogFunStackGroup, controlsSquare);
-        this.on('mouseover', (e) => {
-            this.opacity(0.3);
+        this.add(invisibleRectangle, animalStackGroup, cogFunCutoutsGroup, cogFunStackGroup, controlsSquare);
+        
+        this.on('mouseover tap', (e) => {
+            cogFunStackGroup.opacity(0.7);
+            animalStackGroup.opacity(0.7);
+            // noinspection JSCheckFunctionSignatures (bad signature)
+            this.off('tap');
         });
         
         this.on('mouseout', (e) => {
-            this.opacity(1);
+            cogFunStackGroup.opacity(1);
+            animalStackGroup.opacity(1);
         });
+        
+        // REM Create custom event names in OpTypeStateEvents and make them bubble up when fired, so we can handle them here.
     }
 }
 
@@ -755,10 +779,9 @@ class CognitiveFunctionGroup extends Konva.Group {
         const demonBgImg = new DemonBackgroundImage(cogFunState, circle);
         const masculineBgImg = new MasculineBackgroundImage(cogFunState, circle);
         const text = new CognitiveFunctionText(cogFunState, circle);
-        const pointerCircle = new CognitiveFunctionPointerCircle(cogFunState, circle);
         
         
-        this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text, pointerCircle);
+        this.add(demonBgImg, masculineBgImg, /*outline,*/ circle, text);
     }
     
     
@@ -906,7 +929,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         let fillColor;
         let strokeColor;
         // Select colors based on first character of function.
-        switch (cogFunState.#name[0]) {
+        switch (cogFunState.name[0]) {
             case 'F':
                 fillColor = TFCStyleColor.FEELING_FILL;
                 strokeColor = TFCStyleColor.FEELING_STROKE;
@@ -934,8 +957,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
         const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
         
         // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(cogFunState.#name.length === 2 ? scaleFactor : genericScaleFactor);
-        this.scaleY(cogFunState.#name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
     }
 }
 
@@ -1120,7 +1143,7 @@ class CognitiveFunctionText extends Konva.Text {
     
     
     #updateDrawing(cogFunState, circle) {
-        this.text(cogFunState.#name);
+        this.text(cogFunState.name);
         this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
     }
 }
@@ -1394,7 +1417,7 @@ class AnimalLetter extends AnimalText {
     
     #updateDrawing(animalState) {
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-        let animalName = animalState.#name
+        let animalName = animalState.name
     
         if (animalState.stackOrder === 3) {
             animalName = `(${animalName})`;
@@ -1430,12 +1453,37 @@ class AnimalOrderNumber extends AnimalText {
 
 
 
-class ControlsArea extends Konva.Rect {
+class ControlsGroup extends Konva.Group {
     /**
      *
      * @param opTypeState {OpTypeState}
      */
     constructor(opTypeState) {
+        super();
+        
+        // HERE Finish controls
+        const switchLetterControl = new SwitchLetterControl(opTypeState.getCogFunState(0));
+        
+        
+    }
+}
+
+
+
+class ControlCircle extends Konva.Circle {
+    // REM All controls extending this will bubble up the appropriate event from OpTypeStateEvents
+    constructor() {
+        super();
+    }
+}
+
+
+class SwitchLetterControl extends ControlCircle {
+    /**
+     *
+     * @param cogFunState {CognitiveFunctionState}
+     */
+    constructor(cogFunState) {
         super();
     }
 }
