@@ -1325,7 +1325,7 @@ export class Animal extends Enum {
     /**
      * @param otherAnimal {string|Animal}
      */
-    equalsTo(otherAnimal);
+    equalsTo(otherAnimal){};
     
     // noinspection JSDuplicatedDeclaration
     /**

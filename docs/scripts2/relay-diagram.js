@@ -1,3 +1,7 @@
+import {CognitiveFunction} from "./op-lib.js";
+
+const devTest = false;
+
 let isLibraryReady = false;
 
 // To change the base size of each circle (before scaling is applied).
@@ -6,6 +10,8 @@ const CIRCLE_BASE_RADIUS = 60;
 const CIRCLE_STROKE_FACTOR = 0.15;
 const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
 
+const CONTROL_CIRCLE_BASE_RADIUS = 25;
+
 
 // To change the distante between circles on the same "axis".
 const OPPOSITE_CIRCLE_DISTANCE = 350;
@@ -13,15 +19,46 @@ const OPPOSITE_CIRCLE_DISTANCE = 350;
 export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
 const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
 
+/**
+ * @readonly
+ */
+const FunctionCirclePositions = Object.freeze([
+    // First
+    Object.freeze({
+        x: DIAGRAM_CENTER,
+        y: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2
+    }),
+    // Second
+    Object.freeze({
+        x: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: DIAGRAM_CENTER
+    }),
+    // Third
+    Object.freeze({
+        x: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: DIAGRAM_CENTER
+    }),
+    // Last
+    Object.freeze({
+        x: DIAGRAM_CENTER,
+        y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
+    })
+]);
+
+/**
+ * @readonly
+ */
+const FunctionCircleScaleFactors = Object.freeze([
+    1,
+    0.82,
+    0.68,
+    0.53
+])
+
 
 const COGFUN_BASE_FONT_SIZE = 58;
 const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
 const ANIMAL_LETTER_OFFSET_FROM_LINE = -15;
-
-const FIRST_GRANT_FUNCTION_SCALE_FACTOR = 1;
-const SECOND_GRANT_FUNCTION_SCALE_FACTOR = 0.82;
-const THIRD_GRANT_FUNCTION_SCALE_FACTOR = 0.68;
-const LAST_GRANT_FUNCTION_SCALE_FACTOR = 0.53;
 
 // Offset of the semi-transparent colored triangles from the lines.
 const ANIMAL_BG_TRIANGLE_OFFSET = 17;
@@ -45,18 +82,23 @@ const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
 
 
+const CogFunFillColors = Object.freeze({
+    F: '#c82323',
+    T: '#6c6c6c',
+    S: '#f3ca24',
+    N: '#944cd2',
+    O: 'white',
+    D: 'white'
+});
 
-const TFCStyleColor = {
-    FEELING_FILL: '#c82323',
-    FEELING_STROKE: '#881a1a',
-    THINKING_FILL: '#6c6c6c',
-    THINKING_STROKE: '#292929',
-    SENSING_FILL: '#f3ca24',
-    SENSING_STROKE: '#c0912c',
-    INTUITION_FILL: '#944cd2',
-    INTUITION_STROKE: '#522c73',
-}
-
+const CogFunStrokeColors = Object.freeze({
+    F: '#881a1a',
+    T: '#292929',
+    S: '#c0912c',
+    N: '#522c73',
+    O: 'black',
+    D: 'black'
+});
 
 
 
@@ -262,13 +304,14 @@ class AnimalPosition {
 
 
 /**
+ * @readonly
  * @enum {string}
  */
-const OpTypeStateEvents = Object.freeze({
-    FIRST_FUN_LETTER_SWITCH: 'letterSwitch',
-    FIRST_FUN_CHARGE_SWITCH: 'chargeSwitch',
+const DiagramEvents = Object.freeze({
+    // Contains "grantOrder"
+    LETTER_SWITCH: 'letterSwitch',
+    CHARGE_SWITCH: 'chargeSwitch',
     MIDDLE_AXIS_SWITCH: 'middleAxisSwitch',
-    // Send 'details' with the event when firing to know the grant index.
     MAKE_MASCULINE: 'makeMasculine',
     MODALITY_RESET: 'modalityReset',
     TYPE_RESET: 'typeReset'
@@ -298,22 +341,14 @@ class OpTypeState extends EventTarget {
     }
     
     
-    
-    
-    // firstFunctionChanged() {
-    //     const firstCogFunState = this.getCogFunState(0);
-    //     const firstCogFun = new CognitiveFunction(firstCogFunState.name);
-    //     console.log(firstCogFunState);
-    //     const lastCogFun = firstCogFun.opposite();
-    //     this.getCogFunState(3).update(lastCogFun.name, true)
-    //
-    //     const secondCogFun = new CognitiveFunction(
-    //         Axis.oppositeOf(firstCogFun.letter) + (firstCogFun.isPartial ? '' : Charge.oppositeOf(firstCogFun.charge))
-    //     );
-    //     const thirdCogFun = secondCogFun.opposite();
-    //
-    //     this.getCogFunState(1).update(secondCogFun.letter)
-    // }
+    // HERE Animals are updated according to each function update. Animal order is decided through clicking
+    //      the triangles in the middle (clicking on a triangle that was already clicked makes the count start
+    //      from the beginning).
+    //      When animals are already set and a function gets changed, if the animal order is still valid it
+    //      gets preserved. To achieve this more efficiently, I need an additional state stored separately
+    //      for the animal itself rather than its position, and the position state is going to both listen and
+    //      send user updates to that.
+    //      for changes.
     
     /**
      * @param grantOrder {number}
@@ -334,7 +369,8 @@ class OpTypeState extends EventTarget {
 
 class CognitiveFunctionState extends EventTarget {
     #grantOrder;
-    #name;
+    /** @type {CognitiveFunction} */
+    #cogFun;
     #isDemon;
     #isMasculine;
     
@@ -348,64 +384,39 @@ class CognitiveFunctionState extends EventTarget {
         
         switch (grantOrder) {
             case 0:
-                this.#name = 'N';
-                break
+                this.#cogFun = new CognitiveFunction('N');
+                break;
             case 1:
-                this.#name = 'T';
-                // HERE I was making the latest changes here, but now I need to figure out where to start if I wanna
-                //      have simple controls.
-                //      ---- PC ----
-                //      Use fire(...), to fire events and bubble them.
-                //
-                //      Hovering on the area inside the diagram (invisible square above everything) shows the controls.
-                //      Clicking on first function left side changes the letter (same axis), clicking on right side changes the charge.
-                //      When the charge is changed, the middle axis is swapped (so the axis itself stays the same).
-                //      Another control is shown nearby the upper-left animal, to switch the axis (O vs D), which in terms of
-                //      MBTI is equivalent from switching from E to I (thefore maintaining the same axis).
-                //      Animals are updated according to each function update. Animal order is decided through clicking
-                //      the triangles in the middle (clicking on a triangle that was already clicked makes the count start
-                //      from the beginning).
-                //      When animals are already set and a function gets changed, if the animal order is still valid it
-                //      gets preserved. To achieve this more efficiently, I need an additional state stored separately
-                //      for the animal itself rather than its position, and the position state is going to both listen and
-                //      send user updates to that.
-                //      for changes.
-                //      ---- SMARTPHONE -----
-                //      Same thing but hovering is replaced by a tap, which then shows the controls with an additional
-                //      "X" at the top to hide them.
-                const lastFunState = opTypeState.getCogFunState(0);
-                lastFunState.addEventListener(OpTypeStateEvents.CONSISTENCY_CHECK, () => {
-                
-                });
-                break
+                this.#cogFun = new CognitiveFunction('T');
+                break;
             case 2:
-                this.#name = 'F';
-                break
+                this.#cogFun = new CognitiveFunction('F');
+                break;
             case 3:
-                this.#name = 'S';
-                break
+                this.#cogFun = new CognitiveFunction('S');
+                break;
         }
         
         this.#isDemon = false;
         this.#isMasculine = false;
         
-        //this.#devInit()
+        if (devTest) this.#devInit()
     }
     
     
     #devInit() {
         switch (this.#grantOrder) {
             case 0:
-                this.#name = 'Fi';
+                this.#cogFun = new CognitiveFunction('Fi');
                 break
             case 1:
-                this.#name = 'Ne';
+                this.#cogFun = new CognitiveFunction('Ne');
                 break
             case 2:
-                this.#name = 'Si';
+                this.#cogFun = new CognitiveFunction('Si');
                 break
             case 3:
-                this.#name = 'Te';
+                this.#cogFun = new CognitiveFunction('Te');
                 break
         }
     }
@@ -422,7 +433,7 @@ class CognitiveFunctionState extends EventTarget {
      * @returns {string}
      */
     get name() {
-        return this.#name;
+        return this.#cogFun.label;
     }
     
     /**
@@ -440,108 +451,16 @@ class CognitiveFunctionState extends EventTarget {
     }
     
     
-    update(name, isDemon, isMasculine) {
-        if (name != null) this.#name = name;
+    update(cogFun, isDemon, isMasculine) {
+        if (cogFun != null) this.#cogFun = cogFun;
         if (isDemon != null) this.#isDemon = isDemon;
         if (isMasculine != null) this.#isMasculine = isMasculine;
-        this.fireUiChangeEvent();
+        this.notifyUi();
     }
     
     
-    /**
-     * @param specificChange {string}
-     */
-    fireUserChangeEvent(specificChange) {
-        this.dispatchEvent(new Event(specificChange));
-        // When not handling the specificChange directly, the state can handle the consistency check and fix everything
-        // before the actual diagram update.
-        this.dispatchEvent(new Event(OpTypeStateEvents.CONSISTENCY_CHECK));
-        this.fireUiChangeEvent()
-    }
-    
-    fireUiChangeEvent() {
+    notifyUi() {
         this.dispatchEvent(new Event('change'));
-    }
-    
-    
-    previousLetter() {
-        let letter = this.name[0];
-        let charge = this.name[1] ?? '';
-        switch (letter) {
-            case 'F':
-                letter = 'N';
-                break;
-            case 'T':
-                letter = 'F';
-                break;
-            case 'S':
-                letter = 'T';
-                break;
-            case 'N':
-                letter = 'S';
-                break;
-            default:
-                throw new Error("Invalid letter");
-        }
-        
-        this.#name = letter + charge;
-        this.fireUserChangeEvent(OpTypeStateEvents.LETTER_CHANGE);
-    }
-    
-    nextLetter() {
-        let letter = this.name[0];
-        let charge = this.name[1] ?? '';
-        switch (letter) {
-            case 'F':
-                letter = 'T';
-                break;
-            case 'T':
-                letter = 'S';
-                break;
-            case 'S':
-                letter = 'N';
-                break;
-            case 'N':
-                letter = 'F';
-                break;
-            default:
-                throw new Error("Invalid letter");
-        }
-    
-        this.#name = letter + charge;
-        this.fireUserChangeEvent(OpTypeStateEvents.LETTER_CHANGE);
-    }
-    
-    makeIntroverted() {
-        this.#name = this.name[0] + 'i';
-        this.fireUserChangeEvent(OpTypeStateEvents.CHARGE_CHANGE);
-    }
-    
-    makeExtroverted() {
-        this.#name = this.name[0] + 'e';
-        this.fireUserChangeEvent(OpTypeStateEvents.CHARGE_CHANGE);
-    }
-    
-    sameAxisOppositeLetter() {
-        let letter = this.name[0];
-        switch (letter) {
-            case 'F':
-                letter = 'T';
-                break;
-            case 'T':
-                letter = 'F';
-                break;
-            case 'S':
-                letter = 'N';
-                break;
-            case 'N':
-                letter = 'S';
-                break;
-            default:
-                throw new Error("Invalid letter");
-        }
-        this.#name = letter + (this.name[1] ?? '');
-        this.fireUserChangeEvent(OpTypeStateEvents.LETTER_CHANGE);
     }
 }
 
@@ -678,7 +597,7 @@ export class LegendGroup extends Konva.Group {
 
 
 
-export class MainRelayDiagram extends Konva.Group {
+export class RelayDiagramGroup extends Konva.Group {
     
     /**
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
@@ -729,31 +648,84 @@ export class MainRelayDiagram extends Konva.Group {
             animalStackGroup.add(ag);
         }
         
+        // This rectangle is used to have the full hovering/tapping surface available.
         const invisibleRectangle = new Konva.Rect({
             width: DIAGRAM_SIZE,
             height: DIAGRAM_SIZE,
             opacity: 0
         });
-        const controlsSquare = new ControlsGroup(state);
+        const controls = new ControlsGroup(state);
+        
+        this._cognitiveFunctionsGroup = cogFunStackGroup;
+        this._animalsGroup = animalStackGroup;
+        this._controls = controls;
         
         
-        // HERE Fucking cutout works, now figure out how to insert the other two without fucking everything up.
-        // Add the two stack-groups. Animals are visually below, so they're added first.
-        this.add(invisibleRectangle, animalStackGroup, cogFunCutoutsGroup, cogFunStackGroup, controlsSquare);
+        // Add the groups in the right visual order.
+        this.add(invisibleRectangle, animalStackGroup, cogFunCutoutsGroup, cogFunStackGroup, controls);
         
-        this.on('mouseover tap', (e) => {
-            cogFunStackGroup.opacity(0.7);
-            animalStackGroup.opacity(0.7);
-            // noinspection JSCheckFunctionSignatures (bad signature)
-            this.off('tap');
+        // Binding mouse/tap events.
+        this.on('mouseover tap', this.onMouseOver);
+        this.on('mouseout', this.onMouseOut);
+        
+        
+        // Binding Diagram Events.
+        
+        this.on(DiagramEvents.LETTER_SWITCH, (evt) => {
+            this.onLetterSwitch(evt.details.grantOrder);
         });
         
-        this.on('mouseout', (e) => {
-            cogFunStackGroup.opacity(1);
-            animalStackGroup.opacity(1);
+        this.on(DiagramEvents.CHARGE_SWITCH, () => {
+            this.onChargeSwitch();
         });
         
+        this.on(DiagramEvents.MIDDLE_AXIS_SWITCH, () => {
+            this.onMiddleAxisSwitch();
+        });
         // REM Create custom event names in OpTypeStateEvents and make them bubble up when fired, so we can handle them here.
+    }
+    
+    
+    makeRetappable() {
+        this.on('tap', this.onMouseOver);
+    }
+    
+    onMouseOver() {
+        this._cognitiveFunctionsGroup.opacity(0.7);
+        this._animalsGroup.opacity(0.7);
+        this._controls.opacity(1);
+        // noinspection JSCheckFunctionSignatures (bad signature)
+        this.off('tap');
+    }
+    
+    
+    onMouseOut() {
+        this._cognitiveFunctionsGroup.opacity(1);
+        this._animalsGroup.opacity(1);
+        this._controls.opacity(0);
+    }
+    
+    
+    onTap() {
+        this.onMouseOver();
+    }
+    
+    
+    /**
+     *
+     * @param grantOrder {number}
+     */
+    onLetterSwitch(grantOrder) {
+        throw new Error("Not implemented yet.");
+    }
+    
+    
+    onChargeSwitch() {
+    
+    }
+    
+    onMiddleAxisSwitch() {
+    
     }
 }
 
@@ -874,48 +846,13 @@ class CognitiveFunctionCircle extends Konva.Circle {
      * @param {CognitiveFunctionState} cogFunState
      */
     constructor(cogFunState) {
-        let position;
-        let scaleFactor;
-    
-        switch (cogFunState.grantOrder) {
-            case 0:
-                position = {
-                    x: DIAGRAM_CENTER,
-                    y: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2
-                };
-                scaleFactor = FIRST_GRANT_FUNCTION_SCALE_FACTOR;
-                break;
-            case 1:
-                position = {
-                    x: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2,
-                    y: DIAGRAM_CENTER
-                };
-                scaleFactor = SECOND_GRANT_FUNCTION_SCALE_FACTOR;
-                break;
-            case 2:
-                position = {
-                    x: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2,
-                    y: DIAGRAM_CENTER
-                };
-                scaleFactor = THIRD_GRANT_FUNCTION_SCALE_FACTOR;
-                break;
-            case 3:
-                position = {
-                    x: DIAGRAM_CENTER,
-                    y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
-                };
-                scaleFactor = LAST_GRANT_FUNCTION_SCALE_FACTOR;
-                break;
-            default:
-                throw new Error("Invalid Grant order.");
-        }
-        
-        
         super({
-            position: position,
+            position: FunctionCirclePositions[cogFunState.grantOrder],
             radius: CIRCLE_BASE_RADIUS,
             strokeWidth: CIRCLE_STROKE_WIDTH
         });
+        
+        const scaleFactor = FunctionCircleScaleFactors[cogFunState.grantOrder];
         
         this.#updateDrawing(cogFunState, scaleFactor);
         
@@ -926,33 +863,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
     }
     
     #updateDrawing(cogFunState, scaleFactor) {
-        let fillColor;
-        let strokeColor;
-        // Select colors based on first character of function.
-        switch (cogFunState.name[0]) {
-            case 'F':
-                fillColor = TFCStyleColor.FEELING_FILL;
-                strokeColor = TFCStyleColor.FEELING_STROKE;
-                break;
-            case 'T':
-                fillColor = TFCStyleColor.THINKING_FILL;
-                strokeColor = TFCStyleColor.THINKING_STROKE;
-                break;
-            case 'S':
-                fillColor = TFCStyleColor.SENSING_FILL;
-                strokeColor = TFCStyleColor.SENSING_STROKE;
-                break;
-            case 'N':
-                fillColor = TFCStyleColor.INTUITION_FILL;
-                strokeColor = TFCStyleColor.INTUITION_STROKE;
-                break;
-            default:
-                fillColor = 'white';
-                strokeColor = 'black';
-        }
-    
-        this.fill(fillColor);
-        this.stroke(strokeColor);
+        this.fill(CogFunFillColors[cogFunState.name[0]]);
+        this.stroke(CogFunStrokeColors[cogFunState.name[0]]);
     
         const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
         
@@ -1088,7 +1000,7 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
         super(cogFunState, DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle);
         
         this.#updateDrawing(cogFunState)
-        cogFunState.addEventListener(OpTypeStateEvents.OP_TYPE_CHANGE, () => {
+        cogFunState.addEventListener(DiagramEvents.OP_TYPE_CHANGE, () => {
             this.#updateDrawing(cogFunState)
         });
     }
@@ -1143,6 +1055,7 @@ class CognitiveFunctionText extends Konva.Text {
     
     
     #updateDrawing(cogFunState, circle) {
+        // HERE Figure out why undefined by logging all around the places.
         this.text(cogFunState.name);
         this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
     }
@@ -1459,12 +1372,17 @@ class ControlsGroup extends Konva.Group {
      * @param opTypeState {OpTypeState}
      */
     constructor(opTypeState) {
-        super();
+        super({
+            opacity: 0
+        });
         
-        // HERE Finish controls
-        const switchLetterControl = new SwitchLetterControl(opTypeState.getCogFunState(0));
+        // HERE Make controls for Animals
+        const switchLetterControl1 = new SwitchLetterControl(opTypeState.getCogFunState(0));
+        const switchLetterControl2 = new SwitchLetterControl(opTypeState.getCogFunState(1));
+        const switchChargeControl = new SwitchChargeControl(opTypeState.getCogFunState(0));
+        const switchAxisControl = new SwitchAxisControl(opTypeState.getCogFunState(0));
         
-        
+        this.add(switchLetterControl1, switchChargeControl, switchAxisControl, switchLetterControl2);
     }
 }
 
@@ -1472,8 +1390,18 @@ class ControlsGroup extends Konva.Group {
 
 class ControlCircle extends Konva.Circle {
     // REM All controls extending this will bubble up the appropriate event from OpTypeStateEvents
-    constructor() {
-        super();
+    /**
+     *
+     * @param circleConfig {Object}
+     */
+    constructor(circleConfig) {
+        super({
+            radius: CONTROL_CIRCLE_BASE_RADIUS,
+            fill: 'green',
+            stroke: 'black'
+        });
+        
+        this.setAttrs(circleConfig);
     }
 }
 
@@ -1484,6 +1412,84 @@ class SwitchLetterControl extends ControlCircle {
      * @param cogFunState {CognitiveFunctionState}
      */
     constructor(cogFunState) {
-        super();
+        const startingPosition = FunctionCirclePositions[cogFunState.grantOrder];
+        
+        super({
+            x: startingPosition.x - CIRCLE_BASE_RADIUS,
+            y: startingPosition.y
+        });
+        
+        this.on('pointerclick', () => {
+            this.fire(
+                DiagramEvents.LETTER_SWITCH,
+                {
+                    grantOrder: cogFunState.grantOrder
+                },
+                true
+            )
+        });
     }
+    
+    // TODO Make it so that the circle shows the letter it can switch to, with some sort of switch symbol next to it.
+}
+
+
+class SwitchChargeControl extends ControlCircle {
+    /**
+     *
+     * @param cogFunState {CognitiveFunctionState}
+     */
+    constructor(cogFunState) {
+        const startingPosition = FunctionCirclePositions[cogFunState.grantOrder];
+        
+        super({
+            x: startingPosition.x + CIRCLE_BASE_RADIUS,
+            y: startingPosition.y
+        });
+        
+        this.on('pointerclick', () => {
+            this.fire(
+                DiagramEvents.CHARGE_SWITCH,
+                {
+                    details: {
+                    }
+                },
+                true
+            )
+        });
+    }
+    
+    // TODO Same as the letter (read other TODO)
+}
+
+
+class SwitchAxisControl extends ControlCircle {
+    
+    /**
+     *
+     * @param cogFunState {CognitiveFunctionState}
+     */
+    constructor(cogFunState) {
+        const c1Position = FunctionCirclePositions[0];
+        
+        super({
+            x: c1Position.x,
+            y: c1Position.y,
+            offsetX: OPPOSITE_CIRCLE_DISTANCE/4 + 15,
+            offsetY: -OPPOSITE_CIRCLE_DISTANCE/4 + 15
+        });
+        
+        this.on('pointerclick', () => {
+            this.fire(
+                DiagramEvents.MIDDLE_AXIS_SWITCH,
+                {
+                    details: {
+                    }
+                },
+                true
+            )
+        });
+    }
+    
+    // TODO Make it so that the circle shows DOO or ODD
 }
