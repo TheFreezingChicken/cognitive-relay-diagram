@@ -13,7 +13,7 @@ class DiagramStage extends Konva.Stage {
     /**
      *
      * @private
-     * @type {RelayDiagramGroup}
+     * @type {DiagramGroup}
      */
     #diagramGroup;
     
@@ -50,7 +50,7 @@ class DiagramStage extends Konva.Stage {
         this.#diagramSettings = diagramSettings;
         this.#typeInputs = diagramInputs;
         
-        const diagramGroup = new RelayDiagramGroup();
+        const diagramGroup = new DiagramGroup();
         this.#diagramGroup = diagramGroup;
         
         const diagramLayer = new Konva.Layer();

@@ -606,7 +606,7 @@ export class CognitiveFunction {
     get label() {
         /** @type {Charge|undefined} */
         const charge = this.charge;
-        return this._internalName[0] + charge?.label ?? '';
+        return this._internalName[0] + (charge?.label ?? '');
     }
     
     
@@ -1364,6 +1364,112 @@ export class Animal extends Enum {
 }
 
 
+
+
+/**
+ * @readonly
+ * @class
+ */
+export class AnimalPosition extends Enum {
+    
+    static _canConstruct = true;
+    
+    static #STRONGER_INFO = new AnimalPosition(0, 1);
+    static #STRONGER_ENERGY = new AnimalPosition(0, 2);
+    static #WEAKER_INFO = new AnimalPosition(2, 3);
+    static #WEAKER_ENERGY = new AnimalPosition(1, 3);
+    
+    static {
+        this._canConstruct = false;
+    }
+    
+    
+    static get STRONGER_INFO() {
+        return this.#STRONGER_INFO;
+    }
+    
+    static get STRONGER_ENERGY() {
+        return this.#STRONGER_ENERGY;
+    }
+    
+    static get WEAKER_INFO() {
+        return this.#WEAKER_INFO;
+    }
+    
+    static get WEAKER_ENERGY() {
+        return this.#WEAKER_ENERGY;
+    }
+    
+    
+    /**
+     *
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     * @return {AnimalPosition}
+     */
+    static fromGrantOrder(grantIndex1, grantIndex2) {
+        /**
+         * @param i {number}
+         * @param name {string}
+         */
+        function checkIndex(i, name) {
+            if (typeof i !== 'number') throw new TypeError(
+                `${name} is not a number.`
+            );
+            
+            if (!Number.isInteger(i)) throw new Error(
+                `${name} is not an integer.`
+            );
+            
+            if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
+        }
+        
+        checkIndex(grantIndex1, "Grant index 1");
+        checkIndex(grantIndex2, "Grant index 2");
+        
+        if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
+        
+        // Return the appropriate immutable instance based on the provided indexes.
+        switch (grantIndex1 + grantIndex2) {
+            // 0 + 1.
+            case 1:
+                return this.STRONGER_INFO;
+            // 0 + 2.
+            case 2:
+                return this.STRONGER_ENERGY;
+            // 1 + 3.
+            case 4:
+                return this.WEAKER_ENERGY;
+            // 2 + 3.
+            case 5:
+                return this.WEAKER_INFO;
+            default:
+                throw new Error("Invalid index couple (same axis not allowed).");
+        }
+    }
+    
+    
+    /**
+     * 
+     * @param grantIndex1 {number}
+     * @param grantIndex2 {number}
+     */
+    constructor(grantIndex1, grantIndex2) {
+        super()
+        
+        this._grantIndex1 = grantIndex1;
+        this._grantIndex2 = grantIndex2;
+    }
+    
+    
+    get grantIndex1() {
+        return this._grantIndex1;
+    }
+    
+    get grantIndex2() {
+        return this._grantIndex2;
+    }
+}
 
 
 

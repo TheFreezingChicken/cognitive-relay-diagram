@@ -1,4 +1,4 @@
-import {CognitiveFunction} from "./op-lib.js";
+import {Animal, AnimalPosition, CognitiveFunction} from "./op-lib.js";
 
 const devTest = false;
 
@@ -55,6 +55,13 @@ const FunctionCircleScaleFactors = Object.freeze([
     0.53
 ])
 
+/** @type {Map<Readonly<AnimalPosition>, {x: number, y: number}>} */
+const AnimalCenterOffsets = new Map([
+    [AnimalPosition.STRONGER_INFO, {x: 50, y: 50}],
+    [AnimalPosition.STRONGER_ENERGY, {x: -50, y: 50}],
+    [AnimalPosition.WEAKER_ENERGY, {x: 50, y: -50}],
+    [AnimalPosition.WEAKER_INFO, {x: -50, y: -50}],
+]);
 
 const COGFUN_BASE_FONT_SIZE = 58;
 const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
@@ -166,156 +173,23 @@ export const diagramResources = new ResourceLoader();
 
 
 
-/**
- * @readonly
- * @class
- */
-class AnimalPosition {
-    // SLEEP Remove "buildInstance" and copy what we did for Quadra.
-    
-    static #Args = class Args {
-        constructor(grantIndex1, grantIndex2) {
-            this.grantIndex1 = grantIndex1;
-            this.grantIndex2 = grantIndex2;
-        }
-    }
-    
-    static #_UPPER_INFO = this.#buildInstance(0, 1);
-    
-    static #_UPPER_ENERGY = this.#buildInstance(0, 2);
-    
-    static #_LOWER_INFO = this.#buildInstance(2, 3);
-    
-    static #_LOWER_ENERGY = this.#buildInstance(1, 3);
-    
-    
-    /** @type {Readonly<AnimalPosition>} */
-    static get UPPER_INFO() {
-        return this.#_UPPER_INFO;
-    }
-    
-    /** @type {Readonly<AnimalPosition>} */
-    static get UPPER_ENERGY() {
-        return this.#_UPPER_ENERGY;
-    }
-    
-    /** @type {Readonly<AnimalPosition>} */
-    static get LOWER_INFO() {
-        return this.#_LOWER_INFO;
-    }
-    
-    /** @type {Readonly<AnimalPosition>} */
-    static get LOWER_ENERGY() {
-        return this.#_LOWER_ENERGY;
-    }
-    
-    
-    static #all = Object.freeze([
-        AnimalPosition.UPPER_INFO,
-        AnimalPosition.UPPER_ENERGY,
-        AnimalPosition.LOWER_INFO,
-        AnimalPosition.LOWER_ENERGY
-    ]);
-    
-    /**
-     * @returns {Readonly<AnimalPosition>[]}
-     */
-    static get all() {
-        return this.#all;
-    }
-    
-    
-    
-    // SLEEP When we have an IDE that doesn't suck ass convert this to a static initializer.
-    /**
-     * @param grantIndex1 {number}
-     * @param grantIndex2 {number}
-     * @return {AnimalPosition}
-     */
-    static #buildInstance(grantIndex1, grantIndex2) {
-        return new AnimalPosition(new this.#Args(grantIndex1, grantIndex2));
-    }
-    
-    
-    /**
-     *
-     * @param grantIndex1 {number}
-     * @param grantIndex2 {number}
-     * @return {AnimalPosition}
-     */
-    static getInstance(grantIndex1, grantIndex2) {
-        /**
-         * @param i {number}
-         * @param name {string}
-         */
-        function checkIndex(i, name) {
-            if (typeof i !== 'number') throw new TypeError(
-                `${name} is not a number.`
-            );
-            
-            if (!Number.isInteger(i)) throw new Error(
-                `${name} is not an integer.`
-            );
-            
-            if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
-        }
-        
-        checkIndex(grantIndex1, "Grant index 1");
-        checkIndex(grantIndex2, "Grant index 2");
-        
-        if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
-        
-        // Return the appropriate immutable instance based on the provided indexes.
-        switch (grantIndex1 + grantIndex2) {
-            // 0 + 1.
-            case 1:
-                return this.#_UPPER_INFO;
-            // 0 + 2.
-            case 2:
-                return this.#_UPPER_ENERGY;
-            // 1 + 3.
-            case 4:
-                return this.#_LOWER_ENERGY;
-            // 2 + 3.
-            case 5:
-                return this.#_LOWER_INFO;
-            default:
-                throw new Error("Invalid index couple (same axis not allowed).");
-        }
-    }
-    
-    
-    /**
-     *
-     * @param args {AnimalPosition.Args}
-     */
-    constructor(args) {
-        if (!(args instanceof AnimalPosition.#Args)) throw new Error(
-            "Private constructor. Use static methods or properties to obtain instances."
-        );
-        
-        this.grantIndex1 = args.grantIndex1;
-        this.grantIndex2 = args.grantIndex2;
-        
-        Object.freeze(this);
-    }
-}
-
-
 
 /**
  * @readonly
  * @enum {string}
  */
-const DiagramEvents = Object.freeze({
+const DiagramEvents = {
     // Contains "grantOrder"
     LETTER_SWITCH: 'letterSwitch',
     CHARGE_SWITCH: 'chargeSwitch',
     MIDDLE_AXIS_SWITCH: 'middleAxisSwitch',
     MAKE_MASCULINE: 'makeMasculine',
+    SET_ANIMAL_ORDER: 'setAnimalOrder',
     MODALITY_RESET: 'modalityReset',
     TYPE_RESET: 'typeReset'
-});
+};
+Object.freeze(DiagramEvents);
+
 
 class OpTypeState extends EventTarget {
     #cogFunStates;
@@ -335,7 +209,7 @@ class OpTypeState extends EventTarget {
             cogFunStates[i] = new CognitiveFunctionState(this, i);
         }
     
-        for (const ap of AnimalPosition.all) {
+        for (const ap of AnimalPosition.All) {
             animalStates.set(ap, new AnimalState(this, ap))
         }
     }
@@ -466,10 +340,11 @@ class CognitiveFunctionState extends EventTarget {
 
 
 class AnimalState extends EventTarget {
-    #diagramPosition;
+    #animalPosition;
     #isSet;
     #stackOrder;
-    #name;
+    /** @type {Animal} */
+    #animal;
     #isDoubleActivated;
     
     /**
@@ -479,11 +354,11 @@ class AnimalState extends EventTarget {
     constructor(opTypeState, diagramPosition) {
         super();
         
-        this.#diagramPosition = diagramPosition;
+        this.#animalPosition = diagramPosition;
         
         this.#isSet = false;
         this.#stackOrder = -1;
-        this.#name = "";
+        this.#animal = null;
         this.#isDoubleActivated = false;
         
         //this.#devInit()
@@ -493,25 +368,25 @@ class AnimalState extends EventTarget {
     
     
     #devInit() {
-        switch (this.#diagramPosition) {
-            case AnimalPosition.UPPER_INFO:
-                this.#name = 'C';
+        switch (this.#animalPosition) {
+            case AnimalPosition.STRONGER_INFO:
+                this.#animal = Animal.fromAnimalString('C');
                 this.#isSet = true;
                 this.#stackOrder = 1;
                 this.#isDoubleActivated = true;
                 break;
-            case AnimalPosition.UPPER_ENERGY:
-                this.#name = 'P';
+            case AnimalPosition.STRONGER_ENERGY:
+                this.#animal = Animal.fromAnimalString('P');
                 this.#isSet = true;
                 this.#stackOrder = 0;
                 break;
-            case AnimalPosition.LOWER_INFO:
-                this.#name = 'B';
+            case AnimalPosition.WEAKER_INFO:
+                this.#animal = Animal.fromAnimalString('B');
                 this.#isSet = true;
                 this.#stackOrder = 3;
                 break;
-            case AnimalPosition.LOWER_ENERGY:
-                this.#name = 'S';
+            case AnimalPosition.WEAKER_ENERGY:
+                this.#animal = Animal.fromAnimalString('S');
                 this.#isSet = true;
                 this.#stackOrder = 2;
                 break;
@@ -525,8 +400,8 @@ class AnimalState extends EventTarget {
      *
      * @returns {AnimalPosition}
      */
-    get diagramPosition() {
-        return this.#diagramPosition;
+    get animalPosition() {
+        return this.#animalPosition;
     }
     
     /**
@@ -550,7 +425,7 @@ class AnimalState extends EventTarget {
      * @returns {string}
      */
     get name() {
-        return this.#name;
+        return this.#animal?.label ?? '';
     }
     
     /**
@@ -587,17 +462,17 @@ class DebugRect extends Konva.Rect {
 
 
 
-export class LegendGroup extends Konva.Group {
-    constructor() {
-        throw Error("Not implemented.");
-        super();
-    }
-}
+// export class LegendGroup extends Konva.Group {
+//     constructor() {
+//         throw Error("Not implemented.");
+//         super();
+//     }
+// }
 
 
 
 
-export class RelayDiagramGroup extends Konva.Group {
+export class DiagramGroup extends Konva.Group {
     
     /**
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
@@ -635,7 +510,7 @@ export class RelayDiagramGroup extends Konva.Group {
         const animalStackGroup = new Konva.Group();
         // Do the same things for animals.
         // Iterating AnimalPositions (through property names) to create AnimalGroups.
-        for (const ap of AnimalPosition.all) {
+        for (const ap of AnimalPosition.All) {
             console.log(ap)
             const circle1 = cogFunGroups[ap.grantIndex1].circle;
             const circle2 = cogFunGroups[ap.grantIndex2].circle;
@@ -1055,7 +930,7 @@ class CognitiveFunctionText extends Konva.Text {
     
     
     #updateDrawing(cogFunState, circle) {
-        // HERE Figure out why undefined by logging all around the places.
+        console.log(cogFunState.name);
         this.text(cogFunState.name);
         this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
     }
@@ -1251,26 +1126,26 @@ class AnimalText extends Konva.Text {
         // The text is placed using an invisible text box and based on the position of the animal we align the text
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
-        switch (animalState.diagramPosition) {
-            case AnimalPosition.UPPER_INFO:
+        switch (animalState.animalPosition) {
+            case AnimalPosition.STRONGER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case AnimalPosition.UPPER_ENERGY:
+            case AnimalPosition.STRONGER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case AnimalPosition.LOWER_INFO:
+            case AnimalPosition.WEAKER_INFO:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('right');
                 this.verticalAlign('bottom');
                 break;
-            case AnimalPosition.LOWER_ENERGY:
+            case AnimalPosition.WEAKER_ENERGY:
                 // baseWidth = baseSize - baseOff;
                 // baseHeight = baseSize - baseOff;
                 this.align('left');
@@ -1376,13 +1251,16 @@ class ControlsGroup extends Konva.Group {
             opacity: 0
         });
         
-        // HERE Make controls for Animals
+        // Adding controls for functions.
         const switchLetterControl1 = new SwitchLetterControl(opTypeState.getCogFunState(0));
         const switchLetterControl2 = new SwitchLetterControl(opTypeState.getCogFunState(1));
         const switchChargeControl = new SwitchChargeControl(opTypeState.getCogFunState(0));
         const switchAxisControl = new SwitchAxisControl(opTypeState.getCogFunState(0));
         
         this.add(switchLetterControl1, switchChargeControl, switchAxisControl, switchLetterControl2);
+        
+        // Adding controls for animals.
+        for (const an of AnimalPosition.All) this.add(new AnimalOrderControl(opTypeState.getAnimalState(an)));
     }
 }
 
@@ -1492,4 +1370,39 @@ class SwitchAxisControl extends ControlCircle {
     }
     
     // TODO Make it so that the circle shows DOO or ODD
+}
+
+
+class AnimalOrderControl extends ControlCircle {
+    /**
+     *
+     * @param animalState {AnimalState}
+     */
+    constructor(animalState) {
+        const startingPosition = DIAGRAM_CENTER;
+        
+        const offset = AnimalCenterOffsets.get(animalState.animalPosition);
+        
+        super({
+            x: startingPosition,
+            y: startingPosition,
+            offset: offset
+        });
+        
+        this.on('pointerclick', () => {
+            this.fire(
+                DiagramEvents.SET_ANIMAL_ORDER,
+                {
+                    animalPosition: animalState.animalPosition
+                },
+                true
+            )
+        });
+    }
+    
+    
+    // TODO The circle shows what number the animal will be set to if clicked.
+    //      Find a way to put some emphasis on the fact that clicking on an already set one makes the whole thing start
+    //      from 1 again, because just using "1" may be confusing.
+    
 }

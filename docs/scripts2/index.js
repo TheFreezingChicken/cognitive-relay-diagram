@@ -1,4 +1,4 @@
-import {DIAGRAM_SIZE, diagramResources, RelayDiagramGroup} from "./relay-diagram.js";
+import {DIAGRAM_SIZE, DiagramGroup, diagramResources} from "./relay-diagram.js";
 
 
 class DiagramStage extends Konva.Stage {
@@ -12,7 +12,7 @@ class DiagramStage extends Konva.Stage {
     /**
      *
      * @private
-     * @type {RelayDiagramGroup}
+     * @type {DiagramGroup}
      */
     #diagramGroup;
     
@@ -44,7 +44,7 @@ class DiagramStage extends Konva.Stage {
         });
     
         
-        const diagramGroup = new RelayDiagramGroup();
+        const diagramGroup = new DiagramGroup();
         this.#diagramGroup = diagramGroup;
         
         const diagramLayer = new Konva.Layer();
