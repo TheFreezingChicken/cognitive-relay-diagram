@@ -1,4 +1,4 @@
-import {Animal, AnimalPosition, CognitiveFunction} from "./op-lib.js";
+import {Animal, AnimalPosition, Charge, CognitiveFunction, oppositeGrantOrder} from "./op-lib.js";
 
 const devTest = false;
 
@@ -182,35 +182,55 @@ const DiagramEvents = {
     // Contains "grantOrder"
     LETTER_SWITCH: 'letterSwitch',
     CHARGE_SWITCH: 'chargeSwitch',
-    MIDDLE_AXIS_SWITCH: 'middleAxisSwitch',
+    MAIN_AXIS_SWITCH: 'mainAxisSwitch',
     MAKE_MASCULINE: 'makeMasculine',
     SET_ANIMAL_ORDER: 'setAnimalOrder',
     MODALITY_RESET: 'modalityReset',
-    TYPE_RESET: 'typeReset'
+    TYPE_RESET: 'typeReset',
+    INTERNAL_CHANGE: 'internalChange'
 };
 Object.freeze(DiagramEvents);
 
 
 class OpTypeState extends EventTarget {
     #cogFunStates;
-    /** @type {Map} */
+    /** @type {Map<AnimalPosition, AnimalState>} */
     #animalStates;
+    /**
+     * This will be filled with null values if the stack order hasn't been set by the user yet.
+     * @type {AnimalState[]}
+     */
+    #animalStatesByStack;
     
     constructor() {
         super();
         
+        /** @type {CognitiveFunctionState[]} */
         const cogFunStates = new Array(4);
+        /** @type {Map<AnimalPosition, AnimalState>} */
         const animalStates = new Map();
         this.#cogFunStates = cogFunStates;
         this.#animalStates = animalStates;
+        this.#animalStatesByStack = new Array(4);
     
-        
+        // Populating states.
         for (let i = 0; i < 4; i++) {
-            cogFunStates[i] = new CognitiveFunctionState(this, i);
+            cogFunStates[i] = new CognitiveFunctionState(i);
         }
-    
+        
         for (const ap of AnimalPosition.All) {
-            animalStates.set(ap, new AnimalState(this, ap))
+            animalStates.set(ap, new AnimalState(ap))
+        }
+        
+        
+        // Now that the states are all created, attach this instance to all (it will add the listeners).
+        
+        for (const cfs of cogFunStates) {
+            cfs.attachOpTypeState(this);
+        }
+        
+        for (const as of animalStates.values()) {
+            as.attachOpTypeState(this);
         }
     }
     
@@ -233,46 +253,126 @@ class OpTypeState extends EventTarget {
     }
     
     /**
-     * @param animalPosition {AnimalPosition}
+     * @param animalReference {AnimalPosition|number}
      * @returns {AnimalState}
      */
-    getAnimalState(animalPosition) {
-        return this.#animalStates.get(animalPosition);
+    getAnimalState(animalReference) {
+        switch (true) {
+            case (animalReference instanceof AnimalPosition):
+                return this.#animalStates.get(animalReference);
+            case (typeof animalReference === 'number'):
+                return this.#animalStatesByStack[animalReference];
+            default:
+                throw new Error("Invalid argument.");
+        }
+    }
+    
+    
+    
+    
+    fixMiddleAxis() {
+        const firstFun = this.getCogFunState(0);
+        const secondFun = this.getCogFunState(1);
+        
+        if (firstFun.cognitiveFunction.canBeSaviorWith(secondFun.cognitiveFunction)) return;
+        
+        secondFun.dominoUpdate(firstFun.cognitiveFunction.grantMatch(1));
+        this.getCogFunState(2).dominoUpdate(secondFun.cognitiveFunction.opposite());
+    }
+    
+    fixAnimals() {
+        for (/** @type {AnimalPosition} */ const ap of AnimalPosition.All) {
+            const fun1 = this.getCogFunState(ap.grantIndex1).cognitiveFunction;
+            const fun2 = this.getCogFunState(ap.grantIndex2).cognitiveFunction;
+            
+            // No charge means we aren't in a situation where animals can be determined.
+            if (fun1.charge == null) return;
+            
+            this.getAnimalState(ap).updateAnimal(Animal.fromHumanNeeds(fun1, fun2));
+        }
+    }
+    
+    fixDemons() {
+        const lastFunState = this.getCogFunState(3);
+        if (lastFunState.cognitiveFunction.charge != null) lastFunState.dominoUpdate(null, true);
+        
+        const secondFunState = this.getCogFunState(1);
+        const thirdFunState = this.getCogFunState(2);
+        
+        const firstAnimal = this.getAnimalState(0).animal;
+        
+        if (firstAnimal == null) return;
+        
+        if (firstAnimal.includes(secondFunState.cognitiveFunction)) {
+            secondFunState.dominoUpdate(null, true);
+        } else {
+        
+        }
+    }
+    
+    // HERE Issues:
+    //      - Second grant function is not switching letter.
+    //      - Demon pics are not scaling.
+    //      - Third function is getting demon state even if no animal order is set.
+    
+    
+    switchLetter(grantOrder) {
+        const cfs = this.getCogFunState(grantOrder);
+        const newFunction = cfs.cognitiveFunction.withOppositeLetter();
+        cfs.dominoUpdate(newFunction);
+    }
+    
+    switchFirstFunCharge() {
+        const firstFunState = this.getCogFunState(0);
+        const fun1 = firstFunState.cognitiveFunction;
+        const newFunction = fun1.charge == null ?
+            fun1.plusCharge(Charge.INTROVERTED) : fun1.withOppositeCharge();
+        
+        firstFunState.dominoUpdate(newFunction);
+    }
+    
+    
+    switchMainAxis() {
+        const firstFunState = this.getCogFunState(0);
+        const secondFunState = this.getCogFunState(1);
+        firstFunState.dominoUpdate(secondFunState.cognitiveFunction);
+    }
+    
+    setAnimalOrder(animalPosition) {
+        
     }
 }
+
+/** @readonly */
+const DefaultDiagramFunctions = [
+    new CognitiveFunction('N'),
+    new CognitiveFunction('T'),
+    new CognitiveFunction('F'),
+    new CognitiveFunction('S')
+]
+Object.freeze(DefaultDiagramFunctions);
+
 
 class CognitiveFunctionState extends EventTarget {
     #grantOrder;
     /** @type {CognitiveFunction} */
     #cogFun;
+    /** @type {CognitiveFunctionState} */
+    #oppositeCogFunState;
     #isDemon;
     #isMasculine;
     
     /**
-     * @param opTypeState {OpTypeState}
      * @param grantOrder {number}
      */
-    constructor(opTypeState, grantOrder) {
+    constructor(grantOrder) {
         super();
         this.#grantOrder = grantOrder;
         
-        switch (grantOrder) {
-            case 0:
-                this.#cogFun = new CognitiveFunction('N');
-                break;
-            case 1:
-                this.#cogFun = new CognitiveFunction('T');
-                break;
-            case 2:
-                this.#cogFun = new CognitiveFunction('F');
-                break;
-            case 3:
-                this.#cogFun = new CognitiveFunction('S');
-                break;
-        }
-        
+        this.#cogFun = DefaultDiagramFunctions[grantOrder];
         this.#isDemon = false;
         this.#isMasculine = false;
+        
         
         if (devTest) this.#devInit()
     }
@@ -296,6 +396,7 @@ class CognitiveFunctionState extends EventTarget {
     }
     
     
+    
     /**
      * @returns {number}
      */
@@ -303,11 +404,17 @@ class CognitiveFunctionState extends EventTarget {
         return this.#grantOrder;
     }
     
+    
+    
+    get cognitiveFunction() {
+        return this.#cogFun;
+    }
+    
     /**
      * @returns {string}
      */
     get name() {
-        return this.#cogFun.label;
+        return this.#cogFun.coinLabel;
     }
     
     /**
@@ -325,16 +432,63 @@ class CognitiveFunctionState extends EventTarget {
     }
     
     
-    update(cogFun, isDemon, isMasculine) {
-        if (cogFun != null) this.#cogFun = cogFun;
-        if (isDemon != null) this.#isDemon = isDemon;
-        if (isMasculine != null) this.#isMasculine = isMasculine;
-        this.notifyUi();
+    /**
+     * @param opTypeState {OpTypeState}
+     */
+    attachOpTypeState(opTypeState) {
+        // Listen for updates of the opposite function.
+        const oppositeFunState = opTypeState.getCogFunState(oppositeGrantOrder(this.grantOrder));
+        oppositeFunState.addEventListener(
+            DiagramEvents.INTERNAL_CHANGE,
+            () => {
+                const newCogFun = oppositeFunState.cognitiveFunction.opposite();
+                this.#instanceUpdate(newCogFun, !oppositeFunState.isDemon, )
+            }
+        );
+        
+        // In this condition, we need to dominoUpdate both the function itself (in relation to the first function, to
+        // keep the axis opposite) and also it's demon state (in relation to the stronger info animal).
+        // The change to the opposite function will be automatically reflected thanks to the previous listener.
+        if (this.grantOrder === 1) {
+            const firstFunState = opTypeState.getCogFunState(0);
+            firstFunState.addEventListener('change', () => {
+                const grantMatch = firstFunState.cognitiveFunction.grantMatch(1);
+                if (this.cognitiveFunction.humanNeed !== grantMatch.humanNeed) {
+                    this.dominoUpdate(grantMatch);
+                }
+            });
+            
+            const strongerInfoAnimalState = opTypeState.getAnimalState(AnimalPosition.STRONGER_INFO);
+            this.dominoUpdate(null, strongerInfoAnimalState.stackOrder === 0);
+        }
     }
     
     
-    notifyUi() {
+    /** Notifies UI and affected coins. */
+    dominoUpdate(cogFun, isDemon, isMasculine) {
+        this.#update(cogFun, isDemon, isMasculine);
+        this.#notifyStates();
+        this.#notifyUi();
+    }
+    
+    /** Only notifies the UI. */
+    #instanceUpdate(cogFun, isDemon, isMasculine) {
+        this.#update(cogFun, isDemon, isMasculine);
+        this.#notifyUi();
+    }
+    
+    #update(cogFun, isDemon, isMasculine) {
+        if (cogFun != null) this.#cogFun = cogFun;
+        if (isDemon != null) this.#isDemon = isDemon;
+        if (isMasculine != null) this.#isMasculine = isMasculine;
+    }
+    
+    #notifyUi() {
         this.dispatchEvent(new Event('change'));
+    }
+    
+    #notifyStates() {
+        this.dispatchEvent(new Event(DiagramEvents.INTERNAL_CHANGE));
     }
 }
 
@@ -348,16 +502,14 @@ class AnimalState extends EventTarget {
     #isDoubleActivated;
     
     /**
-     * @param opTypeState {OpTypeState}
      * @param diagramPosition {AnimalPosition}
      */
-    constructor(opTypeState, diagramPosition) {
+    constructor(diagramPosition) {
         super();
         
         this.#animalPosition = diagramPosition;
         
-        this.#isSet = false;
-        this.#stackOrder = -1;
+        this.#stackOrder = null;
         this.#animal = null;
         this.#isDoubleActivated = false;
         
@@ -371,23 +523,19 @@ class AnimalState extends EventTarget {
         switch (this.#animalPosition) {
             case AnimalPosition.STRONGER_INFO:
                 this.#animal = Animal.fromAnimalString('C');
-                this.#isSet = true;
                 this.#stackOrder = 1;
                 this.#isDoubleActivated = true;
                 break;
             case AnimalPosition.STRONGER_ENERGY:
                 this.#animal = Animal.fromAnimalString('P');
-                this.#isSet = true;
                 this.#stackOrder = 0;
                 break;
             case AnimalPosition.WEAKER_INFO:
                 this.#animal = Animal.fromAnimalString('B');
-                this.#isSet = true;
                 this.#stackOrder = 3;
                 break;
             case AnimalPosition.WEAKER_ENERGY:
                 this.#animal = Animal.fromAnimalString('S');
-                this.#isSet = true;
                 this.#stackOrder = 2;
                 break;
             default:
@@ -404,17 +552,22 @@ class AnimalState extends EventTarget {
         return this.#animalPosition;
     }
     
+    
+    get animal() {
+        return this.#animal;
+    }
+    
     /**
      *
      * @returns {boolean}
      */
     get isSet() {
-        return this.#isSet;
+        return this.#animal != null;
     }
     
     /**
      *
-     * @returns {number}
+     * @returns {number|null}
      */
     get stackOrder() {
         return this.#stackOrder;
@@ -425,7 +578,7 @@ class AnimalState extends EventTarget {
      * @returns {string}
      */
     get name() {
-        return this.#animal?.label ?? '';
+        return this.#animal?.coinLabel ?? '';
     }
     
     /**
@@ -434,6 +587,43 @@ class AnimalState extends EventTarget {
      */
     get isDoubleActivated() {
         return this.#isDoubleActivated;
+    }
+    
+    
+    
+    
+    /**
+     * @param opTypeState {OpTypeState}
+     */
+    attachOpTypeState(opTypeState) {
+    
+    }
+    
+    
+    
+    
+    /**
+     *
+     * @param animal {Animal}
+     */
+    updateAnimal(animal) {
+        this.#animal = animal;
+        this.notifyUi();
+    }
+    
+    /**
+     * @param stackOrder {number}
+     * @param [isDoubleActivated] {boolean}
+     */
+    updateStackOrder(stackOrder, isDoubleActivated) {
+        this.#stackOrder = stackOrder;
+        this.#isDoubleActivated = isDoubleActivated;
+        this.notifyUi();
+    }
+    
+    
+    notifyUi() {
+        this.dispatchEvent(new Event('change'));
     }
 }
 
@@ -490,6 +680,7 @@ export class DiagramGroup extends Konva.Group {
         super();
         
         const state = new OpTypeState();
+        this._opTypeState = state;
         
         // Create group for the whole stack of functions and then create every single one of them and add them.
         const cogFunStackGroup = new Konva.Group();
@@ -539,13 +730,14 @@ export class DiagramGroup extends Konva.Group {
         // Add the groups in the right visual order.
         this.add(invisibleRectangle, animalStackGroup, cogFunCutoutsGroup, cogFunStackGroup, controls);
         
+        // HERE Figure out how to avoid applying the tap if we've clicked a control circle.
         // Binding mouse/tap events.
-        this.on('mouseover tap', this.onMouseOver);
-        this.on('mouseout', this.onMouseOut);
+        this.on('mouseenter', this.onMouseEnter);
+        this.on('tap', this.onTapShow);
+        this.on('mouseleave', this.onMouseLeave);
         
         
         // Binding Diagram Events.
-        
         this.on(DiagramEvents.LETTER_SWITCH, (evt) => {
             this.onLetterSwitch(evt.details.grantOrder);
         });
@@ -554,36 +746,59 @@ export class DiagramGroup extends Konva.Group {
             this.onChargeSwitch();
         });
         
-        this.on(DiagramEvents.MIDDLE_AXIS_SWITCH, () => {
-            this.onMiddleAxisSwitch();
+        this.on(DiagramEvents.MAIN_AXIS_SWITCH, () => {
+            this.onMainAxisSwitch();
         });
-        // REM Create custom event names in OpTypeStateEvents and make them bubble up when fired, so we can handle them here.
+        
+        this.on(DiagramEvents.SET_ANIMAL_ORDER, (evt) => {
+            this.onSetAnimalOrder(evt.details.animalPosition);
+        });
     }
     
     
-    makeRetappable() {
-        this.on('tap', this.onMouseOver);
+    
+    onMouseEnter() {
+        console.log("Mouse over.");
+        this.onShowControls();
     }
     
-    onMouseOver() {
+    onMouseLeave() {
+        console.log("Mouse out.");
+        this.onHideControls();
+    }
+    
+    
+    onTapShow(evt) {
+        console.log("Tap show.");
+        this.onShowControls();
+        this.off('tap');
+        this.on('tap', this.onTapHide);
+    }
+    
+    onTapHide(evt) {
+        if (evt.target instanceof ControlCircle) return;
+        console.log("Tap hide.");
+        this.onHideControls();
+        this.off('tap');
+        this.on('tap', this.onTapShow);
+    }
+    
+    
+    
+    onShowControls() {
+        console.log("Show controls.");
         this._cognitiveFunctionsGroup.opacity(0.7);
         this._animalsGroup.opacity(0.7);
         this._controls.opacity(1);
-        // noinspection JSCheckFunctionSignatures (bad signature)
-        this.off('tap');
     }
     
     
-    onMouseOut() {
+    onHideControls() {
         this._cognitiveFunctionsGroup.opacity(1);
         this._animalsGroup.opacity(1);
         this._controls.opacity(0);
     }
     
-    
-    onTap() {
-        this.onMouseOver();
-    }
     
     
     /**
@@ -591,17 +806,29 @@ export class DiagramGroup extends Konva.Group {
      * @param grantOrder {number}
      */
     onLetterSwitch(grantOrder) {
-        throw new Error("Not implemented yet.");
+        console.log("Letter switch.");
+        this._opTypeState.switchLetter(grantOrder);
     }
     
     
     onChargeSwitch() {
-    
+        console.log("Charge switch.");
+        this._opTypeState.switchFirstFunCharge();
     }
     
-    onMiddleAxisSwitch() {
-    
+    onMainAxisSwitch() {
+        console.log("Main axis switch.");
+        this._opTypeState.switchMainAxis()
     }
+    
+    onSetAnimalOrder(animalPosition) {
+        console.log("Animal order set.");
+        this._opTypeState.setAnimalOrder(animalPosition);
+    }
+    
+    
+    
+    
 }
 
 
@@ -1301,7 +1528,9 @@ class SwitchLetterControl extends ControlCircle {
             this.fire(
                 DiagramEvents.LETTER_SWITCH,
                 {
-                    grantOrder: cogFunState.grantOrder
+                    details: {
+                        grantOrder: cogFunState.grantOrder
+                    }
                 },
                 true
             )
@@ -1359,7 +1588,7 @@ class SwitchAxisControl extends ControlCircle {
         
         this.on('pointerclick', () => {
             this.fire(
-                DiagramEvents.MIDDLE_AXIS_SWITCH,
+                DiagramEvents.MAIN_AXIS_SWITCH,
                 {
                     details: {
                     }
@@ -1389,11 +1618,13 @@ class AnimalOrderControl extends ControlCircle {
             offset: offset
         });
         
-        this.on('pointerclick', () => {
+        this.on('pointerclick', (evt) => {
             this.fire(
                 DiagramEvents.SET_ANIMAL_ORDER,
                 {
-                    animalPosition: animalState.animalPosition
+                    details: {
+                        animalPosition: animalState.animalPosition
+                    }
                 },
                 true
             )
@@ -1402,7 +1633,7 @@ class AnimalOrderControl extends ControlCircle {
     
     
     // TODO The circle shows what number the animal will be set to if clicked.
-    //      Find a way to put some emphasis on the fact that clicking on an already set one makes the whole thing start
-    //      from 1 again, because just using "1" may be confusing.
+    //      After clicking the first one, a 'reset' button for animals will appear somewhere, and animals that already
+    //      have an order set will not show their button.
     
 }

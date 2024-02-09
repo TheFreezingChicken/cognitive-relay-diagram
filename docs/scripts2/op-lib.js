@@ -1,5 +1,19 @@
 const PRIVATE_OPERATION_SYMBOL = Symbol();
 
+/** @type {number} */
+export function oppositeGrantOrder(grantOrder) {
+    if (typeof grantOrder !== 'number') throw new TypeError("Not a number");
+    if (!Number.isInteger(grantOrder)) throw new Error("Not an integer.");
+    
+    switch (grantOrder) {
+        case 0: return 3;
+        case 1: return 2;
+        case 2: return 1;
+        case 3: return 0;
+        default: throw new Error("Out of range.");
+    }
+}
+
 
 class PrivateConstructorObject extends Object {
     /**
@@ -31,6 +45,13 @@ class Enum extends PrivateConstructorObject {
         enumSubClass._All.push(this);
     }
 }
+
+
+
+// SLEEP Implement all "plus" methods.
+// SLEEP Implement all "opposite" methods.
+// SLEEP Implement case-fixing in all string parameters.
+
 
 
 /**
@@ -83,14 +104,13 @@ export class Axis extends Enum {
     constructor(axisLetter) {
         super();
         
-        this._label = axisLetter;
+        this._coinLabel = axisLetter;
     }
     
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
-    
     
     
     
@@ -101,6 +121,20 @@ export class Axis extends Enum {
     opposite() {
         if (this === Axis.OBSERVING) return Axis.DECIDING
         else return Axis.OBSERVING;
+    }
+    
+    /**
+     * 
+     * @param charge {Charge|string}
+     * @return {HumanNeed|Axis}
+     */
+    plus(charge){
+        if (charge == null) return this;
+        
+        if (typeof Charge === 'string') charge = Charge.fromCharacter(charge);
+        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
+        
+        return HumanNeed.fromString(this.coinLabel + charge.coinLabel);
     }
 }
 
@@ -156,11 +190,11 @@ class RealityScope extends Enum {
     constructor(scopeLetters) {
         super();
         
-        this._label = scopeLetters;
+        this._coinLabel = scopeLetters;
     }
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
     
     
@@ -174,10 +208,10 @@ class RealityScope extends Enum {
         switch (axis) {
             case Axis.OBSERVING:
             case 'O':
-                return this._label[0];
+                return this._coinLabel[0];
             case Axis.DECIDING:
             case 'D':
-                return this._label[1];
+                return this._coinLabel[1];
             default:
                 throw new Error("Invalid axis argument.");
         }
@@ -185,7 +219,7 @@ class RealityScope extends Enum {
     
     
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
 }
 
@@ -198,7 +232,7 @@ class RealityScope extends Enum {
 /**
  * @readonly
  */
-class Charge extends PrivateConstructorObject {
+export class Charge extends PrivateConstructorObject {
     static _canConstruct = true;
     
     static #INTROVERTED = new Charge('i');
@@ -244,12 +278,12 @@ class Charge extends PrivateConstructorObject {
     constructor(chargeLetter) {
         super();
         
-        this._label = chargeLetter;
+        this._coinLabel = chargeLetter;
     }
     
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
     
     
@@ -267,7 +301,7 @@ class Charge extends PrivateConstructorObject {
     
     
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
 }
 
@@ -339,11 +373,11 @@ class HumanNeed extends PrivateConstructorObject {
         
         this._axis = axis;
         this._charge = charge;
-        this._label = axis.label + charge.label;
+        this._coinLabel = axis.coinLabel + charge.coinLabel;
     }
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
     get charge() {
         return this._charge;
@@ -368,7 +402,7 @@ class HumanNeed extends PrivateConstructorObject {
     }
     
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
 }
 
@@ -439,7 +473,7 @@ class Letter extends PrivateConstructorObject {
         
         this._axis = axis;
         this._realityScope = realityScope;
-        this._label = realityScope.getLetterStringFromAxis(axis);
+        this._coinLabel = realityScope.getLetterStringFromAxis(axis);
     }
     
     
@@ -451,8 +485,8 @@ class Letter extends PrivateConstructorObject {
         return this._realityScope;
     }
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
     
     get longName() {
@@ -471,7 +505,7 @@ class Letter extends PrivateConstructorObject {
     }
     
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
     
     
@@ -599,14 +633,14 @@ export class CognitiveFunction {
         const charge = this.charge;
         if (charge == null) return undefined;
         
-        return HumanNeed.fromString(this.axis.label + charge.label);
+        return HumanNeed.fromString(this.axis.coinLabel + charge.coinLabel);
     }
     
     
-    get label() {
+    get coinLabel() {
         /** @type {Charge|undefined} */
         const charge = this.charge;
-        return this._internalName[0] + (charge?.label ?? '');
+        return this._internalName[0] + (charge?.coinLabel ?? '');
     }
     
     
@@ -713,17 +747,14 @@ export class CognitiveFunction {
     
     
     
-    
-    
-    
     /**
      * Return a copy of this function with both letter and charge inverted.
      * The axis is always maintained, which means that the 'O' and 'D' of a partial function are never changed.
      * @returns {CognitiveFunction}
      */
     opposite() {
-        const letterStr = this.letter?.opposite()?.label ?? this.axis.label;
-        const chargeStr = this.charge?.opposite()?.label ?? '';
+        const letterStr = this.letter?.opposite()?.coinLabel ?? this.axis.coinLabel;
+        const chargeStr = this.charge?.opposite()?.coinLabel ?? '';
 
         return new CognitiveFunction(letterStr + chargeStr);
     }
@@ -734,7 +765,7 @@ export class CognitiveFunction {
      * @returns {CognitiveFunction}
      */
     withOppositeLetter() {
-        const letterStr = this.letter?.opposite()?.label ?? this.axis.label;
+        const letterStr = this.letter?.opposite()?.coinLabel ?? this.axis.coinLabel;
         const chargeStr = this._internalName[1];
         
         return new CognitiveFunction(letterStr + chargeStr);
@@ -746,10 +777,55 @@ export class CognitiveFunction {
      */
     withOppositeCharge() {
         const letterStr = this._internalName[0];
-        const chargeStr = this.charge?.opposite()?.label ?? '';
+        const chargeStr = this.charge?.opposite()?.coinLabel ?? '';
         
         return new CognitiveFunction(letterStr + chargeStr);
     }
+    
+    /**
+     *
+     * @param charge {string|Charge}
+     * @return {CognitiveFunction}
+     */
+    plusCharge(charge) {
+        if (this.charge != null) throw new Error("This instance already has a charge.");
+        
+        if (typeof charge === 'string') charge = Charge.fromCharacter(charge);
+        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
+        
+        return new CognitiveFunction(this._internalName[0] + charge.coinLabel);
+    }
+    
+    /**
+     * Returns the matching grant order function as if this instance was the first one in the stack.
+     * Functions in the middle axis will be returned as human needs (because of the possible double match).
+     * Remember grantOrder is always 0-indexed.
+     * 
+     * @example
+     * // Assume this instance is Fi
+     * grantMatch(1) // Returns Oe
+     * grantMatch(2) // Returns Oi
+     * grantMatch(3) // Returns Te
+     * 
+     * @param grantOrder {number}
+     * @return {CognitiveFunction}
+     */
+    grantMatch(grantOrder) {
+        switch (grantOrder) {
+            case 0: return this;
+            // Opposite axis + opposite charge.
+            case 1: return new CognitiveFunction(this.axis.opposite().plus(this.charge?.opposite()).coinLabel);
+            // Opposite axis + same charge.
+            case 2: return new CognitiveFunction(this.axis.opposite().plus(this.charge).coinLabel);
+            case 3: return this.opposite();
+            default: throw new Error("Invalid grant order argument.");
+        }
+    }
+    
+    
+    
+    
+    
     
     
     /**
@@ -774,7 +850,7 @@ export class CognitiveFunction {
         
         if (!(otherFunction instanceof CognitiveFunction)) throw TypeError("Invalid argument type.");
         
-        return this.label === otherFunction.label;
+        return this.coinLabel === otherFunction.coinLabel;
     }
     
     
@@ -839,7 +915,7 @@ export class CognitiveFunction {
      * @returns {string}
      */
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
 }
 
@@ -1246,7 +1322,7 @@ export class Animal extends Enum {
             "Can't have two human needs on the same axis for an Animal."
         );
         
-        switch (humanNeed1.label[1] + humanNeed2.label[2]) {
+        switch (humanNeed1.coinLabel[1] + humanNeed2.coinLabel[2]) {
             case 'ee':
                 return this.PLAY;
             case 'ii':
@@ -1293,29 +1369,29 @@ export class Animal extends Enum {
     constructor(observingHumanNeed, decidingHumanNeed) {
         super();
         
-        let label;
+        let coinLabel;
         if (observingHumanNeed === HumanNeed.OI_ORGANIZE) {
-            label = decidingHumanNeed === HumanNeed.DI_SELF ? 'S' : 'B';
+            coinLabel = decidingHumanNeed === HumanNeed.DI_SELF ? 'S' : 'B';
         } else {
-            label = decidingHumanNeed === HumanNeed.DI_SELF ? 'C' : 'P';
+            coinLabel = decidingHumanNeed === HumanNeed.DI_SELF ? 'C' : 'P';
         }
         
         this._observingHumanNeed = observingHumanNeed;
         this._decidingHumanNeed = decidingHumanNeed;
-        this._label = label;
+        this._coinLabel = coinLabel;
     }
     
     
     
-    get label() {
-        return this._label;
+    get coinLabel() {
+        return this._coinLabel;
     }
     
-    get decidingFunction() {
+    get decidingHumanNeed() {
         return this._decidingHumanNeed;
     }
     
-    get observingFunction() {
+    get observingHumanNeed() {
         return this._observingHumanNeed;
     }
     
@@ -1337,8 +1413,23 @@ export class Animal extends Enum {
         let otherAnimal = humanNeed1;
         if (!(otherAnimal instanceof Animal)) otherAnimal = Animal.fromHumanNeeds(humanNeed1, humanNeed2);
         
-        return this.label === otherAnimal.label;
+        return this.coinLabel === otherAnimal.coinLabel;
     };
+    
+    
+    /**
+     *
+     * @param humanNeed {CognitiveFunction|HumanNeed|string}
+     * @return {boolean}
+     */
+    includes(humanNeed) {
+        if (typeof humanNeed === 'string') humanNeed = HumanNeed.fromString(humanNeed);
+        if (humanNeed instanceof CognitiveFunction) humanNeed = humanNeed.humanNeed;
+        
+        if (!humanNeed instanceof HumanNeed) throw new Error("Not a valid human need.");
+        
+        return this.decidingHumanNeed === humanNeed || this.observingHumanNeed === humanNeed;
+    }
     
     
     
@@ -1358,8 +1449,9 @@ export class Animal extends Enum {
     };
     
     
+    
     toString() {
-        return this.label;
+        return this.coinLabel;
     }
 }
 
