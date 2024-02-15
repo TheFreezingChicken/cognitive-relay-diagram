@@ -94,8 +94,8 @@ const CogFunFillColors = Object.freeze({
     T: '#6c6c6c',
     S: '#f3ca24',
     N: '#944cd2',
-    O: 'white',
-    D: 'white'
+    O: '#929292',
+    D: '#929292'
 });
 
 const CogFunStrokeColors = Object.freeze({
@@ -232,6 +232,8 @@ class OpTypeState extends EventTarget {
         for (const as of animalStates.values()) {
             as.attachOpTypeState(this);
         }
+        
+        this._isUntouched = true;
     }
     
     
@@ -310,36 +312,73 @@ class OpTypeState extends EventTarget {
         }
     }
     
-    // HERE Issues:
-    //      - Second grant function is not switching letter.
-    //      - Demon pics are not scaling.
-    //      - Third function is getting demon state even if no animal order is set.
     
     
     switchLetter(grantOrder) {
         const cfs = this.getCogFunState(grantOrder);
         const newFunction = cfs.cognitiveFunction.withOppositeLetter();
+        this._isUntouched = false;
         cfs.dominoUpdate(newFunction);
     }
     
-    switchFirstFunCharge() {
-        const firstFunState = this.getCogFunState(0);
-        const fun1 = firstFunState.cognitiveFunction;
-        const newFunction = fun1.charge == null ?
-            fun1.plusCharge(Charge.INTROVERTED) : fun1.withOppositeCharge();
+    switchCharge(grantOrder) {
+        // REM Using multiples to stop recursion.
         
-        firstFunState.dominoUpdate(newFunction);
+        const cfs = this.getCogFunState(grantOrder % 4);
+        const newFunction = cfs.cognitiveFunction.withOppositeCharge();
+        
+        // Trying adding introverted charge when there is no charge.
+        try {
+            cfs.dominoUpdate(newFunction.plusCharge(Charge.INTROVERTED));
+        } catch (e) {
+            cfs.dominoUpdate(newFunction);
+        }
+        
+        // Getting "first" function of each axis.
+        const fun1State = this.getCogFunState(0);
+        const fun2State = this.getCogFunState(1);
+        let thisAxisFunState;
+        let otherAxisFunState;
+        
+        // Establishing in which axis we applied the change earlier.
+        switch (grantOrder) {
+            case 0:
+            case 3:
+                thisAxisFunState = fun1State;
+                otherAxisFunState = fun2State;
+                break;
+            case 1:
+            case 2:
+                thisAxisFunState = fun2State;
+                otherAxisFunState = fun1State;
+                break;
+        }
+        
+        // Putting opposite charge on opposite axis function.
+        const propagatedFun = otherAxisFunState.cognitiveFunction.withCharge(thisAxisFunState.cognitiveFunction.charge.opposite());
+        otherAxisFunState.dominoUpdate(propagatedFun);
     }
     
     
     switchMainAxis() {
         const firstFunState = this.getCogFunState(0);
         const secondFunState = this.getCogFunState(1);
+        const tempFun = firstFunState.cognitiveFunction;
+        
         firstFunState.dominoUpdate(secondFunState.cognitiveFunction);
+        secondFunState.dominoUpdate(tempFun);
     }
     
     setAnimalOrder(animalPosition) {
-        
+        let resetAll = false;
+        for (let i = 0; i < 4; i++) {
+            if (resetAll) {
+                this.#animalStatesByStack[i] = null;
+                continue;
+            }
+            
+            // HERE Continue (and consider if the above condition is fine)
+        }
     }
 }
 
@@ -361,6 +400,9 @@ class CognitiveFunctionState extends EventTarget {
     #oppositeCogFunState;
     #isDemon;
     #isMasculine;
+    
+    /** @type {OpTypeState|null} */
+    _parentOpTypeState = null;
     
     /**
      * @param grantOrder {number}
@@ -432,39 +474,46 @@ class CognitiveFunctionState extends EventTarget {
     }
     
     
+    
+    get isDiagramUntouched() {
+        return this._parentOpTypeState._isUntouched
+    }
+    
+    
     /**
      * @param opTypeState {OpTypeState}
      */
     attachOpTypeState(opTypeState) {
-        // Listen for updates of the opposite function.
+        this._parentOpTypeState = opTypeState;
+        
+        // For all functions. Listen to update of the opposite one to change it accordingly.
         const oppositeFunState = opTypeState.getCogFunState(oppositeGrantOrder(this.grantOrder));
         oppositeFunState.addEventListener(
             DiagramEvents.INTERNAL_CHANGE,
             () => {
                 const newCogFun = oppositeFunState.cognitiveFunction.opposite();
-                this.#instanceUpdate(newCogFun, !oppositeFunState.isDemon, )
+                // If last function, set Demon to true, otherwise set null to do nothing.
+                const isDemon = this.grantOrder === 3 || null;
+                this.#instanceUpdate(newCogFun, isDemon);
             }
         );
         
-        // In this condition, we need to dominoUpdate both the function itself (in relation to the first function, to
-        // keep the axis opposite) and also it's demon state (in relation to the stronger info animal).
-        // The change to the opposite function will be automatically reflected thanks to the previous listener.
-        if (this.grantOrder === 1) {
-            const firstFunState = opTypeState.getCogFunState(0);
-            firstFunState.addEventListener('change', () => {
-                const grantMatch = firstFunState.cognitiveFunction.grantMatch(1);
-                if (this.cognitiveFunction.humanNeed !== grantMatch.humanNeed) {
-                    this.dominoUpdate(grantMatch);
-                }
-            });
-            
+        
+        
+        
+        // For second and third function.
+        if (this.grantOrder === 1 || this.grantOrder === 2) {
+            // Listen to updates of stronger info animal to change Demon state accordingly.
             const strongerInfoAnimalState = opTypeState.getAnimalState(AnimalPosition.STRONGER_INFO);
-            this.dominoUpdate(null, strongerInfoAnimalState.stackOrder === 0);
+            strongerInfoAnimalState.addEventListener(DiagramEvents.INTERNAL_CHANGE, () => {
+                const isDemon = strongerInfoAnimalState.isSet && this.grantOrder === 1 && strongerInfoAnimalState.stackOrder === 0;
+                this.#instanceUpdate(null, isDemon);
+            });
         }
     }
     
     
-    /** Notifies UI and affected coins. */
+    /** Notifies UI and affected coins. Should only be called by methods that are called on user actions. */
     dominoUpdate(cogFun, isDemon, isMasculine) {
         this.#update(cogFun, isDemon, isMasculine);
         this.#notifyStates();
@@ -478,6 +527,7 @@ class CognitiveFunctionState extends EventTarget {
     }
     
     #update(cogFun, isDemon, isMasculine) {
+        this._parentOpTypeState._isUntouched = false;
         if (cogFun != null) this.#cogFun = cogFun;
         if (isDemon != null) this.#isDemon = isDemon;
         if (isMasculine != null) this.#isMasculine = isMasculine;
@@ -813,7 +863,7 @@ export class DiagramGroup extends Konva.Group {
     
     onChargeSwitch() {
         console.log("Charge switch.");
-        this._opTypeState.switchFirstFunCharge();
+        this._opTypeState.switchCharge(0);
     }
     
     onMainAxisSwitch() {
@@ -971,8 +1021,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
         const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
         
         // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
-        this.scaleY(cogFunState.name.length === 2 ? scaleFactor : genericScaleFactor);
+        this.scaleX(cogFunState.isDiagramUntouched ? genericScaleFactor : scaleFactor);
+        this.scaleY(cogFunState.isDiagramUntouched ? genericScaleFactor : scaleFactor);
     }
 }
 
@@ -1002,24 +1052,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
 
 class CognitiveFunctionBackgroundImage extends Konva.Image {
     
-    /**
-     * @protected
-     * @type {number}
-     */
-    get _IMG_SCALE() { return 1; }
-    
-    /**
-     * Used as a multiplier on the _IMG_SCALE to stay proportional to the assigned circle.
-     * @protected
-     * @type {number}
-     */
-    #circleScale;
-    
-    /**
-     * @protected
-     * @returns {number}
-     */
-    get _BASE_SCALE() { return this._IMG_SCALE * this.#circleScale; }
+    get _BASE_IMG_SCALE() { return 1; }
     
     
     
@@ -1033,7 +1066,6 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     constructor(cogFunState, img, circle) {
         super();
         
-        this.#circleScale = circle.scaleX();
         
         // Based on how the library is structured, img should always be loaded when reaching this point.
         this.image(img);
@@ -1043,27 +1075,30 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
         
-        this._applyCustomAttributes(circle, cogFunState.grantOrder);
+        this._updateDrawing(cogFunState, circle);
+        cogFunState.addEventListener('change', () => {
+            this._updateDrawing(cogFunState, circle);
+        });
     }
     
     
     
     /**
      *
+     * @param {CognitiveFunctionState} cogFunState
      * @param {CognitiveFunctionCircle} circle
-     * @param {number} grantOrder
      * @protected
      */
-    _applyCustomAttributes(circle, grantOrder) {
-        const baseScale = this._BASE_SCALE;
-        this.scaleX(baseScale);
-        this.scaleY(baseScale);
+    _updateDrawing(cogFunState, circle) {
+        const scale = this._BASE_IMG_SCALE * circle.scaleX();
+        this.scaleX(scale);
+        this.scaleY(scale);
     }
 }
 
 
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _IMG_SCALE() { return 0.4; }
+    get _BASE_IMG_SCALE() { return 0.4; }
     
     
     /**
@@ -1077,8 +1112,8 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
         super(cogFunState, img, circle);
     
         this.#updateDrawing(cogFunState)
-        cogFunState.addEventListener("change", () => {
-            this.#updateDrawing(cogFunState)
+        cogFunState.addEventListener('change', () => {
+            this.#updateDrawing(cogFunState);
         });
     }
     
@@ -1090,7 +1125,7 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
 
 
 class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _IMG_SCALE() {
+    get _BASE_IMG_SCALE() {
         return 0.43;
     }
     
@@ -1103,7 +1138,7 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
         
         this.#updateDrawing(cogFunState)
         cogFunState.addEventListener(DiagramEvents.OP_TYPE_CHANGE, () => {
-            this.#updateDrawing(cogFunState)
+            this.#updateDrawing(cogFunState);
         });
     }
     

@@ -782,18 +782,169 @@ export class CognitiveFunction {
         return new CognitiveFunction(letterStr + chargeStr);
     }
     
+    
+    
+    
+    /**
+     *
+     * @param charge {string|Charge}
+     * @return {CognitiveFunction}
+     */
+    withCharge(charge) {
+        if (charge == null || charge === this.charge) return this;
+        
+        if (typeof charge === 'string') charge = Charge.fromCharacter(charge);
+        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
+        
+        return new CognitiveFunction(this._internalName[0] + charge.coinLabel);
+    }
+    
+    
     /**
      *
      * @param charge {string|Charge}
      * @return {CognitiveFunction}
      */
     plusCharge(charge) {
-        if (this.charge != null) throw new Error("This instance already has a charge.");
+        if (charge == null || charge === this.charge) return this;
+        if (this.charge != null) throw new Error("This instance has an opposing charge.");
         
-        if (typeof charge === 'string') charge = Charge.fromCharacter(charge);
-        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
+        return this.withCharge(charge);
+    }
+    
+    
+    /**
+     *
+     * @param humanNeed {string|HumanNeed}
+     * @param [ignoreAxis] {boolean}
+     * @return {CognitiveFunction}
+     */
+    withHumanNeed(humanNeed, ignoreAxis) {
+        if (humanNeed == null || humanNeed === this.humanNeed) return this;
         
-        return new CognitiveFunction(this._internalName[0] + charge.coinLabel);
+        if (typeof humanNeed === 'string') humanNeed = HumanNeed.fromString(humanNeed);
+        if (!(humanNeed instanceof HumanNeed)) throw new Error("Not a valid human need.");
+        if (!ignoreAxis && this.axis !== humanNeed.axis) throw new Error("Incompatible axis.");
+        
+        return this.axis !== humanNeed.axis ?
+            new CognitiveFunction(humanNeed.coinLabel) :
+            new CognitiveFunction(this._internalName[0] + humanNeed.charge.coinLabel);
+    }
+    
+    /**
+     *
+     * @param humanNeed {string|HumanNeed}
+     * @return {CognitiveFunction}
+     */
+    plusHumanNeed(humanNeed) {
+        if (humanNeed == null || humanNeed === this.humanNeed) return this;
+        if (this.humanNeed != null) throw new Error("This instance has a different human need.");
+        
+        return this.withHumanNeed(humanNeed);
+    }
+    
+    
+    /**
+     *
+     * @param letter {string|Letter}
+     * @param [ignoreAxis] {boolean}
+     * @return {CognitiveFunction}
+     */
+    withLetter(letter, ignoreAxis) {
+        if (letter == null || letter.coinLabel === this.coinLabel) return this;
+        
+        if (typeof letter === 'string') letter = Letter.fromCharacter(letter);
+        if (!(letter instanceof Letter)) throw new Error("Not a valid letter.");
+        if (!ignoreAxis && this.axis !== letter.axis) throw new Error("Incompatible axis.");
+        
+        return new CognitiveFunction(letter.coinLabel + this._internalName[1]);
+    }
+    
+    
+    /**
+     *
+     * @param letter {string|Letter}
+     * @return {CognitiveFunction}
+     */
+    plusLetter(letter) {
+        if (letter == null || letter === this.letter) return this;
+        if (this.letter != null) throw new Error("This instance has a different letter.");
+        
+        return this.withLetter(letter);
+    }
+    
+    
+    
+    
+    /**
+     * Returns a new cognitive function, where every coin in this instance is overridden by coins in <code>other</code>, but doesn't remove missing
+     * coins. If <code>ignoreAxis</code> is falsy, conflicting axis will throw an error, otherwise <code>other</code> will
+     * completely override every coin.
+     * @example
+     * // Assuming instance is 'Fi'.
+     * this.injectedWith('Te') // returns 'Te'.
+     * this.injectedWith('De') // returns 'Fe'.
+     * this.injectedWith('Oi') // throws an error.
+     * this.injectedWith('O', true) // returns 'O'.
+     * this.injectedWith('Oi', true) // returns 'Oi'.
+     * this.injectedWith('Ni', true) // returns 'Ni'.
+     *
+     * @param other {string|Charge|HumanNeed|Letter|CognitiveFunction}
+     * @param [ignoreAxis] {boolean}
+     * @return {CognitiveFunction}
+     */
+    injectedWith(other, ignoreAxis) {
+        if (other == null || other.coinLabel === this.coinLabel) return this;
+        
+        switch (true) {
+            case (other instanceof Charge): return this.withCharge(other);
+            case (other instanceof HumanNeed): return this.withHumanNeed(other, ignoreAxis);
+            case (other instanceof Letter): return this.withLetter(other, ignoreAxis);
+        }
+        
+        
+        if (typeof other === 'string') other = new CognitiveFunction(other);
+        if (!(other instanceof CognitiveFunction)) throw new Error("Invalid argument type.");
+        
+        console.log(other.humanNeed);
+        console.log(other.letter);
+        return this.withHumanNeed(other.humanNeed, ignoreAxis).withLetter(other.letter, ignoreAxis);
+    }
+    
+    
+    /**
+     * Simply does <code>other.injectedWith(this)</code>.
+     * @param other {string|Charge|HumanNeed|Letter|CognitiveFunction}
+     * @param [ignoreAxis] {boolean}
+     * @return {CognitiveFunction}
+     */
+    injectInto(other, ignoreAxis) {
+        return other.injectedWith(this);
+    }
+    
+    
+    
+    /**
+     *
+     * @param other {string|Charge|HumanNeed|Letter|CognitiveFunction}
+     * @return {CognitiveFunction}
+     */
+    plus(other) {
+        if (other == null || other.coinLabel === this.coinLabel) return this;
+        
+        
+        switch (true) {
+            case (other instanceof Charge): return this.plusCharge(other);
+            case (other instanceof HumanNeed): return this.plusHumanNeed(other);
+            case (other instanceof Letter): return this.plusLetter(other);
+        }
+        
+        
+        if (typeof other === 'string') other = new CognitiveFunction(other);
+        if (!(other instanceof CognitiveFunction)) throw new Error("Invalid argument type.");
+        
+        // REM Both human need and charge addition is necessary to trigger errors on conflicts.
+        return this.plusCharge(other.charge).plusHumanNeed(other.humanNeed).plusLetter(other.letter);
     }
     
     /**
