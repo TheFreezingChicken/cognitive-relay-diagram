@@ -15,6 +15,17 @@ export function oppositeGrantOrder(grantOrder) {
 }
 
 
+/**
+ * @param grantOrder {number}
+ */
+function checkGrantOrder(grantOrder) {
+    if (typeof grantOrder !== 'number') throw new TypeError("Invalid Grant order index. Not a number.");
+    if (!Number.isInteger(grantOrder)) throw new Error("Invalid Grant order index. Not an integer.");
+    
+    if (grantOrder < 0 || grantOrder >= 4) throw new Error("Invalid Grant order index. Out of bounds (0-3).");
+}
+
+
 class PrivateConstructorObject extends Object {
     /**
      * @protected
@@ -1292,126 +1303,6 @@ export class CognitiveFunction {
 
 
 
-// /**
-//  * @readonly
-//  * @class
-//  */
-// export class AbsoluteAnimalPositions {
-//     // SLEEP Remove "buildInstance" and copy what we did for Quadra.
-//
-//     static #Args = class Args {
-//         constructor(grantIndex1, grantIndex2) {
-//             this.grantIndex1 = grantIndex1;
-//             this.grantIndex2 = grantIndex2;
-//         }
-//     }
-//
-//     static #_UPPER_INFO = this.#buildInstance(0, 1);
-//
-//     static #_UPPER_ENERGY = this.#buildInstance(0, 2);
-//
-//     static #_LOWER_INFO = this.#buildInstance(2, 3);
-//
-//     static #_LOWER_ENERGY = this.#buildInstance(1, 3);
-//
-//
-//     /** @type {Readonly<AbsoluteAnimalPositions>} */
-//     static get UPPER_INFO() {
-//         return this.#_UPPER_INFO;
-//     }
-//
-//     /** @type {Readonly<AbsoluteAnimalPositions>} */
-//     static get UPPER_ENERGY() {
-//         return this.#_UPPER_ENERGY;
-//     }
-//
-//     /** @type {Readonly<AbsoluteAnimalPositions>} */
-//     static get LOWER_INFO() {
-//         return this.#_LOWER_INFO;
-//     }
-//
-//     /** @type {Readonly<AbsoluteAnimalPositions>} */
-//     static get LOWER_ENERGY() {
-//         return this.#_LOWER_ENERGY;
-//     }
-//
-//     // SLEEP When we have an IDE that doesn't suck ass convert this to a static initializer.
-//     /**
-//      * @param grantIndex1 {number}
-//      * @param grantIndex2 {number}
-//      * @return {AbsoluteAnimalPositions}
-//      */
-//     static #buildInstance(grantIndex1, grantIndex2) {
-//         return new AbsoluteAnimalPositions(new this.#Args(grantIndex1, grantIndex2));
-//     }
-//
-//
-//     /**
-//      *
-//      * @param grantIndex1 {number}
-//      * @param grantIndex2 {number}
-//      * @return {AbsoluteAnimalPositions}
-//      */
-//     static getInstance(grantIndex1, grantIndex2) {
-//         /**
-//          * @param i {number}
-//          * @param name {string}
-//          */
-//         function checkIndex(i, name) {
-//             if (typeof i !== 'number') throw new TypeError(
-//                 `${name} is not a number.`
-//             );
-//
-//             if (!Number.isInteger(i)) throw new Error(
-//                 `${name} is not an integer.`
-//             );
-//
-//             if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
-//         }
-//
-//         checkIndex(grantIndex1, "Grant index 1");
-//         checkIndex(grantIndex2, "Grant index 2");
-//
-//         if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
-//
-//         // Return the appropriate immutable instance based on the provided indexes.
-//         switch (grantIndex1 + grantIndex2) {
-//             // 0 + 1.
-//             case 1:
-//                 return this.#_UPPER_INFO;
-//             // 0 + 2.
-//             case 2:
-//                 return this.#_UPPER_ENERGY;
-//             // 1 + 3.
-//             case 4:
-//                 return this.#_LOWER_ENERGY;
-//             // 2 + 3.
-//             case 5:
-//                 return this.#_LOWER_INFO;
-//             default:
-//                 throw new Error("Invalid index couple (same axis not allowed).");
-//         }
-//     }
-//
-//
-//     /**
-//      *
-//      * @param args {AbsoluteAnimalPositions.Args}
-//      */
-//     constructor(args) {
-//         if (!(args instanceof AbsoluteAnimalPositions.#Args)) throw new Error(
-//             "Private constructor. Use static methods or properties to obtain instances."
-//         );
-//
-//         this.grantIndex1 = args.grantIndex1;
-//         this.grantIndex2 = args.grantIndex2;
-//
-//         Object.freeze(this);
-//     }
-// }
-
-
-
 
 
 /**
@@ -1610,17 +1501,18 @@ export class Animal extends Enum {
 
 
 /**
+ * Indicates the position of an animal based on the grant order of its functions.
  * @readonly
  * @class
  */
-export class AnimalPosition extends Enum {
+export class AnimalGrantPosition extends Enum {
     
     static _canConstruct = true;
     
-    static #STRONGER_INFO = new AnimalPosition(0, 1);
-    static #STRONGER_ENERGY = new AnimalPosition(0, 2);
-    static #WEAKER_INFO = new AnimalPosition(2, 3);
-    static #WEAKER_ENERGY = new AnimalPosition(1, 3);
+    static #STRONGER_INFO = new AnimalGrantPosition(0, 1);
+    static #STRONGER_ENERGY = new AnimalGrantPosition(0, 2);
+    static #WEAKER_INFO = new AnimalGrantPosition(2, 3);
+    static #WEAKER_ENERGY = new AnimalGrantPosition(1, 3);
     
     static {
         this._canConstruct = false;
@@ -1648,27 +1540,11 @@ export class AnimalPosition extends Enum {
      *
      * @param grantIndex1 {number}
      * @param grantIndex2 {number}
-     * @return {AnimalPosition}
+     * @return {AnimalGrantPosition}
      */
     static fromGrantOrder(grantIndex1, grantIndex2) {
-        /**
-         * @param i {number}
-         * @param name {string}
-         */
-        function checkIndex(i, name) {
-            if (typeof i !== 'number') throw new TypeError(
-                `${name} is not a number.`
-            );
-            
-            if (!Number.isInteger(i)) throw new Error(
-                `${name} is not an integer.`
-            );
-            
-            if (i < 0 || i >= 4) throw new Error(`${name} is not between 0 and 3 (included).`);
-        }
-        
-        checkIndex(grantIndex1, "Grant index 1");
-        checkIndex(grantIndex2, "Grant index 2");
+        checkGrantOrder(grantIndex1);
+        checkGrantOrder(grantIndex2);
         
         if (grantIndex1 === grantIndex2) throw new Error("Grant indexes can't be the same.");
         
@@ -2243,3 +2119,621 @@ export class AnimalPosition extends Enum {
 //
 //
 // }
+
+
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const OpTypeChangeEvents = {
+    // Contains "grantOrder"
+    LETTER_SWITCH: 'letterSwitch',
+    CHARGE_SWITCH: 'chargeSwitch',
+    MAIN_AXIS_SWITCH: 'mainAxisSwitch',
+    MAKE_MASCULINE: 'makeMasculine',
+    SET_ANIMAL_ORDER: 'setAnimalOrder',
+    MODALITY_RESET: 'modalityReset',
+    TYPE_RESET: 'typeReset',
+    INTERNAL_CHANGE: 'internalChange'
+};
+Object.freeze(OpTypeChangeEvents);
+
+
+// HERE Possible actions:
+//      - 16type change
+//        · Changes everything
+//      - Letter change (for any function)
+//        · Changes opposite function
+//
+
+//      - Charge change (for first and last function)
+//      - Animal change (
+
+
+/**
+ *
+ */
+class ObservableOpType extends EventTarget {
+    /** @type {Symbol} */
+    #dominoSymbol;
+    
+    /**
+     *
+     * @return {Symbol}
+     * @package
+     */
+    get _dominoSymbol() {
+        return this.#dominoSymbol;
+    }
+    
+    
+    /** @type {ObservableGrantFunction[]} */
+    #observableCognitiveFunctions;
+    /** @type {Map<AnimalGrantPosition, ObservableGrantAnimal>} */
+    #observableAnimals;
+    
+    // HERE Continua a fixare
+    
+    
+    /**
+     * This will be filled with null values if the stack order hasn't been set by the user yet.
+     * @type {AnimalState[]}
+     */
+    #animalStackStates;
+    
+    
+    
+    constructor() {
+        super();
+        
+        /** @type {ObservableGrantFunction[]} */
+        const cogFunStates = new Array(4);
+        /** @type {Map<AnimalGrantPosition, ObservableGrantAnimal>} */
+        const animalStates = new Map();
+        this.#observableCognitiveFunctions = cogFunStates;
+        this.#observableAnimals = animalStates;
+        this.#animalStackStates = new Array(4);
+        
+        // Populating states.
+        for (let i = 0; i < 4; i++) {
+            cogFunStates[i] = new ObservableGrantFunction(i);
+        }
+        
+        for (const ap of AnimalGrantPosition.All) {
+            animalStates.set(ap, new ObservableGrantAnimal(ap))
+        }
+        
+        
+        // Now that the states are all created, attach this instance to all (it will add the listeners).
+        
+        for (const cfs of cogFunStates) {
+            cfs.attachOpTypeState(this);
+        }
+        
+        for (const as of animalStates.values()) {
+            as.attachOpTypeState(this);
+        }
+    }
+    
+    
+    _dominoStarted() {
+        this.#dominoSymbol = Symbol();
+    }
+    
+
+// HERE Animals are updated according to each function update. Animal order is decided through clicking
+//      the triangles in the middle (clicking on a triangle that was already clicked makes the count start
+//      from the beginning).
+//      When animals are already set and a function gets changed, if the animal order is still valid it
+//      gets preserved. To achieve this more efficiently, I need an additional state stored separately
+//      for the animal itself rather than its position, and the position state is going to both listen and
+//      send user updates to that.
+//      for changes.
+    
+    /**
+     * @param grantOrder {number}
+     * @returns {ObservableGrantFunction}
+     */
+    getCogFunState(grantOrder) {
+        return this.#observableCognitiveFunctions[grantOrder];
+    }
+    
+    /**
+     * @param animalReference {AnimalGrantPosition|number}
+     * @returns {ObservableGrantAnimal}
+     */
+    getAnimalState(animalReference) {
+        switch (true) {
+            case (animalReference instanceof AnimalGrantPosition):
+                return this.#observableAnimals.get(animalReference);
+            case (typeof animalReference === 'number'):
+                return this.#animalStackStates[animalReference];
+            default:
+                throw new Error("Invalid argument.");
+        }
+    }
+    
+    
+    
+    
+    fixMiddleAxis() {
+        const firstFun = this.getCogFunState(0);
+        const secondFun = this.getCogFunState(1);
+        
+        if (firstFun.cognitiveFunction.canBeSaviorWith(secondFun.cognitiveFunction)) return;
+        
+        secondFun.startDominoUpdate(firstFun.cognitiveFunction.grantMatch(1));
+        this.getCogFunState(2).startDominoUpdate(secondFun.cognitiveFunction.opposite());
+    }
+    
+    fixAnimals() {
+        for (/** @type {AnimalGrantPosition} */ const ap of AnimalGrantPosition.All) {
+            const fun1 = this.getCogFunState(ap.grantIndex1).cognitiveFunction;
+            const fun2 = this.getCogFunState(ap.grantIndex2).cognitiveFunction;
+            
+            // No charge means we aren't in a situation where animals can be determined.
+            if (fun1.charge == null) return;
+            
+            this.getAnimalState(ap).updateAnimal(Animal.fromHumanNeeds(fun1, fun2));
+        }
+    }
+    
+    fixDemons() {
+        const lastFunState = this.getCogFunState(3);
+        if (lastFunState.cognitiveFunction.charge != null) lastFunState.startDominoUpdate(null, true);
+        
+        const secondFunState = this.getCogFunState(1);
+        const thirdFunState = this.getCogFunState(2);
+        
+        const firstAnimal = this.getAnimalState(0).animal;
+        
+        if (firstAnimal == null) return;
+        
+        if (firstAnimal.includes(secondFunState.cognitiveFunction)) {
+            secondFunState.startDominoUpdate(null, true);
+        } else {
+        
+        }
+    }
+    
+    
+    
+    switchLetter(grantOrder) {
+        const cfs = this.getCogFunState(grantOrder);
+        const newFunction = cfs.cognitiveFunction.withOppositeLetter();
+        this._isUntouched = false;
+        cfs.startDominoUpdate(newFunction);
+    }
+    
+    switchCharge(grantOrder) {
+        
+        
+        // Changing charges of middle axis functions would require ambiguous propagations, so we forbid it.
+        if (grantOrder === 1 || grantOrder === 2) throw new Error("Can't change charges of middle axis functions.");
+        
+        
+        const cfState = this.getCogFunState(grantOrder);
+        const cogFun = cfState.cognitiveFunction
+        
+        // Inverting charge or assigning introverted charge if there is no charge.
+        cfState.startDominoUpdate(
+            cogFun.charge == null ? cogFun.plusCharge(Charge.INTROVERTED) : cogFun.withOppositeCharge()
+        )
+    }
+    
+    
+    switchMainAxis() {
+        const firstFunState = this.getCogFunState(0);
+        const secondFunState = this.getCogFunState(1);
+        const tempFun = firstFunState.cognitiveFunction;
+        
+        firstFunState.startDominoUpdate(secondFunState.cognitiveFunction);
+        secondFunState.startDominoUpdate(tempFun);
+    }
+    
+    resetAnimals() {
+        for (const [aPos, animal] of this.#observableAnimals) {
+            animal.updateStackOrder(0, false);
+        }
+    }
+    
+    
+    setAnimalOrder(animalPosition) {
+        // const animalBeingSet = this.getAnimalState(animalPosition);
+        // let resetAll = false;
+        // for (let i = 0; i < 4; i++) {
+        //     if (resetAll) {
+        //         this.#animalStackStates[i] = null;
+        //         continue;
+        //     }
+        //     // TODO Remember that at the 3rd animal we must also automatically set the 4th and the double activated.
+        //     // HERE Continue (and consider if the above condition is fine)
+        // }
+    }
+}
+
+
+/** @readonly */
+const DefaultOpTypeFunctions = [
+    new CognitiveFunction('N'),
+    new CognitiveFunction('T'),
+    new CognitiveFunction('F'),
+    new CognitiveFunction('S')
+]
+Object.freeze(DefaultOpTypeFunctions);
+
+
+
+class ObservableCoin extends EventTarget {
+    /** @type {Symbol} */
+    #dominoSymbol = null;
+    /** @type {ObservableOpType|null} */
+    _parentOpType = null;
+    /**
+     * @abstract
+     * @type {Object}
+     */
+    _state = null;
+    
+    
+    
+    /**
+     *
+     * @abstract
+     * @protected
+     * @param observableOpType {ObservableOpType}
+     */
+    _onAttachParent(observableOpType) {
+        throw new Error("Abstract method. Not overridden in subclass.");
+    }
+    
+    
+    
+    
+    /**
+     * @package
+     * @param obsOpType {ObservableOpType}
+     */
+    _attachParentOpType(obsOpType) {
+        this._parentOpType = obsOpType;
+        
+        obsOpType._afterDominoEdit(() => {
+            this._notifyUi();
+        });
+        
+        this._onAttachParent(obsOpType);
+    }
+    
+    
+    /**
+     * Should only be called after a domino ended.
+     * @protected
+     */
+    _notifyUi() {
+        this.dispatchEvent(new Event('change'));
+    }
+    
+    /**
+     * @protected
+     */
+    _notifyCoins() {
+        this.dispatchEvent(new Event(OpTypeChangeEvents.INTERNAL_CHANGE));
+    }
+    
+    /**
+     * Should be called by OP type on user action.
+     * @param config
+     * @package
+     */
+    _startDominoEdit(config) {
+        this._parentOpType._dominoStarted();
+        this._dominoEdit(config);
+    };
+    
+    /**
+     *
+     * @return {boolean}
+     * @package
+     */
+    get _hasBeenDominoEdited() {
+        return this._parentOpType._dominoSymbol === this.#dominoSymbol;
+    }
+    
+    /**
+     * Should be called only by listeners when attaching parent OP type, and only if not previously domino edited in the same domino.
+     * @param config
+     * @protected
+     */
+    _dominoEdit(config) {
+        if (this._hasBeenDominoEdited) throw new Error("Already edited in the same domino edit.");
+        this.#dominoSymbol = this._parentOpType._dominoSymbol;
+        this._onEdit(config);
+    };
+    
+    
+    /**
+     * @protected
+     */
+    _onEdit(state) {
+        for (const prop in state) this._state[prop] = state[prop];
+        this._notifyCoins();
+    };
+}
+
+
+/**
+ * @typedef {Object} CognitiveFunctionState
+ * @property {CognitiveFunction} cognitiveFunction
+ * @property {number} grantOrder
+ * @property {boolean|null} [isDemon]
+ * @property {boolean|null} [isMasculine]
+ */
+
+/**
+ *
+ */
+class ObservableGrantFunction extends ObservableCoin {
+    #grantOrder;
+    /** @type {CognitiveFunction} */
+    #cogFun;
+    /** @type {ObservableGrantFunction} */
+    #oppositeCogFunState;
+    /** @type {boolean|null} */
+    #isDemon = null;
+    /** @type {boolean|null} */
+    #isMasculine = null;
+    
+    /** @type {ObservableOpType|null} */
+    _parentOpTypeState = null;
+    
+    /**
+     * @param grantOrder {number}
+     */
+    constructor(grantOrder) {
+        super();
+        this.#grantOrder = grantOrder;
+        
+        this.#cogFun = DefaultOpTypeFunctions[grantOrder];
+        
+        
+        if (devTest) this.#devInit()
+    }
+    
+    
+    #devInit() {
+        switch (this.#grantOrder) {
+            case 0:
+                this.#cogFun = new CognitiveFunction('Fi');
+                break
+            case 1:
+                this.#cogFun = new CognitiveFunction('Ne');
+                break
+            case 2:
+                this.#cogFun = new CognitiveFunction('Si');
+                break
+            case 3:
+                this.#cogFun = new CognitiveFunction('Te');
+                break
+        }
+    }
+    
+    
+    
+    /**
+     * @returns {number}
+     */
+    get grantOrder() {
+        return this.#grantOrder;
+    }
+    
+    
+    
+    get cognitiveFunction() {
+        return this.#cogFun;
+    }
+    
+    /**
+     * @returns {string}
+     */
+    get name() {
+        return this.#cogFun.coinLabel;
+    }
+    
+    get isDemon() {
+        return this.#isDemon;
+    }
+    
+    /**
+     * @returns {boolean}
+     */
+    get isMasculine() {
+        return this.#isMasculine;
+    }
+    
+    
+    
+    get isDiagramUntouched() {
+        return this._parentOpTypeState._isUntouched
+    }
+    
+    
+    _attachParentOpType(obsOpType) {
+        super._attachParentOpType(obsOpType);
+        
+        // For all functions. Listen to update of the opposite one to change it accordingly.
+        const oppositeFunState = opTypeState.getCogFunState(oppositeGrantOrder(this.grantOrder));
+        oppositeFunState.addEventListener(
+            OpTypeChangeEvents.INTERNAL_CHANGE,
+            () => {
+                const newCogFun = oppositeFunState.cognitiveFunction.opposite();
+                // If last function, set Demon to true, otherwise set null to do nothing.
+                const isDemon = this.grantOrder === 3 || null;
+                this.#instanceUpdate(newCogFun, isDemon);
+            }
+        );
+        
+        
+        
+        
+        // For second and third function.
+        if (this.grantOrder === 1 || this.grantOrder === 2) {
+            const firstFunState
+            
+            // Listen to updates of stronger info animal to change Demon state accordingly.
+            const strongerInfoAnimalState = opTypeState.getAnimalState(AnimalGrantPosition.STRONGER_INFO);
+            strongerInfoAnimalState.addEventListener(OpTypeChangeEvents.INTERNAL_CHANGE, () => {
+                const isDemon = strongerInfoAnimalState.isSet && this.grantOrder === 1 && strongerInfoAnimalState.stackOrder === 0;
+                this.#instanceUpdate(null, isDemon);
+            });
+        }
+    }
+}
+
+
+
+
+/**
+ * @typedef {Object} AnimalState
+ * @property {Animal} [animal]
+ * @property {number} [stackOrder]
+ * @property {boolean|null} [isDemon]
+ * @property {boolean|null} [isDoubleActivated]
+ */
+
+
+/**
+ * Animal that's observable in within a parent type. What remains fixed is its positioning based on the Grant order of the functions within the parent
+ * type. <br>
+ * For example, if you're observing the {@link AnimalGrantPosition.STRONGER_INFO} Animal, it should update to:
+ * - Consume for IxxPs and ExxPs
+ * - Blast for IxxJs and ExxJs
+ *
+ * So every time the parent type changes, the Animal changes to maintain the Animal consistent to its Grant functions position.
+ */
+class ObservableGrantAnimal extends EventTarget {
+    
+    /**
+     * @param diagramPosition {AnimalGrantPosition}
+     */
+    constructor(diagramPosition) {
+        super();
+        
+        this.#animalPosition = diagramPosition;
+        
+        this.#stackOrder = null;
+        this.#animal = null;
+        this.#isDoubleActivated = false;
+        
+        //this.#devInit()
+    }
+    
+    
+    
+    
+    #devInit() {
+        switch (this.#animalPosition) {
+            case AnimalGrantPosition.STRONGER_INFO:
+                this.#animal = Animal.fromAnimalString('C');
+                this.#stackOrder = 1;
+                this.#isDoubleActivated = true;
+                break;
+            case AnimalGrantPosition.STRONGER_ENERGY:
+                this.#animal = Animal.fromAnimalString('P');
+                this.#stackOrder = 0;
+                break;
+            case AnimalGrantPosition.WEAKER_INFO:
+                this.#animal = Animal.fromAnimalString('B');
+                this.#stackOrder = 3;
+                break;
+            case AnimalGrantPosition.WEAKER_ENERGY:
+                this.#animal = Animal.fromAnimalString('S');
+                this.#stackOrder = 2;
+                break;
+            default:
+                throw new Error("Invalid Animal Position");
+        }
+    }
+    
+    
+    /**
+     *
+     * @returns {AnimalGrantPosition}
+     */
+    get animalPosition() {
+        return this.#animalPosition;
+    }
+    
+    
+    get animal() {
+        return this.#animal;
+    }
+    
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isSet() {
+        return this.#animal != null;
+    }
+    
+    /**
+     *
+     * @returns {number|null}
+     */
+    get stackOrder() {
+        return this.#stackOrder;
+    }
+    
+    /**
+     *
+     * @returns {string}
+     */
+    get name() {
+        return this.#animal?.coinLabel ?? '';
+    }
+    
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isDoubleActivated() {
+        return this.#isDoubleActivated;
+    }
+    
+    
+    
+    
+    /**
+     * @param opTypeState {ObservableOpType}
+     */
+    attachOpTypeState(opTypeState) {
+    }
+    
+    
+    
+    
+    /**
+     *
+     * @param animal {Animal}
+     */
+    updateAnimal(animal) {
+        this.#animal = animal;
+        this.notifyUi();
+    }
+    
+    /**
+     * @param stackOrder {number}
+     * @param [isDoubleActivated] {boolean}
+     */
+    updateStackOrder(stackOrder, isDoubleActivated) {
+        this.#stackOrder = stackOrder;
+        if (isDoubleActivated != null) this.#isDoubleActivated = isDoubleActivated;
+        this.notifyUi();
+    }
+    
+    
+    notifyUi() {
+        this.dispatchEvent(new Event('change'));
+    }
+}
