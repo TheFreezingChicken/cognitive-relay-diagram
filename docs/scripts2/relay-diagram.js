@@ -173,6 +173,19 @@ export const diagramResources = new ResourceLoader();
 
 
 
+// ERR Find calls to previous OpTypeEvents and use these instead.
+const DiagramEvents = {
+    // Contains "grantOrder"
+    LETTER_SWITCH: 'letterSwitch',
+    CHARGE_SWITCH: 'chargeSwitch',
+    MAIN_AXIS_SWITCH: 'mainAxisSwitch',
+    MAKE_MASCULINE: 'makeMasculine',
+    SET_ANIMAL_ORDER: 'setAnimalOrder',
+    MODALITY_RESET: 'modalityReset',
+    TYPE_RESET: 'typeReset'
+};
+
+
 
 
 
@@ -209,6 +222,8 @@ class DebugRect extends Konva.Rect {
 
 
 
+// FIX Visit all diagram elements and fix listeners calls with new method names.
+
 
 export class DiagramGroup extends Konva.Group {
     
@@ -239,11 +254,11 @@ export class DiagramGroup extends Konva.Group {
         /** @type {CognitiveFunctionGroup[]} */
         const cogFunGroups = new Array(4);
         for (let i = 0; i < 4; i++) {
-            const cfg = new CognitiveFunctionGroup(state.getCogFunState(i));
+            const cfg = new CognitiveFunctionGroup(state.getCognitiveFunState(i));
             
             cogFunGroups[i] = cfg;
             cogFunStackGroup.add(cfg);
-            cogFunCutoutsGroup.add(new CognitiveFunctionCircle(state.getCogFunState(i)));
+            cogFunCutoutsGroup.add(new CognitiveFunctionCircle(state.getCognitiveFunState(i)));
         }
     
         const animalStackGroup = new Konva.Group();
