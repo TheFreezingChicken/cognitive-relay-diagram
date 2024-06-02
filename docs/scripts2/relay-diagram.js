@@ -1,4 +1,5 @@
-import {AnimalGrantPosition, OpTypeChangeEvents} from "./op-lib.js";
+import {AnimalGrantPosition} from "./op-lib.js";
+
 
 const devTest = false;
 
@@ -457,8 +458,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
      * @param cogFunState {CognitiveFunctionState}
      */
     #updateDrawing(cogFunState) {
-        this.fill(CogFunFillColors[cogFunState.cognitiveFunction.coinLabel[0]]);
-        this.stroke(CogFunStrokeColors[cogFunState.cognitiveFunction.coinLabel[0]]);
+        this.fill(CogFunFillColors[cogFunState.cognitiveFunction.shortName[0]]);
+        this.stroke(CogFunStrokeColors[cogFunState.cognitiveFunction.shortName[0]]);
     
         const genericScaleFactor = cogFunState.grantOrder === 0 ? 1.05 : 1;
         

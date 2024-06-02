@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "konva": "^9.3.11"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}

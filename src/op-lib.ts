@@ -1,6 +1,3 @@
-import {Animal, AnimalGrantPosition, Charge, CognitiveFunction} from "../docs/scripts2/op-lib";
-
-
 /**
  * Returns the opposite grant order.
  * @throws {TypeError} If {@link grantOrder} is not a number.
@@ -29,512 +26,526 @@ function checkGrantOrder(grantOrder: number): void {
     if (grantOrder < 0 || grantOrder >= 4) throw new Error("Invalid Grant order index. Out of bounds (0-3).");
 }
 
-
-
-
-
-
-const OpTypeChangeEvents = {
-    INTERNAL_CHANGE: 'internalChange',
-    UI_CHANGE: 'change'
-} as const;
-
-
-
-
-
-interface CoinState<T extends ObservableCoin> {
-    stateProducer: T;
-}
-
-interface CognitiveFunctionState extends CoinState<ObservableGrantFunction> {
-    grantOrder: number;
-    cognitiveFunction: CognitiveFunction;
-    isDemon: ?boolean;
-    isMasculine: ?boolean;
-}
-
-interface AnimalState extends CoinState<ObservableGrantAnimal> {
-    grantPosition: AnimalGrantPosition;
-    animal: ?Animal;
-    stackOrder: ?number;
-    isDemon: ?boolean;
-    isDoubleActivated: ?boolean;
-}
-
-
-/**
- * @class
- */
-class OpEventTarget extends Object {
-    protected _eventHandler = new EventTarget();
+function isInstanceOfEnum(enumObj: any, value: any): boolean {
+    return Object.values(enumObj).includes(value);
 }
 
 
 
-/**
- *
- */
-class ObservableOpType extends OpEventTarget {
-    #dominoSymbol: ?Symbol = null;
-
-    get dominoSymbol(): ?Symbol {
-        return this.#dominoSymbol;
-    }
 
 
-    #observableCognitiveFunctions: ObservableGrantFunction[];
-    readonly #observableAnimals: Map<AnimalGrantPosition, ObservableGrantAnimal>;
-
-    /**
-     * This will be filled with null values if the stack order hasn't been set by the user yet.
-     */
-    readonly #animalStackStates: AnimalState[];
+enum Axis {
+    OBSERVING = 'O',
+    DECIDING = 'D'
+}
 
 
-
-    constructor() {
-        super();
-
-
-        const obsFuns: ObservableGrantFunction[] = this.#observableCognitiveFunctions = new Array(4);
-        const obsAnimals: Map<AnimalGrantPosition, ObservableGrantAnimal> = this.#observableAnimals = new Map();
-
-
-
-            this.#animalStackStates = new Array(4);
-
-        // Populating states.
-        for (let i = 0; i < 4; i++) {
-            obsFuns[i] = new ObservableGrantFunction(i);
-        }
-
-        // @ts-ignore
-        for (const ap of AnimalGrantPosition.All) {
-            obsAnimals.set(ap, new ObservableGrantAnimal(ap))
-        }
-
-
-        // Now that all the states are created and assigned to the corresponding collection, attach this instance to all the child observable coins.
-        // Each coin will implement their own changes through adding their own listeners when attached.
-
-        for (const cfs of obsFuns) {
-            cfs._attachParentOpType(this);
-        }
-
-        for (const as of obsAnimals.values()) {
-            as._attachParentOpType(this);
+namespace Axis {
+    export function fromCharacter(character: string): Axis {
+        switch (character) {
+            case 'O':
+            case 'S':
+            case 'N':
+                return Axis.OBSERVING;
+            case 'D':
+            case 'F':
+            case 'T':
+                return Axis.DECIDING;
+            default:
+                throw new Error("Invalid character.");
         }
     }
 
-
-
-
-    getCognitiveFunState(grantOrder: number): CognitiveFunctionState {
-        return this.#observableCognitiveFunctions[grantOrder].state;
+    export function opposite(axis: Axis): Axis {
+        return axis === Axis.OBSERVING ? Axis.DECIDING : Axis.OBSERVING;
     }
 
-    /**
-     * @param animalReference {AnimalGrantPosition|number}
-     * @returns {AnimalState}
-     */
-    getAnimalState(animalReference) {
+    /* TODO Converted from javascript, requires more considerations.
+    export function plus(axis: Axis, charge: any): any {
+        if (charge == null) return axis;
+
+        if (typeof charge === 'string') charge = Charge.fromCharacter(charge);
+        if (!(isInstanceOfEnum(Charge, charge))) throw new Error("Not a valid charge.");
+
+        return HumanNeed.fromString(axis + charge.coinLabel);
+    }*/
+}
+
+
+enum RealityScope {
+    CONCRETE = 'SF',
+    ABSTRACT = 'NT'
+}
+
+namespace RealityScope {
+    //export const All: Set<RealityScope> = new Set(Object.values(RealityScope) as RealityScope[]);
+
+    export function fromCharacter(character: string): RealityScope {
+        switch (character) {
+            case 'S':
+            case 'F':
+                return RealityScope.CONCRETE;
+            case 'N':
+            case 'T':
+                return RealityScope.ABSTRACT;
+            default:
+                throw new Error("Invalid Scope letter.");
+        }
+    }
+
+    export function getLetterStringFromAxis(scope: RealityScope, axis: string | Axis): string {
+        switch (axis) {
+            case Axis.OBSERVING:
+            case 'O':
+                return scope[0];
+            case Axis.DECIDING:
+            case 'D':
+                return scope[1];
+            default:
+                throw new Error("Invalid axis argument.");
+        }
+    }
+
+    export function toString(scope: RealityScope): string {
+
+        return scope;
+    }
+}
+
+
+enum Charge {
+    INTROVERTED = 'i',
+    EXTROVERTED = 'e'
+}
+
+namespace Charge {
+    //export const All: Charge[] = [Charge.INTROVERTED, Charge.EXTROVERTED];
+
+
+    export function fromCharacter(character: string): Charge {
+        switch (character) {
+            case 'i':
+                return Charge.INTROVERTED;
+            case 'e':
+                return Charge.EXTROVERTED;
+            default:
+                throw new Error("Invalid Charge character.");
+        }
+    }
+
+
+
+
+    export function opposite(charge: Charge): Charge {
+        switch (charge) {
+            case Charge.INTROVERTED:
+                return Charge.EXTROVERTED;
+            case Charge.EXTROVERTED:
+                return Charge.INTROVERTED;
+            default:
+                throw new Error("Impossible. Foreign Charge instance.");
+        }
+    }
+
+    export function toString(charge: Charge): string {
+        return charge;
+    }
+}
+
+
+enum HumanNeed {
+    OI_ORGANIZE = 'Oi',
+    OE_GATHER = 'Oe',
+    DI_SELF = 'Di',
+    DE_TRIBE = 'De'
+}
+
+namespace HumanNeed {
+
+    export function fromString(humanNeedLabel: string): HumanNeed {
+        switch (humanNeedLabel) {
+            case 'Di':
+            case 'Self':
+                return HumanNeed.DI_SELF;
+            case 'De':
+            case 'Tribe':
+                return HumanNeed.DE_TRIBE;
+            case 'Oi':
+            case 'Organize':
+                return HumanNeed.OI_ORGANIZE;
+            case 'Oe':
+            case 'Gather':
+                return HumanNeed.OE_GATHER;
+            default:
+                throw new Error("Invalid human need string.");
+        }
+    }
+
+    export function getCharge(humanNeed: HumanNeed): Charge {
+        switch (humanNeed) {
+            case HumanNeed.OI_ORGANIZE:
+            case HumanNeed.DI_SELF:
+                return Charge.INTROVERTED
+            case HumanNeed.OE_GATHER:
+            case HumanNeed.DE_TRIBE:
+                return Charge.EXTROVERTED
+        }
+    }
+
+    export function getAxis(humanNeed: HumanNeed): Axis {
+        switch (humanNeed) {
+            case HumanNeed.OI_ORGANIZE:
+            case HumanNeed.OE_GATHER:
+                return Axis.OBSERVING
+            case HumanNeed.DI_SELF:
+            case HumanNeed.DE_TRIBE:
+                return Axis.DECIDING
+        }
+    }
+
+
+}
+
+
+
+enum Letter {
+    SENSING = 'S',
+    INTUITING = 'N',
+    FEELING = 'F',
+    THINKING = 'T'
+}
+
+namespace Letter {
+    export function fromCharacter(character: string): Letter {
+        switch (character) {
+            case 'S':
+                return Letter.SENSING;
+            case 'N':
+                return Letter.INTUITING;
+            case 'F':
+                return Letter.FEELING;
+            case 'T':
+                return Letter.THINKING;
+            default:
+                throw new Error("String is not a valid letter.");
+        }
+    }
+}
+
+
+
+export class CognitiveFunction {
+    protected _internalName: string;
+
+    constructor(cognitiveFunction: string | CognitiveFunction) {
+        if (cognitiveFunction instanceof CognitiveFunction) {
+            cognitiveFunction = cognitiveFunction._internalName;
+        }
+
+        if (cognitiveFunction.length < 1 || cognitiveFunction.length > 2) {
+            throw new Error("Invalid length.");
+        }
+
+        if (cognitiveFunction.length === 1) {
+            cognitiveFunction = cognitiveFunction + '?';
+        }
+
+        cognitiveFunction = cognitiveFunction[0].toUpperCase() + cognitiveFunction[1].toLowerCase();
+
+        if (/[^FTSNDO]/.test(cognitiveFunction[0])) {
+            throw new Error("Invalid first letter.");
+        }
+
+        if (/[^ie?]/.test(cognitiveFunction[1])) {
+            throw new Error("Invalid second letter.");
+        }
+
+        this._internalName = cognitiveFunction;
+    }
+
+    get letter(): Letter | undefined {
+        const char1 = this._internalName[0];
+
+        if (/[OD]/.test(char1)) return undefined;
+
+        return Letter.fromCharacter(char1);
+    }
+
+    get charge(): Charge | undefined {
+        const char2 = this._internalName[1];
+
+        if (char2 == '?') return undefined;
+
+        return Charge.fromCharacter(char2);
+    }
+
+    get axis(): Axis {
+        return Axis.fromCharacter(this._internalName[0]);
+    }
+
+    get shortName(): string {
+        const charge = this.charge;
+
+        // First character is always guaranteed, second one depends on presence of charge.
+        return this._internalName[0] + (charge ?? '');
+    }
+
+    /*
+    get realityScope(): any | undefined {
+        const letter = this.letter;
+        if (letter == null) return undefined;
+        return letter.realityScope;
+    }
+
+    get humanNeed(): HumanNeed | undefined {
+        const charge = this.charge;
+        if (charge == null) return undefined;
+        return HumanNeed.fromString(this.axis.coinLabel + charge.coinLabel);
+    }
+
+
+    get isIntroverted(): boolean | undefined {
+        return this.charge && this.charge === Charge.INTROVERTED;
+    }
+
+    get isExtroverted(): boolean | undefined {
+        return this.charge && this.charge === Charge.EXTROVERTED;
+    }
+
+    get isObserving(): boolean {
+        return this.axis === Axis.OBSERVING;
+    }
+
+    get isDeciding(): boolean {
+        return this.axis === Axis.DECIDING;
+    }
+
+    get isOi(): boolean | undefined {
+        return this.humanNeed === HumanNeed.OI_ORGANIZE;
+    }
+
+    get isOe(): boolean | undefined {
+        return this.humanNeed === HumanNeed.OE_GATHER;
+    }
+
+    get isSensing(): boolean {
+        return this.letter === Letter.Sensing;
+    }
+
+    get isIntuition(): boolean {
+        return this.letter === Letter.Intuiting;
+    }
+
+    get isDi(): boolean | undefined {
+        return this.humanNeed === HumanNeed.DI_SELF;
+    }
+
+    get isDe(): boolean | undefined {
+        return this.humanNeed === HumanNeed.DE_TRIBE;
+    }
+
+    get isFeeling(): boolean {
+        return this.letter === Letter.Feeling;
+    }
+
+    get isThinking(): boolean {
+        return this.letter === Letter.Thinking;
+    }
+
+    opposite(): CognitiveFunction {
+        const letterStr = this.letter?.opposite()?.coinLabel ?? this.axis.coinLabel;
+        const chargeStr = this.charge?.opposite()?.coinLabel ?? '';
+        return new CognitiveFunction(letterStr + chargeStr);
+    }
+
+    withOppositeLetter(): CognitiveFunction {
+        const letterStr = this.letter?.opposite()?.coinLabel ?? this.axis.coinLabel;
+        const chargeStr = this._internalName[1];
+        return new CognitiveFunction(letterStr + chargeStr);
+    }
+
+    withOppositeCharge(): CognitiveFunction {
+        const letterStr = this._internalName[0];
+        const chargeStr = this.charge?.opposite()?.coinLabel ?? '';
+        return new CognitiveFunction(letterStr + chargeStr);
+    }
+
+    withCharge(charge: string | Charge): CognitiveFunction {
+        if (charge == null || charge === this.charge) return this;
+
+        if (typeof charge === 'string') charge = Charge.fromCharacter(charge);
+        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
+
+        return new CognitiveFunction(this._internalName[0] + charge.coinLabel);
+    }
+
+    plusCharge(charge: string | Charge): CognitiveFunction {
+        if (charge == null || charge === this.charge) return this;
+        if (this.charge != null) throw new Error("This instance has an opposing charge.");
+        return this.withCharge(charge);
+    }
+
+    withHumanNeed(humanNeed: string | HumanNeed, ignoreAxis?: boolean): CognitiveFunction {
+        if (humanNeed == null || humanNeed === this.humanNeed) return this;
+
+        if (typeof humanNeed === 'string') humanNeed = HumanNeed.fromString(humanNeed);
+        if (!(humanNeed instanceof HumanNeed)) throw new Error("Not a valid human need.");
+        if (!ignoreAxis && this.axis !== humanNeed.axis) throw new Error("Incompatible axis.");
+
+        return this.axis !== humanNeed.axis ?
+            new CognitiveFunction(humanNeed.coinLabel) :
+            new CognitiveFunction(this._internalName[0] + humanNeed.charge.coinLabel);
+    }
+
+    plusHumanNeed(humanNeed: string | HumanNeed): CognitiveFunction {
+        if (humanNeed == null || humanNeed === this.humanNeed) return this;
+        if (this.humanNeed != null) throw new Error("This instance has a different human need.");
+        return this.withHumanNeed(humanNeed);
+    }
+
+    withLetter(letter: string | Letter, ignoreAxis?: boolean): CognitiveFunction {
+        if (letter == null || letter.coinLabel === this.coinLabel) return this;
+
+        if (typeof letter === 'string') letter = Letter.fromCharacter(letter);
+        if (!(letter instanceof Letter)) throw new Error("Not a valid letter.");
+        if (!ignoreAxis && this.axis !== letter.axis) throw new Error("Incompatible axis.");
+
+        return new CognitiveFunction(letter.coinLabel + this._internalName[1]);
+    }
+
+    plusLetter(letter: string | Letter): CognitiveFunction {
+        if (letter == null || letter === this.letter) return this;
+        if (this.letter != null) throw new Error("This instance has a different letter.");
+        return this.withLetter(letter);
+    }
+
+    injectedWith(other: string | Charge | HumanNeed | Letter | CognitiveFunction, ignoreAxis?: boolean): CognitiveFunction {
+        if (other == null || other.coinLabel === this.coinLabel) return this;
+
         switch (true) {
-            case (animalReference instanceof AnimalGrantPosition):
-                return this.#observableAnimals.get(animalReference).state;
-            case (typeof animalReference === 'number'):
-                return this.#animalStackStates[animalReference];
-            default:
-                throw new Error("Invalid argument.");
+            case (other instanceof Charge): return this.withCharge(other);
+            case (other instanceof HumanNeed): return this.withHumanNeed(other, ignoreAxis);
+            case (other instanceof Letter): return this.withLetter(other, ignoreAxis);
+        }
+
+        if (typeof other === 'string') other = new CognitiveFunction(other);
+        if (!(other instanceof CognitiveFunction)) throw new Error("Invalid argument type.");
+
+        return this.withHumanNeed(other.humanNeed, ignoreAxis).withLetter(other.letter, ignoreAxis);
+    }
+
+    injectInto(other: string | Charge | HumanNeed | Letter | CognitiveFunction, ignoreAxis?: boolean): CognitiveFunction {
+        return other.injectedWith(this);
+    }
+
+    plus(other: string | Charge | HumanNeed | Letter | CognitiveFunction): CognitiveFunction {
+        if (other == null || other.coinLabel === this.coinLabel) return this;
+
+        switch (true) {
+            case (other instanceof Charge): return this.plusCharge(other);
+            case (other instanceof HumanNeed): return this.plusHumanNeed(other);
+            case (other instanceof Letter): return this.plusLetter(other);
+        }
+
+        if (typeof other === 'string') other = new CognitiveFunction(other);
+        if (!(other instanceof CognitiveFunction)) throw new Error("Invalid argument type.");
+
+        return this.plusCharge(other.charge).plusHumanNeed(other.humanNeed).plusLetter(other.letter);
+    }
+
+    grantMatch(grantOrder: number): CognitiveFunction {
+        switch (grantOrder) {
+            case 0: return this;
+            case 1: return new CognitiveFunction(this.axis.opposite().plus(this.charge?.opposite()).coinLabel);
+            case 2: return new CognitiveFunction(this.axis.opposite().plus(this.charge).coinLabel);
+            case 3: return this.opposite();
+            default: throw new Error("Invalid grant order argument.");
         }
     }
 
-
-    /**
-     *
-     * @package
-     */
-    _dominoStarted() {
-        this.#dominoSymbol = Symbol();
+    get isPartial(): boolean {
+        return /[OD?]/.test(this._internalName);
     }
 
-    /**
-     *
-     * @package
-     * @param {(function(): void)} action
-     */
-    _afterDominoEdit(action) {
-        throw new Error("Not implemented yet.");
-    }
-
-
-
-    // HERE Keep fixing these methods
-
-    switchLetter(grantOrder) {
-        const cfs = this.getCognitiveFunState(grantOrder);
-        /** @type {CognitiveFunctionStateEdit} */
-        const stateEdits = {cognitiveFunction: cfs.cognitiveFunction.withOppositeLetter()}
-        cfs.stateProducer.
-    }
-
-    switchCharge(grantOrder) {
-
-
-        // Changing charges of middle axis functions would require ambiguous propagations, so we forbid it.
-        if (grantOrder === 1 || grantOrder === 2) throw new Error("Can't change charges of middle axis functions.");
-
-
-        const cfState = this.getCognitiveFunState(grantOrder);
-        const cogFun = cfState.cognitiveFunction
-
-        // Inverting charge or assigning introverted charge if there is no charge.
-        cfState.startDominoUpdate(
-            cogFun.charge == null ? cogFun.plusCharge(Charge.INTROVERTED) : cogFun.withOppositeCharge()
-        )
-    }
-
-
-    switchMainAxis() {
-        const firstFunState = this.getCognitiveFunState(0);
-        const secondFunState = this.getCognitiveFunState(1);
-        const tempFun = firstFunState.cognitiveFunction;
-
-        firstFunState.startDominoUpdate(secondFunState.cognitiveFunction);
-        secondFunState.startDominoUpdate(tempFun);
-    }
-
-    resetAnimals() {
-        for (const [aPos, animal] of this.#observableAnimals) {
-            animal.updateStackOrder(0, false);
+    equalsTo(otherFunction: string | CognitiveFunction): boolean {
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            throw new Error("String argument isn't a valid cognitive function.");
         }
+
+        if (!(otherFunction instanceof CognitiveFunction)) throw TypeError("Invalid argument type.");
+
+        return this.coinLabel === otherFunction.coinLabel;
     }
 
-
-    setAnimalOrder(animalPosition) {
-        // const animalBeingSet = this.getAnimalState(animalPosition);
-        // let resetAll = false;
-        // for (let i = 0; i < 4; i++) {
-        //     if (resetAll) {
-        //         this.#animalStackStates[i] = null;
-        //         continue;
-        //     }
-        //     // TODO Remember that at the 3rd animal we must also automatically set the 4th and the double activated.
-        //     // HERE Continue (and consider if the above condition is fine)
-        // }
-    }
-}
-
-
-/** @readonly */
-const DefaultOpTypeFunctions = [
-    new CognitiveFunction('N'),
-    new CognitiveFunction('T'),
-    new CognitiveFunction('F'),
-    new CognitiveFunction('S')
-]
-Object.freeze(DefaultOpTypeFunctions);
-
-
-class ObservableCoin<CS extends CoinState<*>> extends OpEventTarget {
-    protected _parentOpType: ?ObservableOpType = null;
-
-    #dominoSymbol: ?Symbol = null;
-
-    #state: CS ;
-    get state(): Readonly<CS> {
-        return Object.freeze({...this.#state});
+    strictlyEqualsTo(otherFunction: CognitiveFunction): boolean {
+        if (!(otherFunction instanceof CognitiveFunction)) throw TypeError("Not an instance of CognitiveFunction.");
+        return this.equalsTo(otherFunction);
     }
 
+    isCompatibleWith(otherFunction: string | CognitiveFunction): boolean {
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            throw new Error("String argument isn't a valid cognitive function.");
+        }
+        if (!(otherFunction instanceof CognitiveFunction)) throw new TypeError('Invalid argument type.');
 
+        if (this.axis !== otherFunction.axis) return true;
 
-    constructor(initialState: CS) {
-        super();
-
-        initialState.stateProducer = this;
-        this.#state = initialState;
-    }
-
-
-    // HERE Keep converting to TS
-
-
-    /**
-     *
-     * @abstract
-     * @protected
-     * @param observableOpType {ObservableOpType}
-     */
-    _onAttachParent(observableOpType) {
-        throw new Error("Abstract method. Not overridden in subclass.");
-    }
-
-
-
-
-    /**
-     * Should be called only in ObservableOpType.
-     * @access package
-     * @param obsOpType {ObservableOpType}
-     */
-    _attachParentOpType(obsOpType) {
-        this._parentOpType = obsOpType;
-
-        obsOpType._afterDominoEdit(() => {
-            this._notifyUi();
-        });
-
-        this._onAttachParent(obsOpType);
-    }
-
-
-    /**
-     * Should only be called after a domino ended.
-     * @protected
-     */
-    _notifyUi() {
-        this.dispatchEvent(new Event('change'));
-    }
-
-    /**
-     * @protected
-     */
-    _notifyCoins() {
-        this.dispatchEvent(new Event(OpTypeChangeEvents.INTERNAL_CHANGE));
-    }
-
-    /**
-     * Should be called by OP type on user action.
-     * @param stateEdits {CS}
-     * @access package
-     */
-    _startDominoEdit(stateEdits) {
-        this._parentOpType._dominoStarted();
-        this._dominoEdit(stateEdits);
-    };
-
-    /**
-     *
-     * @return {boolean}
-     * @package
-     */
-    get _hasBeenDominoEdited() {
-        return this._parentOpType._dominoSymbol === this.#dominoSymbol;
-    }
-
-    /**
-     * Should be called only by listeners when attaching parent OP type, and only if not previously domino edited in the same domino.
-     * @param stateEdits {CS}
-     * @protected
-     */
-    _dominoEdit(stateEdits) {
-        if (this._hasBeenDominoEdited) throw new Error("Already edited in the same domino edit.");
-        this.#dominoSymbol = this._parentOpType._dominoSymbol;
-        this._onEdit(stateEdits);
-    };
-
-
-    /**
-     * @protected
-     * @param {CS} stateEdits
-     */
-    _onEdit(stateEdits) {
-        this.#state += {...this.#state, ...stateEdits};
-        this._notifyCoins();
-    };
-}
-
-
-
-/**
- * @class
- * @extends ObservableCoin<CognitiveFunctionState>
- */
-class ObservableGrantFunction extends ObservableCoin {
-
-    /**
-     * @param grantOrder {number}
-     */
-    constructor(grantOrder) {
-        super();
-        throw new Error("Not implemented yet.");
-    }
-
-
-
-
-    _attachParentOpType(obsOpType) {
-        super._attachParentOpType(obsOpType);
-
-        // For all functions. Listen to update of the opposite one to change it accordingly.
-        const oppositeFunState = opTypeState.getCognitiveFunState(oppositeGrantOrder(this.grantOrder));
-        oppositeFunState.addEventListener(
-            OpTypeChangeEvents.INTERNAL_CHANGE,
-            () => {
-                const newCogFun = oppositeFunState.cognitiveFunction.opposite();
-                // If last function, set Demon to true, otherwise set null to do nothing.
-                const isDemon = this.grantOrder === 3 || null;
-                this.#instanceUpdate(newCogFun, isDemon);
-            }
+        return !(
+            this.charge != null && this.charge === otherFunction.charge ||
+            this.letter != null && this.letter === otherFunction.letter
         );
-
-
-
-
-        // For second and third function.
-        if (this.grantOrder === 1 || this.grantOrder === 2) {
-            const firstFunState
-
-            // Listen to updates of stronger info animal to change Demon state accordingly.
-            const strongerInfoAnimalState = opTypeState.getAnimalState(AnimalGrantPosition.STRONGER_INFO);
-            strongerInfoAnimalState.addEventListener(OpTypeChangeEvents.INTERNAL_CHANGE, () => {
-                const isDemon = strongerInfoAnimalState.isSet && this.grantOrder === 1 && strongerInfoAnimalState.stackOrder === 0;
-                this.#instanceUpdate(null, isDemon);
-            });
-        }
     }
 
-    _onAttachParent(observableOpType) {
-        throw new Error("Not implemented yet.");
-        // TODO Implement from above (which is old).
+    canBeSaviorWith(otherFunction: string | CognitiveFunction): boolean {
+        try {
+            if (typeof otherFunction === 'string') otherFunction = new CognitiveFunction(otherFunction);
+        } catch (e) {
+            throw new Error("String argument isn't a valid cognitive function.");
+        }
+        if (!(otherFunction instanceof CognitiveFunction)) throw new TypeError('Invalid argument type.');
+
+        if (this.axis === otherFunction.axis) return false;
+
+        return !(
+            this.charge != null && this.charge === otherFunction.charge ||
+            this.letter != null && this.letter === otherFunction.letter
+        );
+    }
+    */
+
+    toString(): string {
+        return this.shortName;
     }
 }
 
 
+export enum AnimalGrantPosition {
+    STRONGER_INFO,
+    STRONGER_ENERGY,
+    WEAKER_INFO,
+    WEAKER_ENERGY,
+}
 
 
-/**
- * Animal that's observable in within a parent type. What remains fixed is its positioning based on the Grant order of the functions within the parent
- * type. <br>
- * For example, if you're observing the {@link AnimalGrantPosition.STRONGER_INFO} Animal, it should update to:
- * - Consume for IxxPs and ExxPs
- * - Blast for IxxJs and ExxJs
- *
- * So every time the parent type changes, the Animal changes to maintain the Animal consistent to its Grant functions position.
- */
-class ObservableGrantAnimal extends ObservableCoin {
+export class OpType {
+    private static GENERIC_TYPE_SYMBOL = Symbol();
+    static GENERIC: OpType = new OpType(OpType.GENERIC_TYPE_SYMBOL);
 
-    /**
-     * @param diagramPosition {AnimalGrantPosition}
-     */
-    constructor(diagramPosition) {
-        super();
 
-        this.#animalPosition = diagramPosition;
-
-        this.#stackOrder = null;
-        this.#animal = null;
-        this.#isDoubleActivated = false;
-
-        //this.#devInit()
+    constructor(
+        firstGrantFunction: symbol | CognitiveFunction,
+        secondGrantFunction?: CognitiveFunction,
+        animalStack?: string,
+        modalities?: ModalitiesStack
+    ) {
     }
 
 
-
-
-    #devInit() {
-        switch (this.#animalPosition) {
-            case AnimalGrantPosition.STRONGER_INFO:
-                this.#animal = Animal.fromAnimalString('C');
-                this.#stackOrder = 1;
-                this.#isDoubleActivated = true;
-                break;
-            case AnimalGrantPosition.STRONGER_ENERGY:
-                this.#animal = Animal.fromAnimalString('P');
-                this.#stackOrder = 0;
-                break;
-            case AnimalGrantPosition.WEAKER_INFO:
-                this.#animal = Animal.fromAnimalString('B');
-                this.#stackOrder = 3;
-                break;
-            case AnimalGrantPosition.WEAKER_ENERGY:
-                this.#animal = Animal.fromAnimalString('S');
-                this.#stackOrder = 2;
-                break;
-            default:
-                throw new Error("Invalid Animal Position");
-        }
-    }
-
-
-    /**
-     *
-     * @returns {AnimalGrantPosition}
-     */
-    get animalPosition() {
-        return this.#animalPosition;
-    }
-
-
-    get animal() {
-        return this.#animal;
-    }
-
-    /**
-     *
-     * @returns {boolean}
-     */
-    get isSet() {
-        return this.#animal != null;
-    }
-
-    /**
-     *
-     * @returns {number|null}
-     */
-    get stackOrder() {
-        return this.#stackOrder;
-    }
-
-    /**
-     *
-     * @returns {string}
-     */
-    get name() {
-        return this.#animal?.coinLabel ?? '';
-    }
-
-    /**
-     *
-     * @returns {boolean}
-     */
-    get isDoubleActivated() {
-        return this.#isDoubleActivated;
-    }
-
-
-
-
-    /**
-     * @param opTypeState {ObservableOpType}
-     */
-    attachOpTypeState(opTypeState) {
-    }
-
-
-
-
-    /**
-     *
-     * @param animal {Animal}
-     */
-    updateAnimal(animal) {
-        this.#animal = animal;
-        this.notifyUi();
-    }
-
-    /**
-     * @param stackOrder {number}
-     * @param [isDoubleActivated] {boolean}
-     */
-    updateStackOrder(stackOrder, isDoubleActivated) {
-        this.#stackOrder = stackOrder;
-        if (isDoubleActivated != null) this.#isDoubleActivated = isDoubleActivated;
-        this.notifyUi();
-    }
-
-
-    notifyUi() {
-        this.dispatchEvent(new Event('change'));
+    getCognitiveFunction(grantIndex: number): CognitiveFunction {
+        throw new Error("Not implemented yet.");
     }
 }

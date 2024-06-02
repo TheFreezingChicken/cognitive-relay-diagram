@@ -1,3 +1,4 @@
+import {Axis} from "../../build/op-lib";
 
 class PrivateConstructorObject extends Object {
     /**
@@ -35,93 +36,6 @@ class Enum extends PrivateConstructorObject {
 // SLEEP Implement all "plus" methods.
 // SLEEP Implement all "opposite" methods.
 // SLEEP Implement case-fixing in all string parameters.
-
-
-
-/**
- * @readonly
- */
-export class Axis extends Enum {
-    static _canConstruct = true;
-    
-    static #OBSERVING = new Axis('O');
-    static #DECIDING = new Axis('D');
-    
-    static {
-        this._canConstruct = false;
-    }
-    
-    static get OBSERVING() {
-        return this.#OBSERVING;
-    }
-    
-    static get DECIDING() {
-        return this.#DECIDING;
-    }
-    
-    
-    /**
-     * @param character {string}
-     * @return {Axis}
-     */
-    static fromCharacter(character) {
-        switch (character) {
-            case 'O':
-            case 'S':
-            case 'N':
-                return this.OBSERVING;
-            case 'D':
-            case 'F':
-            case 'T':
-                return this.DECIDING;
-            default:
-                throw new Error("Invalid character.");
-        }
-    }
-    
-    
-    
-    /**
-     * @private
-     * @param axisLetter {string}
-     */
-    constructor(axisLetter) {
-        super();
-        
-        this._coinLabel = axisLetter;
-    }
-    
-    
-    get coinLabel() {
-        return this._coinLabel;
-    }
-    
-    
-    
-    
-    /**
-     * @return {Axis}
-     */
-    opposite() {
-        if (this === Axis.OBSERVING) return Axis.DECIDING
-        else return Axis.OBSERVING;
-    }
-    
-    /**
-     * 
-     * @param charge {Charge|string}
-     * @return {HumanNeed|Axis}
-     */
-    plus(charge){
-        if (charge == null) return this;
-        
-        if (typeof Charge === 'string') charge = Charge.fromCharacter(charge);
-        if (!(charge instanceof Charge)) throw new Error("Not a valid charge.");
-        
-        return HumanNeed.fromString(this.coinLabel + charge.coinLabel);
-    }
-}
-
 
 
 
