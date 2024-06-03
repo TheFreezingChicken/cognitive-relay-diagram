@@ -643,6 +643,7 @@ class CognitiveFunctionText extends Konva.Text {
 
 
 
+
 class AnimalGroup extends Konva.Group {
     /**
      *

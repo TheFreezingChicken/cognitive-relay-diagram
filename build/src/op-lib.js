@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpType = exports.AnimalGrantPosition = exports.CognitiveFunction = exports.oppositeGrantOrder = void 0;
+exports.OpType = exports.Animal = exports.AnimalGrantPosition = exports.CognitiveFunction = exports.oppositeGrantOrder = void 0;
 /**
  * Returns the opposite grant order.
  * @throws {TypeError} If {@link grantOrder} is not a number.
@@ -484,6 +484,13 @@ class CognitiveFunction {
     }
 }
 exports.CognitiveFunction = CognitiveFunction;
+var Modality;
+(function (Modality) {
+    Modality["FF_TESTER"] = "FF";
+    Modality["FM_VISUAL"] = "FM";
+    Modality["MF_AUDIO"] = "MF";
+    Modality["MM_KINESTHETIC"] = "MM";
+})(Modality || (Modality = {}));
 var AnimalGrantPosition;
 (function (AnimalGrantPosition) {
     AnimalGrantPosition[AnimalGrantPosition["STRONGER_INFO"] = 0] = "STRONGER_INFO";
@@ -491,10 +498,48 @@ var AnimalGrantPosition;
     AnimalGrantPosition[AnimalGrantPosition["WEAKER_INFO"] = 2] = "WEAKER_INFO";
     AnimalGrantPosition[AnimalGrantPosition["WEAKER_ENERGY"] = 3] = "WEAKER_ENERGY";
 })(AnimalGrantPosition || (exports.AnimalGrantPosition = AnimalGrantPosition = {}));
+(function (AnimalGrantPosition) {
+    function toGrantIndexCouple(animalGrantPosition) {
+        switch (animalGrantPosition) {
+            case AnimalGrantPosition.STRONGER_INFO:
+                return {
+                    strongerIndex: 0,
+                    weakerIndex: 1
+                };
+            case AnimalGrantPosition.STRONGER_ENERGY:
+                return {
+                    strongerIndex: 0,
+                    weakerIndex: 2
+                };
+            case AnimalGrantPosition.WEAKER_INFO:
+                return {
+                    strongerIndex: 2,
+                    weakerIndex: 3
+                };
+            case AnimalGrantPosition.WEAKER_ENERGY:
+                return {
+                    strongerIndex: 1,
+                    weakerIndex: 3
+                };
+        }
+    }
+    AnimalGrantPosition.toGrantIndexCouple = toGrantIndexCouple;
+})(AnimalGrantPosition || (exports.AnimalGrantPosition = AnimalGrantPosition = {}));
+class Animal {
+    get shortName() {
+        throw new Error("Not implemented yet.");
+    }
+}
+exports.Animal = Animal;
 class OpType {
     constructor(firstGrantFunction, secondGrantFunction, animalStack, modalities) {
+        animalStack === null || animalStack === void 0 ? void 0 : animalStack.replace(/"[^SCBP]"/, "");
+        throw new Error("Not implemented yet.");
     }
-    getCognitiveFunction(grantIndex) {
+    getCognitiveFunctionInfo(grantIndex) {
+        throw new Error("Not implemented yet.");
+    }
+    getAnimalInfo(animalGrantPosition) {
         throw new Error("Not implemented yet.");
     }
 }

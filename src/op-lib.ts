@@ -523,12 +523,84 @@ export class CognitiveFunction {
 }
 
 
+
+enum Modality {
+    FF_TESTER = "FF",
+    FM_VISUAL = "FM",
+    MF_AUDIO = "MF",
+    MM_KINESTHETIC = "MM",
+}
+
+
+
+
+export interface GrantIndexCouple {
+    strongerIndex: number;
+    weakerIndex: number;
+}
+
 export enum AnimalGrantPosition {
     STRONGER_INFO,
     STRONGER_ENERGY,
     WEAKER_INFO,
     WEAKER_ENERGY,
 }
+
+export namespace AnimalGrantPosition {
+    export function toGrantIndexCouple(animalGrantPosition: AnimalGrantPosition): GrantIndexCouple {
+        switch (animalGrantPosition) {
+            case AnimalGrantPosition.STRONGER_INFO:
+                return {
+                    strongerIndex: 0,
+                    weakerIndex: 1
+                }
+            case AnimalGrantPosition.STRONGER_ENERGY:
+                return {
+                    strongerIndex: 0,
+                    weakerIndex: 2
+                }
+            case AnimalGrantPosition.WEAKER_INFO:
+                return {
+                    strongerIndex: 2,
+                    weakerIndex: 3
+                }
+            case AnimalGrantPosition.WEAKER_ENERGY:
+                return {
+                    strongerIndex: 1,
+                    weakerIndex: 3
+                }
+        }
+    }
+}
+
+
+
+export class Animal {
+    get shortName(): string {
+        throw new Error("Not implemented yet.");
+    }
+
+}
+
+
+
+
+export interface CognitiveFunctionInfo {
+    readonly cognitiveFunction: CognitiveFunction;
+    readonly grantIndex: number;
+    readonly isSavior: boolean;
+    readonly isMasculine: boolean;
+    readonly isDoubleActivated: boolean;
+}
+
+export interface AnimalInfo {
+    readonly animal: Animal;
+    readonly stackIndex: number;
+    readonly animalPosition: AnimalGrantPosition;
+    readonly isSavior: boolean;
+    readonly isDoubleActivated: boolean;
+}
+
 
 
 export class OpType {
@@ -540,12 +612,19 @@ export class OpType {
         firstGrantFunction: symbol | CognitiveFunction,
         secondGrantFunction?: CognitiveFunction,
         animalStack?: string,
-        modalities?: ModalitiesStack
+        modalities?: Modality
     ) {
+        animalStack?.replace(/"[^SCBP]"/, "");
+
+        throw new Error("Not implemented yet.");
     }
 
 
-    getCognitiveFunction(grantIndex: number): CognitiveFunction {
+    getCognitiveFunctionInfo(grantIndex: number): CognitiveFunctionInfo {
+        throw new Error("Not implemented yet.");
+    }
+
+    getAnimalInfo(animalGrantPosition: AnimalGrantPosition): AnimalInfo {
         throw new Error("Not implemented yet.");
     }
 }
