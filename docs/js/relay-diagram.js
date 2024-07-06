@@ -1,49 +1,55 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CRDStage = exports.DIAGRAM_SIZE = void 0;
-const konva_1 = __importDefault(require("konva"));
-const op_lib_1 = require("./op-lib");
+import {AnimalGrantPosition, OpType} from "./op-lib.js";
+
 const devTest = false;
+
 let isLibraryReady = false;
+
 // To change the base size of each circle (before scaling is applied).
 const CIRCLE_BASE_RADIUS = 60;
+
 // Multiplier applied to CIRCLE_BASE_RADIUS to get the width of each circle stroke.
 const CIRCLE_STROKE_FACTOR = 0.15;
+
 const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
+
 const CONTROL_CIRCLE_BASE_RADIUS = 25;
+
 // To change the distante between circles on the same "axis".
 const OPPOSITE_CIRCLE_DISTANCE = 350;
+
 // Width and height of the diagram stage.
-exports.DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
+export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
+
+const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
+
 function getCogFunCirclePosition(stage, grantIndex) {
     switch (grantIndex) {
         case 0:
             return Object.freeze({
-                x: stage.CenterPoint.x,
-                y: stage.CenterPoint.y - OPPOSITE_CIRCLE_DISTANCE / 2
+                x: DIAGRAM_CENTER,
+                y: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2
             });
         case 1:
             return Object.freeze({
-                x: stage.CenterPoint.x - OPPOSITE_CIRCLE_DISTANCE / 2,
-                y: stage.CenterPoint.y
+                x: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2,
+                y: DIAGRAM_CENTER
             });
         case 2:
             return Object.freeze({
-                x: stage.CenterPoint.x + OPPOSITE_CIRCLE_DISTANCE / 2,
-                y: stage.CenterPoint.y
+                x: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2,
+                y: DIAGRAM_CENTER
             });
         case 3:
             return Object.freeze({
-                x: stage.CenterPoint.x,
-                y: stage.CenterPoint.y + OPPOSITE_CIRCLE_DISTANCE / 2
+                x: DIAGRAM_CENTER,
+                y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
             });
         default:
             throw new Error("Invalid grant order");
     }
 }
+
+
 /**
  * @readonly
  */
@@ -53,30 +59,43 @@ const FunctionCircleScaleFactors = Object.freeze([
     0.68,
     0.53
 ]);
+
+
 const AnimalCenterOffsets = new Map([
-    [op_lib_1.AnimalGrantPosition.STRONGER_INFO, { x: 50, y: 50 }],
-    [op_lib_1.AnimalGrantPosition.STRONGER_ENERGY, { x: -50, y: 50 }],
-    [op_lib_1.AnimalGrantPosition.WEAKER_ENERGY, { x: 50, y: -50 }],
-    [op_lib_1.AnimalGrantPosition.WEAKER_INFO, { x: -50, y: -50 }],
+    [AnimalGrantPosition.STRONGER_INFO, { x: 50, y: 50 }],
+    [AnimalGrantPosition.STRONGER_ENERGY, { x: -50, y: 50 }],
+    [AnimalGrantPosition.WEAKER_ENERGY, { x: 50, y: -50 }],
+    [AnimalGrantPosition.WEAKER_INFO, { x: -50, y: -50 }],
 ]);
+
+
 const COGFUN_BASE_FONT_SIZE = 58;
+
 const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
+
 const ANIMAL_LETTER_OFFSET_FROM_LINE = -15;
+
 // Offset of the semi-transparent colored triangles from the lines.
 const ANIMAL_BG_TRIANGLE_OFFSET = 17;
+
 const FIRST_ANIMAL_STROKE_WIDTH = 5;
-const SECOND_ANIMAL_STROKE_WIDTH = 3;
 const THIRD_ANIMAL_STROKE_WIDTH = 2;
-const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_STROKE_WIDTH = 1;
+
+const SECOND_ANIMAL_STROKE_WIDTH = 3;
+const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_DASH_PATTERN = [6, 17];
+
 const SAVIOR_ANIMAL_TRIANGLE_COLOR = "green";
 const DEMON_ANIMAL_TRIANGLE_COLOR = "red";
+
 const FIRST_ANIMAL_TRIANGLE_OPACITY = 0.1;
 const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.05;
 const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.03;
 const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
+
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
+
 const CogFunFillColors = Object.freeze({
     F: '#c82323',
     T: '#6c6c6c',
@@ -85,6 +104,8 @@ const CogFunFillColors = Object.freeze({
     O: '#929292',
     D: '#929292'
 });
+
+
 const CogFunStrokeColors = Object.freeze({
     F: '#881a1a',
     T: '#292929',
@@ -93,7 +114,10 @@ const CogFunStrokeColors = Object.freeze({
     O: 'black',
     D: 'black'
 });
-const IMG_DIR_PATH = './img';
+
+
+const IMG_DIR_PATH = './assets/img';
+
 // REM Leave "new Image" in case we need to use different types of resources.
 const DiagramResources = {
     BIG_DEMON_BG_IMG: new Image(),
@@ -102,6 +126,8 @@ const DiagramResources = {
     FUNCTION_POINTER_GRID_IMG: new Image(),
     FUNCTION_POINTER_ARROW_IMG: new Image()
 };
+
+
 class ResourceLoader {
     /**
      * Asynchronously initializes all resources needed to render diagrams.
@@ -145,16 +171,22 @@ class ResourceLoader {
         });
     }
 }
+
+
 const diagramResources = new ResourceLoader();
+
 class OpTypeManager {
     constructor(startingOpType) {
-        throw new Error("Not implemented yet.");
+        this.opType = OpType.GENERIC;
     }
     addListener(listener) {
-        throw new Error("Not implemented yet.");
+        console.log("implement OpTypeManager.addListener");
     }
 }
-class CRDStage extends konva_1.default.Stage {
+
+
+export class CRDStage extends Konva.Stage {
+    //private readonly controlLayer: ControlLayer;
     /**
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
      * @returns {Promise<void>}
@@ -162,27 +194,35 @@ class CRDStage extends konva_1.default.Stage {
     static async initializeResources() {
         return diagramResources.initializeAsync();
     }
+    
+    
     constructor(diagramContainer, startingOpType) {
         if (!isLibraryReady)
             throw new Error("Library resources must be initialized before using diagrams.");
+        
         super({
             container: diagramContainer.id,
-            width: exports.DIAGRAM_SIZE,
-            height: exports.DIAGRAM_SIZE
+            width: DIAGRAM_SIZE,
+            height: DIAGRAM_SIZE
         });
+        
         this.CenterPoint = {
             x: this.width() / 2,
             y: this.height() / 2
         };
+        
         const opTypeManager = new OpTypeManager(startingOpType);
+        
         this.diagramLayer = new DiagramLayer(opTypeManager);
-        this.controlLayer = new ControlLayer(opTypeManager);
+        
+        //this.controlLayer = new ControlLayer(opTypeManager);
         this.add(this.diagramLayer);
-        this.add(this.controlLayer);
+        //this.add(this.controlLayer);
     }
 }
-exports.CRDStage = CRDStage;
-class DiagramLayer extends konva_1.default.Layer {
+
+
+class DiagramLayer extends Konva.Layer {
     constructor(opTypeManager) {
         super();
         this.add(new DiagramGroup(opTypeManager.opType));
@@ -193,7 +233,9 @@ class DiagramLayer extends konva_1.default.Layer {
         });
     }
 }
-class DiagramGroup extends konva_1.default.Group {
+
+
+class DiagramGroup extends Konva.Group {
     constructor(opType) {
         super();
         // Create group for the whole stack of functions and then create every single one of them and add them.
@@ -201,7 +243,12 @@ class DiagramGroup extends konva_1.default.Group {
         this.animalStackGroup = new AnimalStackGroup(opType, this.cogFunStackGroup);
     }
 }
-class CognitiveFunctionStackGroup extends konva_1.default.Group {
+
+
+
+
+
+class CognitiveFunctionStackGroup extends Konva.Group {
     constructor(opType) {
         super();
         this.cogFunGroups = new Array(4);
@@ -211,21 +258,29 @@ class CognitiveFunctionStackGroup extends konva_1.default.Group {
             this.add(cfg);
         }
     }
+    
     getCognitiveFunctionGroup(grantIndex) {
         return this.cogFunGroups[grantIndex];
     }
 }
-class CognitiveFunctionGroup extends konva_1.default.Group {
+
+
+class CognitiveFunctionGroup extends Konva.Group {
     constructor(opType, grantIndex) {
         super();
+        
         this.circle = new CognitiveFunctionCircle(opType, grantIndex);
+        
         const demonBgImg = new DemonBackgroundImage(opType, this.circle);
         const masculineBgImg = new MasculineBackgroundImage(opType, this.circle);
         const text = new CognitiveFunctionText(opType, this.circle);
+        
         this.add(demonBgImg, masculineBgImg, this.circle, text);
     }
 }
-class CognitiveFunctionCircle extends konva_1.default.Circle {
+
+
+class CognitiveFunctionCircle extends Konva.Circle {
     constructor(opType, grantIndex) {
         super({
             radius: CIRCLE_BASE_RADIUS,
@@ -235,7 +290,7 @@ class CognitiveFunctionCircle extends konva_1.default.Circle {
         this.position(getCogFunCirclePosition(this.getStage(), grantIndex));
         this.grantScaleFactor = FunctionCircleScaleFactors[grantIndex];
         const cogFunInfo = opType.getCognitiveFunctionInfo(grantIndex);
-        const isGenericDiagram = opType === op_lib_1.OpType.GENERIC;
+        const isGenericDiagram = opType === OpType.GENERIC;
         // @ts-ignore // Should work
         this.fill(CogFunFillColors[cogFunInfo.cognitiveFunction.shortName[0]]);
         // @ts-ignore // Should work
@@ -246,7 +301,9 @@ class CognitiveFunctionCircle extends konva_1.default.Circle {
         this.scaleY(isGenericDiagram ? genericScaleFactor : this.grantScaleFactor);
     }
 }
-class CognitiveFunctionBackgroundImage extends konva_1.default.Image {
+
+
+class CognitiveFunctionBackgroundImage extends Konva.Image {
     get _BASE_IMG_SCALE() { return 1; }
     constructor(img, circle) {
         // Based on how we structured the library, img should always be loaded when reaching this point.
@@ -263,6 +320,9 @@ class CognitiveFunctionBackgroundImage extends konva_1.default.Image {
         this.scaleY(scale);
     }
 }
+
+
+
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
     get _BASE_IMG_SCALE() { return 0.4; }
     constructor(opType, circle) {
@@ -272,6 +332,7 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
         this.visible(!cogFunInfo.isSavior);
     }
 }
+
 class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     get _BASE_IMG_SCALE() {
         return 0.43;
@@ -279,10 +340,13 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     constructor(opType, circle) {
         super(DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle);
         const cogFunInfo = opType.getCognitiveFunctionInfo(circle.grantIndex);
-        this.visible(cogFunInfo.isMasculine);
+        this.visible(cogFunInfo.isMasculine ?? false);
     }
 }
-class CognitiveFunctionText extends konva_1.default.Text {
+
+
+
+class CognitiveFunctionText extends Konva.Text {
     constructor(opType, circle) {
         super({
             position: {
@@ -310,20 +374,25 @@ class CognitiveFunctionText extends konva_1.default.Text {
         this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
     }
 }
-class AnimalStackGroup extends konva_1.default.Group {
+
+
+
+class AnimalStackGroup extends Konva.Group {
     constructor(opType, cogFunStackGroup) {
         super();
-        for (const ap of Object.values(op_lib_1.AnimalGrantPosition)) {
+        for (const ap of Object.values(AnimalGrantPosition)) {
             console.log(ap);
-            const { strongerIndex, weakerIndex } = op_lib_1.AnimalGrantPosition.toGrantIndexCouple(ap);
-            const biggerCircle = cogFunStackGroup.getCognitiveFunctionGroup(strongerIndex).circle;
-            const smallerCircle = cogFunStackGroup.getCognitiveFunctionGroup(weakerIndex).circle;
+            const idxCouple = AnimalGrantPosition.toGrantIndexCouple(ap);
+            const biggerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.strongerIndex).circle;
+            const smallerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.weakerIndex).circle;
             const ag = new AnimalGroup(opType, ap, biggerCircle, smallerCircle);
             this.add(ag);
         }
     }
 }
-class AnimalGroup extends konva_1.default.Group {
+
+
+class AnimalGroup extends Konva.Group {
     constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
         super();
         const bgTriangle = new AnimalBackgroundTriangle(opType, animalGrantPosition, biggerCircle, smallerCircle);
@@ -336,8 +405,10 @@ class AnimalGroup extends konva_1.default.Group {
         this.add(orderText);
     }
 }
+
+
 // DEBT When passing shapes we should be throwing errors if the passed shape stage doesn't match current shape stage.
-class AnimalBackgroundTriangle extends konva_1.default.Line {
+class AnimalBackgroundTriangle extends Konva.Line {
     static offsetCoordinate(coord, centerValue) {
         switch (true) {
             case coord > centerValue:
@@ -348,9 +419,11 @@ class AnimalBackgroundTriangle extends konva_1.default.Line {
                 return coord;
         }
     }
+    
     constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
         const crdStage = biggerCircle.getStage();
         const centerPoint = crdStage.CenterPoint;
+        
         super({
             points: [
                 AnimalBackgroundTriangle.offsetCoordinate(biggerCircle.x(), centerPoint.x),
@@ -362,7 +435,9 @@ class AnimalBackgroundTriangle extends konva_1.default.Line {
             ],
             closed: true
         });
-        const stackIndex = opType.getAnimalInfo(animalGrantPosition).stackIndex;
+        
+        const stackIndex = opType.getAnimalInfo(animalGrantPosition)?.stackIndex;
+        
         switch (stackIndex) {
             case 0:
                 this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
@@ -384,7 +459,7 @@ class AnimalBackgroundTriangle extends konva_1.default.Line {
         }
     }
 }
-class AnimalLine extends konva_1.default.Line {
+class AnimalLine extends Konva.Line {
     constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
         super({
             points: [
@@ -394,7 +469,7 @@ class AnimalLine extends konva_1.default.Line {
             stroke: 'black',
             strokeWidth: 5
         });
-        const stackIndex = opType.getAnimalInfo(animalGrantPosition).stackIndex;
+        const stackIndex = opType.getAnimalInfo(animalGrantPosition)?.stackIndex;
         switch (stackIndex) {
             case 0:
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
@@ -425,7 +500,7 @@ class AnimalLine extends konva_1.default.Line {
         }
     }
 }
-class AnimalText extends konva_1.default.Text {
+class AnimalText extends Konva.Text {
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
     constructor(opType, animalGrantPosition, text) {
         super({
@@ -445,19 +520,19 @@ class AnimalText extends konva_1.default.Text {
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
         switch (animalGrantPosition) {
-            case op_lib_1.AnimalGrantPosition.STRONGER_INFO:
+            case AnimalGrantPosition.STRONGER_INFO:
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case op_lib_1.AnimalGrantPosition.STRONGER_ENERGY:
+            case AnimalGrantPosition.STRONGER_ENERGY:
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case op_lib_1.AnimalGrantPosition.WEAKER_INFO:
+            case AnimalGrantPosition.WEAKER_INFO:
                 this.align('right');
                 this.verticalAlign('bottom');
                 break;
-            case op_lib_1.AnimalGrantPosition.WEAKER_ENERGY:
+            case AnimalGrantPosition.WEAKER_ENERGY:
                 this.align('left');
                 this.verticalAlign('bottom');
                 break;
@@ -468,10 +543,10 @@ class AnimalText extends konva_1.default.Text {
         this.height(baseSize + 12);
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
-        this.visible(animalInfo.stackIndex != undefined);
+        this.visible(animalInfo?.stackIndex != undefined);
         this.text(text);
-        this.fontStyle(animalInfo.isDoubleActivated ? "bold" : "normal");
-        this.strokeEnabled(animalInfo.isDoubleActivated);
+        this.fontStyle(animalInfo?.isDoubleActivated ? "bold" : "normal");
+        this.strokeEnabled(animalInfo?.isDoubleActivated ?? false);
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
     }
@@ -480,10 +555,10 @@ class AnimalLetter extends AnimalText {
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
     constructor(opType, animalGrantPosition) {
         const animalInfo = opType.getAnimalInfo(animalGrantPosition);
-        super(opType, animalGrantPosition, animalInfo.animal.shortName);
+        super(opType, animalGrantPosition, animalInfo?.animal ?? '');
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-        if (animalInfo.stackIndex === 3) {
-            this.text(`(${animalInfo.animal.shortName})`);
+        if (animalInfo?.stackIndex === 3) {
+            this.text(`(${animalInfo?.animal ?? ''})`);
             this.width(baseSize + 20);
         }
         else {
@@ -494,10 +569,12 @@ class AnimalLetter extends AnimalText {
 class AnimalOrderNumber extends AnimalText {
     constructor(opType, animalGrantPosition) {
         const animalInfo = opType.getAnimalInfo(animalGrantPosition);
-        super(opType, animalGrantPosition, (animalInfo.stackIndex + 1).toString());
+        const stackIndex = animalInfo && animalInfo.stackIndex;
+        const text = stackIndex == undefined ? '' : (stackIndex + 1).toString();
+        super(opType, animalGrantPosition, text);
     }
 }
-class ControlLayer extends konva_1.default.Layer {
+class ControlLayer extends Konva.Layer {
     constructor(opTypeManager) {
         super();
         this.hideControls();
@@ -530,7 +607,7 @@ class ControlLayer extends konva_1.default.Layer {
         this.opacity(0);
     }
 }
-class ControlGroup extends konva_1.default.Group {
+class ControlGroup extends Konva.Group {
     constructor(opTypeManager) {
         super();
         // HERE Base class, with the background semi-transparent "full-size" rectangle.
@@ -542,7 +619,7 @@ class MainAxisChoiceGroup extends ControlGroup {
         super(opTypeManager);
     }
 }
-class ControlButton extends konva_1.default.Rect {
+class ControlButton extends Konva.Rect {
     constructor() {
         super();
     }
