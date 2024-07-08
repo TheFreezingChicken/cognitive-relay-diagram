@@ -249,7 +249,12 @@ class DiagramGroup extends Konva.Group {
 
 
 class CognitiveFunctionStackGroup extends Konva.Group {
-    constructor(opType) {
+    
+    /**
+     *
+     * @param configs CognitiveFunctionStackGroupConfigs
+     */
+    constructor(configs) {
         super();
         this.cogFunGroups = new Array(4);
         for (let i = 0; i < 4; i++) {
