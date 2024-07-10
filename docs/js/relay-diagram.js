@@ -22,38 +22,32 @@ export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
 
 const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
 
-function getCogFunCirclePosition(stage, grantIndex) {
-    switch (grantIndex) {
-        case 0:
-            return Object.freeze({
-                x: DIAGRAM_CENTER,
-                y: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2
-            });
-        case 1:
-            return Object.freeze({
-                x: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2,
-                y: DIAGRAM_CENTER
-            });
-        case 2:
-            return Object.freeze({
-                x: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2,
-                y: DIAGRAM_CENTER
-            });
-        case 3:
-            return Object.freeze({
-                x: DIAGRAM_CENTER,
-                y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
-            });
-        default:
-            throw new Error("Invalid grant order");
-    }
-}
+
+const CogFunCirclePositions = Object.freeze([
+    Object.freeze({
+        x: DIAGRAM_CENTER,
+        y: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2
+    }),
+    Object.freeze({
+        x: DIAGRAM_CENTER - OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: DIAGRAM_CENTER
+    }),
+    Object.freeze({
+        x: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: DIAGRAM_CENTER
+    }),
+    Object.freeze({
+        x: DIAGRAM_CENTER,
+        y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
+    })
+])
+
 
 
 /**
  * @readonly
  */
-const FunctionCircleScaleFactors = Object.freeze([
+const CogFunCircleScaleFactors = Object.freeze([
     1,
     0.82,
     0.68,
@@ -285,22 +279,36 @@ class CognitiveFunctionGroup extends Konva.Group {
 }
 
 
+/**
+ * Configurations for {@link CognitiveFunctionCircle}
+ * @typedef {Object} CognitiveFunctionCircleConfigs
+ * @property {number} grantIndex
+ * @property {string} cogFunLetter
+ */
+
+
 class CognitiveFunctionCircle extends Konva.Circle {
-    constructor(opType, grantIndex) {
+    /**
+     *
+     * @param configs {CognitiveFunctionCircleConfigs}
+     */
+    constructor(configs) {
+        
         super({
             radius: CIRCLE_BASE_RADIUS,
-            strokeWidth: CIRCLE_STROKE_WIDTH
+            strokeWidth: CIRCLE_STROKE_WIDTH,
+            x: CogFunCirclePositions[configs.grantIndex].x,
+            y: CogFunCirclePositions[configs.grantIndex].y,
+            fill: CogFunFillColors[configs.cogFunLetter],
+            stroke: CogFunStrokeColors[configs.cogFunLetter],
         });
-        this.grantIndex = grantIndex;
-        this.position(getCogFunCirclePosition(this.getStage(), grantIndex));
-        this.grantScaleFactor = FunctionCircleScaleFactors[grantIndex];
-        const cogFunInfo = opType.getCognitiveFunctionInfo(grantIndex);
+        
+        // HERE Keep changing
         const isGenericDiagram = opType === OpType.GENERIC;
-        // @ts-ignore // Should work
-        this.fill(CogFunFillColors[cogFunInfo.cognitiveFunction.shortName[0]]);
-        // @ts-ignore // Should work
-        this.stroke(CogFunStrokeColors[cogFunInfo.cognitiveFunction.shortName[0]]);
+        
+        // Making first function slightly bigger for generic because of optical illusion.
         const genericScaleFactor = grantIndex === 0 ? 1.05 : 1;
+        
         // If not generic diagram use scaling, otherwise don't.
         this.scaleX(isGenericDiagram ? genericScaleFactor : this.grantScaleFactor);
         this.scaleY(isGenericDiagram ? genericScaleFactor : this.grantScaleFactor);
