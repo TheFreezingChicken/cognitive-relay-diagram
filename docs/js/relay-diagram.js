@@ -1,4 +1,4 @@
-import {AnimalGrantPosition, OpType} from "./op-lib.js";
+import {CognitiveFunction, Letter, OpType} from "./op-lib.js";
 
 const devTest = false;
 
@@ -280,17 +280,19 @@ class CognitiveFunctionGroup extends Konva.Group {
 
 
 /**
- * Configurations for {@link CognitiveFunctionCircle}
- * @typedef {Object} CognitiveFunctionCircleConfigs
+ * Configurations for elements of {@link CognitiveFunctionGroup}
+ * @typedef {Object} CognitiveFunctionConfigs
  * @property {number} grantIndex
- * @property {string} cogFunLetter
+ * @property {CognitiveFunction|Letter} cogFun
+ * @property {boolean} isSavior
+ * @property {boolean} isMasculine
  */
 
 
 class CognitiveFunctionCircle extends Konva.Circle {
     /**
      *
-     * @param configs {CognitiveFunctionCircleConfigs}
+     * @param configs {CognitiveFunctionConfigs}
      */
     constructor(configs) {
         
@@ -299,92 +301,119 @@ class CognitiveFunctionCircle extends Konva.Circle {
             strokeWidth: CIRCLE_STROKE_WIDTH,
             x: CogFunCirclePositions[configs.grantIndex].x,
             y: CogFunCirclePositions[configs.grantIndex].y,
-            fill: CogFunFillColors[configs.cogFunLetter],
-            stroke: CogFunStrokeColors[configs.cogFunLetter],
+            fill: CogFunFillColors[configs.cogFun[0]],
+            stroke: CogFunStrokeColors[configs.cogFun[0]],
         });
         
-        // HERE Keep changing
-        const isGenericDiagram = opType === OpType.GENERIC;
+        // DEBT Assuming non-partial diagram, so it's generic only at first rendering.
+        const isGenericDiagram = configs.cogFun.length === 1;
         
         // Making first function slightly bigger for generic because of optical illusion.
-        const genericScaleFactor = grantIndex === 0 ? 1.05 : 1;
+        const genericScaleFactor = configs.grantIndex === 0 ? 1.05 : 1;
+        const grantScaleFactor = CogFunCircleScaleFactors[configs.grantIndex];
         
         // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(isGenericDiagram ? genericScaleFactor : this.grantScaleFactor);
-        this.scaleY(isGenericDiagram ? genericScaleFactor : this.grantScaleFactor);
+        this.scaleX(isGenericDiagram ? genericScaleFactor : grantScaleFactor);
+        this.scaleY(isGenericDiagram ? genericScaleFactor : grantScaleFactor);
     }
 }
 
 
 class CognitiveFunctionBackgroundImage extends Konva.Image {
-    get _BASE_IMG_SCALE() { return 1; }
-    constructor(img, circle) {
+    /**
+     *
+     * @param img {HTMLImageElement}
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(img, configs) {
         // Based on how we structured the library, img should always be loaded when reaching this point.
         super({
-            image: img,
+            image: img
         });
-        // this.opacity(grantOrder !== 3 ? 0.3 : 1);
-        this.position(circle.position());
-        // Offset is applied before the scale, regardless of when it's called, so we need to use the original size.
+        
+        const pos = CogFunCirclePositions[configs.grantIndex];
+        
+        this.position(pos);
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
-        const scale = this._BASE_IMG_SCALE * circle.scaleX();
-        this.scaleX(scale);
-        this.scaleY(scale);
     }
 }
 
 
 
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _BASE_IMG_SCALE() { return 0.4; }
-    constructor(opType, circle) {
-        const img = circle.grantIndex === 3 ? DiagramResources.BIG_DEMON_BG_IMG : DiagramResources.LITTLE_DEMON_BG_IMG;
-        super(img, circle);
-        const cogFunInfo = opType.getCognitiveFunctionInfo(circle.grantIndex);
-        this.visible(!cogFunInfo.isSavior);
+    
+    /**
+     *
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(configs) {
+        const img = configs.grantIndex === 3 ?
+            DiagramResources.BIG_DEMON_BG_IMG :
+            DiagramResources.LITTLE_DEMON_BG_IMG;
+        
+        super(img, configs);
+        
+        this.visible(!configs.isSavior);
+        
+        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.grantIndex];
+        const IMG_SCALE_FACTOR = 0.4;
+        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
+        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
     }
 }
 
 class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
-    get _BASE_IMG_SCALE() {
-        return 0.43;
-    }
-    constructor(opType, circle) {
-        super(DiagramResources.MASCULINE_FUNCTION_BG_IMG, circle);
-        const cogFunInfo = opType.getCognitiveFunctionInfo(circle.grantIndex);
-        this.visible(cogFunInfo.isMasculine ?? false);
+    
+    
+    /**
+     *
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(configs) {
+        super(DiagramResources.MASCULINE_FUNCTION_BG_IMG, configs);
+        
+        this.visible(configs.isMasculine ?? false);
+        
+        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.grantIndex];
+        const IMG_SCALE_FACTOR = 0.43;
+        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
+        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
     }
 }
 
 
 
 class CognitiveFunctionText extends Konva.Text {
-    constructor(opType, circle) {
+    /**
+     *
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(configs) {
+        const pos = CogFunCirclePositions[configs.grantIndex];
+        const scale = CogFunCircleScaleFactors[configs.grantIndex];
+        
         super({
-            position: {
-                x: circle.getClientRect().x,
-                y: circle.getClientRect().y,
-            },
+            position: pos,
             offset: {
-                x: -2 * circle.scaleY() + 1.3,
-                y: -4 * circle.scaleY()
+                x: pos / 2 + 1.3,
+                y: pos / 2
             },
-            height: circle.getClientRect().height,
-            width: circle.getClientRect().width,
+            height: CIRCLE_BASE_RADIUS * 2 * scale,
+            width: CIRCLE_BASE_RADIUS * 2 * scale,
             align: 'center',
             verticalAlign: 'middle',
             fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
             fontStyle: 'bold',
-            fontSize: COGFUN_BASE_FONT_SIZE * circle.scaleY(),
+            fontSize: COGFUN_BASE_FONT_SIZE * scale,
             fill: 'white',
             stroke: 'black',
             strokeWidth: 2,
         });
-        const cogFunInfo = opType.getCognitiveFunctionInfo(circle.grantIndex);
-        console.log(cogFunInfo.cognitiveFunction.shortName);
-        this.text(cogFunInfo.cognitiveFunction.shortName);
-        this.fontSize(COGFUN_BASE_FONT_SIZE * circle.scaleY());
+        
+        
+        this.text(configs.cogFun);
+        this.fontSize(COGFUN_BASE_FONT_SIZE * scale);
     }
 }
 

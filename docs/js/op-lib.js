@@ -151,6 +151,10 @@ export const HumanNeed = {
     
 }
 
+/**
+ * @enum {string}
+ *
+ */
 export const Letter = {
     SENSING: 'S',
     INTUITING: 'N',
@@ -189,6 +193,9 @@ export const Letter = {
 }
 
 
+/**
+ * @enum {string}
+ */
 export const CognitiveFunction = {
     SI: 'Si',
     SE: 'Se',
