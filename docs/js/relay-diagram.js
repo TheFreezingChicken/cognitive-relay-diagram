@@ -1,4 +1,39 @@
-import {CognitiveFunction, Letter, OpType} from "./op-lib.js";
+import {AnimalGrantContext, CognitiveFunction, Letter, OpType} from "./op-lib.js";
+
+
+/**
+ * @typedef {Object} CogFunStackConfigs
+ * @property {CognitiveFunction[]} cogFunStack
+ * @property {CognitiveFunction[]} masculineCogFuns
+ * @property {CognitiveFunction[]} saviorCogFuns
+ */
+
+
+/**
+ * Configurations for elements of {@link CognitiveFunctionGroup}
+ * @typedef {Object} CognitiveFunctionConfigs
+ * @property {number} grantIndex
+ * @property {CognitiveFunction|Letter} cogFun
+ * @property {boolean} isSavior
+ * @property {boolean} isMasculine
+ */
+
+
+/**
+ * @typedef {Object} AnimalConfigs
+ * @property {ConnectedGrantIndexCouple} animalGrantContext
+ * @property {number} animalStackIndex
+ * @property {Animal|string} animal
+ * @property {boolean} isDoubleActivated
+ */
+
+
+/**
+ * @typedef {Object} AnimalStackConfigs
+ * @property {Map<AnimalGrantContext, number>} animalGrantContextToIndexMap
+ */
+
+
 
 const devTest = false;
 
@@ -219,7 +254,9 @@ export class CRDStage extends Konva.Stage {
 class DiagramLayer extends Konva.Layer {
     constructor(opTypeManager) {
         super();
+        
         this.add(new DiagramGroup(opTypeManager.opType));
+        
         // Add listener to reset (remove and re-add) diagram when OP type changes.
         opTypeManager.addListener((newOpType) => {
             this.removeChildren();
@@ -233,60 +270,65 @@ class DiagramGroup extends Konva.Group {
     constructor(opType) {
         super();
         // Create group for the whole stack of functions and then create every single one of them and add them.
-        this.cogFunStackGroup = new CognitiveFunctionStackGroup(opType);
-        this.animalStackGroup = new AnimalStackGroup(opType, this.cogFunStackGroup);
+        this._cogFunStackGroup = new CogFunStackGroup(opType);
+        this._animalStackGroup = new AnimalStackGroup(opType, this._cogFunStackGroup);
     }
 }
 
 
 
-
-
-class CognitiveFunctionStackGroup extends Konva.Group {
-    
+class CogFunStackGroup extends Konva.Group {
     /**
      *
-     * @param configs CognitiveFunctionStackGroupConfigs
+     * @param configs
      */
     constructor(configs) {
         super();
-        this.cogFunGroups = new Array(4);
+        this._cogFunGroups = new Array(4);
         for (let i = 0; i < 4; i++) {
-            const cfg = new CognitiveFunctionGroup(opType, i);
-            this.cogFunGroups[i] = cfg;
+            const cogFun = configs.cogFunStack[i];
+            const cogFunConfigs = {
+                cogFun: cogFun,
+                grantIndex: i,
+                isMasculine: configs.masculineCogFuns.includes(cogFun),
+                isSavior: configs.saviorCogFuns.includes(cogFun),
+            }
+            
+            const cfg = new CognitiveFunctionGroup(configs);
+            this._cogFunGroups[i] = cfg;
             this.add(cfg);
         }
     }
     
     getCognitiveFunctionGroup(grantIndex) {
-        return this.cogFunGroups[grantIndex];
+        return this._cogFunGroups[grantIndex];
     }
 }
 
 
+
+
+
 class CognitiveFunctionGroup extends Konva.Group {
-    constructor(opType, grantIndex) {
+    
+    /**
+     *
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(configs) {
         super();
         
-        this.circle = new CognitiveFunctionCircle(opType, grantIndex);
+        this.circle = new CognitiveFunctionCircle(configs);
         
-        const demonBgImg = new DemonBackgroundImage(opType, this.circle);
-        const masculineBgImg = new MasculineBackgroundImage(opType, this.circle);
-        const text = new CognitiveFunctionText(opType, this.circle);
+        const demonBgImg = new DemonBackgroundImage(configs);
+        const masculineBgImg = new MasculineBackgroundImage(configs);
+        const text = new CognitiveFunctionText(configs);
         
         this.add(demonBgImg, masculineBgImg, this.circle, text);
     }
 }
 
 
-/**
- * Configurations for elements of {@link CognitiveFunctionGroup}
- * @typedef {Object} CognitiveFunctionConfigs
- * @property {number} grantIndex
- * @property {CognitiveFunction|Letter} cogFun
- * @property {boolean} isSavior
- * @property {boolean} isMasculine
- */
 
 
 class CognitiveFunctionCircle extends Konva.Circle {
@@ -365,7 +407,6 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
 
 class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     
-    
     /**
      *
      * @param configs {CognitiveFunctionConfigs}
@@ -419,68 +460,100 @@ class CognitiveFunctionText extends Konva.Text {
 
 
 
+
+
+
+
+
+
+
+
 class AnimalStackGroup extends Konva.Group {
-    constructor(opType, cogFunStackGroup) {
+    
+    /**
+     *
+     * @param configs {AnimalStackConfigs}
+     */
+    constructor(configs) {
         super();
-        for (const ap of Object.values(AnimalGrantPosition)) {
+        
+        for (const ap of AnimalGrantContext.getAll()) {
+            console.log('Constructing animal stack group...')
             console.log(ap);
-            const idxCouple = AnimalGrantPosition.toGrantIndexCouple(ap);
+            console.log();
+            
             const biggerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.strongerIndex).circle;
             const smallerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.weakerIndex).circle;
-            const ag = new AnimalGroup(opType, ap, biggerCircle, smallerCircle);
+            const ag = new AnimalGroup(
+                {
+                    animalGrantContext: ap,
+                    animalStackIndex: configs.animalGrantContextToIndexMap.get(ap),
+                    animal:
+                }
+            );
             this.add(ag);
         }
     }
 }
 
 
+
+
 class AnimalGroup extends Konva.Group {
-    constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
+    
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
         super();
-        const bgTriangle = new AnimalBackgroundTriangle(opType, animalGrantPosition, biggerCircle, smallerCircle);
-        const line = new AnimalLine(opType, animalGrantPosition, biggerCircle, smallerCircle);
-        const letterText = new AnimalLetter(opType, animalGrantPosition);
-        const orderText = new AnimalOrderNumber(opType, animalGrantPosition);
-        this.add(bgTriangle);
-        this.add(line);
-        this.add(letterText);
-        this.add(orderText);
+        
+        const bgTriangle = new AnimalBackgroundTriangle(configs);
+        const line = new AnimalLine(configs);
+        const letterText = new AnimalLetter(configs);
+        const orderText = new AnimalOrderNumber(configs);
+        
+        this.add(bgTriangle, line, letterText, orderText);
     }
 }
 
 
-// DEBT When passing shapes we should be throwing errors if the passed shape stage doesn't match current shape stage.
+
+
 class AnimalBackgroundTriangle extends Konva.Line {
-    static offsetCoordinate(coord, centerValue) {
+    static offsetCoordinate(circleCoord, centerValue) {
         switch (true) {
-            case coord > centerValue:
-                return coord - ANIMAL_BG_TRIANGLE_OFFSET;
-            case coord < centerValue:
-                return coord + ANIMAL_BG_TRIANGLE_OFFSET;
+            case circleCoord > centerValue:
+                return circleCoord - ANIMAL_BG_TRIANGLE_OFFSET;
+            case circleCoord < centerValue:
+                return circleCoord + ANIMAL_BG_TRIANGLE_OFFSET;
             default:
-                return coord;
+                return circleCoord;
         }
     }
     
-    constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
-        const crdStage = biggerCircle.getStage();
-        const centerPoint = crdStage.CenterPoint;
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
+        const biggerCirclePos = CogFunCirclePositions[configs.animalGrantContext.strongerIndex];
+        const smallerCirclePos = CogFunCirclePositions[configs.animalGrantContext.weakerIndex];
         
         super({
             points: [
-                AnimalBackgroundTriangle.offsetCoordinate(biggerCircle.x(), centerPoint.x),
-                AnimalBackgroundTriangle.offsetCoordinate(biggerCircle.y(), centerPoint.y),
-                AnimalBackgroundTriangle.offsetCoordinate(smallerCircle.x(), centerPoint.x),
-                AnimalBackgroundTriangle.offsetCoordinate(smallerCircle.y(), centerPoint.y),
-                centerPoint.x,
-                centerPoint.y
+                AnimalBackgroundTriangle.offsetCoordinate(biggerCirclePos.x, DIAGRAM_CENTER),
+                AnimalBackgroundTriangle.offsetCoordinate(biggerCirclePos.y, DIAGRAM_CENTER),
+                AnimalBackgroundTriangle.offsetCoordinate(smallerCirclePos.x, DIAGRAM_CENTER),
+                AnimalBackgroundTriangle.offsetCoordinate(smallerCirclePos.y, DIAGRAM_CENTER),
+                DIAGRAM_CENTER,
+                DIAGRAM_CENTER
             ],
             closed: true
         });
         
-        const stackIndex = opType.getAnimalInfo(animalGrantPosition)?.stackIndex;
         
-        switch (stackIndex) {
+        switch (configs.animalStackIndex) {
             case 0:
                 this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
                 this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
@@ -501,18 +574,31 @@ class AnimalBackgroundTriangle extends Konva.Line {
         }
     }
 }
+
+
+
+
 class AnimalLine extends Konva.Line {
-    constructor(opType, animalGrantPosition, biggerCircle, smallerCircle) {
+    
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
+        const biggerCirclePos = CogFunCirclePositions[configs.animalGrantContext.strongerIndex];
+        const smallerCirclePos = CogFunCirclePositions[configs.animalGrantContext.weakerIndex];
+        
         super({
             points: [
-                biggerCircle.x(), biggerCircle.y(),
-                smallerCircle.x(), smallerCircle.y()
+                biggerCirclePos.x, biggerCirclePos.y,
+                smallerCirclePos.x, smallerCirclePos.y
             ],
             stroke: 'black',
             strokeWidth: 5
         });
-        const stackIndex = opType.getAnimalInfo(animalGrantPosition)?.stackIndex;
-        switch (stackIndex) {
+        
+        
+        switch (configs.animalStackIndex) {
             case 0:
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
                 this.dashEnabled(false);
@@ -542,9 +628,19 @@ class AnimalLine extends Konva.Line {
         }
     }
 }
+
+
+
+
 class AnimalText extends Konva.Text {
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
-    constructor(opType, animalGrantPosition, text) {
+    
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     * @param text {string}
+     */
+    constructor(configs, text) {
         super({
             fontSize: ANIMAL_LETTER_BASE_FONT_SIZE,
             fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
@@ -554,68 +650,91 @@ class AnimalText extends Konva.Text {
             strokeWidth: 1,
             strokeEnabled: false
         });
-        const center = this.getStage().CenterPoint;
-        this.position(center);
+        
+        this.position(DIAGRAM_CENTER);
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-        const animalInfo = opType.getAnimalInfo(animalGrantPosition);
+        
         // The text is placed using an invisible text box and based on the position of the animal we align the text
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
-        switch (animalGrantPosition) {
-            case AnimalGrantPosition.STRONGER_INFO:
+        switch (configs.animalGrantContext) {
+            case AnimalGrantContext.STRONGER_INFO:
                 this.align('left');
                 this.verticalAlign('top');
                 break;
-            case AnimalGrantPosition.STRONGER_ENERGY:
+            case AnimalGrantContext.STRONGER_ENERGY:
                 this.align('right');
                 this.verticalAlign('top');
                 break;
-            case AnimalGrantPosition.WEAKER_INFO:
+            case AnimalGrantContext.WEAKER_INFO:
                 this.align('right');
                 this.verticalAlign('bottom');
                 break;
-            case AnimalGrantPosition.WEAKER_ENERGY:
+            case AnimalGrantContext.WEAKER_ENERGY:
                 this.align('left');
                 this.verticalAlign('bottom');
                 break;
             default:
                 throw new Error("Invalid Animal Position.");
         }
+        
         this.width(baseSize);
         this.height(baseSize + 12);
-        this.offsetX(this.width() / 2);
-        this.offsetY(this.height() / 2);
-        this.visible(animalInfo?.stackIndex != undefined);
+        
         this.text(text);
-        this.fontStyle(animalInfo?.isDoubleActivated ? "bold" : "normal");
-        this.strokeEnabled(animalInfo?.isDoubleActivated ?? false);
+        
+        this.fontStyle(configs.isDoubleActivated ? "bold" : "normal");
+        this.strokeEnabled(configs.isDoubleActivated ?? false);
+        
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
     }
 }
+
+
+
 class AnimalLetter extends AnimalText {
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return super._INVISIBLE_TEXT_BOX_BASE_SIZE + 50; }
-    constructor(opType, animalGrantPosition) {
-        const animalInfo = opType.getAnimalInfo(animalGrantPosition);
-        super(opType, animalGrantPosition, animalInfo?.animal ?? '');
-        const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
-        if (animalInfo?.stackIndex === 3) {
-            this.text(`(${animalInfo?.animal ?? ''})`);
+    
+    
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
+        super(configs, configs.animal);
+        
+        // CHECK If text shenanigans, try to uncomment this and the one below.
+        //const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
+        
+        if (configs.animalStackIndex === 3) {
+            this.text(`(${configs.animal ?? ''})`);
             this.width(baseSize + 20);
         }
-        else {
-            this.width(baseSize);
-        }
+        // else {
+        //     this.width(baseSize);
+        // }
     }
 }
+
+
+
 class AnimalOrderNumber extends AnimalText {
-    constructor(opType, animalGrantPosition) {
-        const animalInfo = opType.getAnimalInfo(animalGrantPosition);
-        const stackIndex = animalInfo && animalInfo.stackIndex;
-        const text = stackIndex == undefined ? '' : (stackIndex + 1).toString();
-        super(opType, animalGrantPosition, text);
+    
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
+        const text = configs.animalStackIndex == null ? '' : (configs.animalStackIndex + 1).toString();
+        super(configs, text);
     }
 }
+
+
+
+
+
 class ControlLayer extends Konva.Layer {
     constructor(opTypeManager) {
         super();
@@ -625,30 +744,37 @@ class ControlLayer extends Konva.Layer {
         this.on('mouseleave', this.onMouseLeave);
         this.add(new MainAxisChoiceGroup(opTypeManager));
     }
+    
     onMouseEnter() {
         this.showControls();
     }
+    
     onTapShow() {
         console.log("Tap show.");
         this.showControls();
         this.off('tap');
         this.on('tap', this.onTapHide);
     }
+    
     onTapHide() {
         this.hideControls();
         this.off('tap');
         this.on('tap', this.onTapShow);
     }
+    
     onMouseLeave() {
         this.hideControls();
     }
+    
     showControls() {
         this.opacity(1);
     }
+    
     hideControls() {
         this.opacity(0);
     }
 }
+
 class ControlGroup extends Konva.Group {
     constructor(opTypeManager) {
         super();
@@ -656,11 +782,13 @@ class ControlGroup extends Konva.Group {
         throw new Error("Not implemented yet.");
     }
 }
+
 class MainAxisChoiceGroup extends ControlGroup {
     constructor(opTypeManager) {
         super(opTypeManager);
     }
 }
+
 class ControlButton extends Konva.Rect {
     constructor() {
         super();
