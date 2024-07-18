@@ -28,9 +28,12 @@ import {AnimalGrantContext, CognitiveFunction, Letter, OpType} from "./op-lib.js
  */
 
 
+// HERE Figure out how to properly make a union for Animal, and consider making other unions for other enums.
+//      Also not really here... in op-lib.
+
 /**
  * @typedef {Object} AnimalStackConfigs
- * @property {Map<AnimalGrantContext, number>} animalGrantContextToIndexMap
+ * @property {Map<AnimalGrantContext, Animal>} animalGrantContextToIndexMap
  */
 
 
