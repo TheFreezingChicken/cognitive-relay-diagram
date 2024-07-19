@@ -1,42 +1,59 @@
 
-/**
- * @typedef {AnimalGrantContext} ConnectedGrantIndexCouple
- * @property {number} strongerIndex
- * @property {number} weakerIndex
- */
 
 
-/**
- * Checks if the provided {@link grantIndex} is valid.
- * @throws {TypeError} If {@link grantIndex} is not a number.
- * @throws {Error} If {@link grantIndex} is not an integer or is out of bounds (0-3).
- */
-export function validateGrantIndex(grantIndex) {
-    if (!Number.isInteger(grantIndex))
-        throw new Error("Invalid Grant order index. Not an integer.");
+export const GrantIndex = {
     
-    if (grantIndex < 0 || grantIndex > 3)
-        throw new Error("Invalid Grant order index. Out of bounds (0-3).");
-}
-
-/**
- * Returns the opposite grant index.
- * @throws {TypeError} If {@link grantIndex} is not a number.
- * @throws {Error} If {@link grantIndex} is not an integer or is out of range.
- */
-export function oppositeGrantIndex(grantIndex) {
-    validateGrantIndex(grantIndex);
+    /**
+     * Checks if the provided {@link grantIndex} is valid.
+     *
+     * @param {...number} grantIndex
+     *
+     * @throws {TypeError} If {@link grantIndex} is not a number.
+     * @throws {Error} If {@link grantIndex} is not an integer or is out of bounds (0-3).
+     */
+    validate(...grantIndex) {
+        grantIndex.forEach((grIdx) => {
+            if (!Number.isInteger(grIdx))
+                throw new Error("Invalid Grant order index. Not an integer.");
+            
+            if (grIdx < 0 || grIdx > 3)
+                throw new Error("Invalid Grant order index. Out of bounds (0-3).");
+        })
+    },
     
-    switch (grantIndex) {
-        case 0: return 3;
-        case 1: return 2;
-        case 2: return 1;
-        case 3: return 0;
-        default: throw new Error("Out of range.");
+    
+    /**
+     * Returns the opposite grant index.
+     *
+     * @param {number} grantIndex
+     *
+     * @throws {TypeError} If {@link grantIndex} is not a number.
+     * @throws {Error} If {@link grantIndex} is not an integer or is out of range.
+     */
+    opposite(grantIndex) {
+        this.validate(grantIndex);
+        
+        switch (grantIndex)         {
+            case 0: return 3;
+            case 1: return 2;
+            case 2: return 1;
+            case 3: return 0;
+            default: throw new Error("Out of range.");
+        }
+    },
+    
+    
+    Couple: class {
+        constructor(index1, index2) {
+            GrantIndex.validate(index1, index2)
+            
+            if (index1 === index2) throw new Error("Indexes in Couple can't be equal.");
+            
+            this.strongerIndex = Math.max(index1, index2);
+            this.weakerIndex = Math.min(index1, index2);
+        }
     }
 }
-
-
 
 
 
@@ -50,48 +67,82 @@ export const Axis = {
     OBSERVING: 'O',
     DECIDING: 'D',
     
-    fromCharacter(character) {
-        switch (character) {
+    fromString(axisString) {
+        switch (axisString) {
             case 'O':
             case 'S':
             case 'N':
+            case 'Si':
+            case 'Se':
+            case 'Ni':
+            case 'Ne':
                 return Axis.OBSERVING;
             case 'D':
             case 'F':
             case 'T':
+            case 'Fi':
+            case 'Ti':
+            case 'Fe':
+            case 'Te':
                 return Axis.DECIDING;
             default:
-                throw new Error("Invalid character.");
+                throw new Error("Invalid Axis string.");
         }
     },
     
     /**
      *
-     * @param axis {Axis}
+     * @param axis {Axis|string}
      * @return {string}
      */
     opposite(axis) {
+        axis = Axis.fromString(axis);
+        
         return axis === Axis.OBSERVING ? Axis.DECIDING : Axis.OBSERVING;
     }
 }
+
+
 
 
 export const Charge = {
     INTROVERTED: 'i',
     EXTROVERTED: 'e',
     
-    fromCharacter: function (character) {
-        switch (character) {
+    
+    fromString(chargeString) {
+        switch (chargeString) {
             case 'i':
+            case '?i':
+            case 'Di':
+            case 'Oi':
+            case 'Fi':
+            case 'Ti':
+            case 'Si':
+            case 'Ni':
                 return Charge.INTROVERTED;
             case 'e':
+            case '?e':
+            case 'De':
+            case 'Oe':
+            case 'Fe':
+            case 'Te':
+            case 'Se':
+            case 'Ne':
                 return Charge.EXTROVERTED;
             default:
-                throw new Error("Invalid Charge character.");
+                throw new Error("Invalid Charge string.");
         }
     },
     
-    opposite: function (charge) {
+    /**
+     *
+     * @param charge {Charge|string}
+     * @returns {string}
+     */
+    opposite(charge) {
+        charge = Charge.fromString(charge);
+        
         switch (charge) {
             case Charge.INTROVERTED:
                 return Charge.EXTROVERTED;
@@ -102,6 +153,8 @@ export const Charge = {
         }
     }
 }
+
+
 
 
 /**
@@ -147,36 +200,29 @@ export const HumanNeed = {
         }
     },
     
-    getCharge: function (humanNeed) {
-        switch (humanNeed) {
-            case HumanNeed.OI_ORGANIZE:
-            case HumanNeed.DI_SELF:
-                return Charge.INTROVERTED;
-            case HumanNeed.OE_GATHER:
-            case HumanNeed.DE_TRIBE:
-                return Charge.EXTROVERTED;
-        }
-    },
-    
-    getAxis(humanNeed) {
-        switch (humanNeed) {
-            case HumanNeed.OI_ORGANIZE:
-            case HumanNeed.OE_GATHER:
-                return Axis.OBSERVING;
-            case HumanNeed.DI_SELF:
-            case HumanNeed.DE_TRIBE:
-                return Axis.DECIDING;
-        }
-    },
-    
-    areAllValid(...humanNeeds) {
-        humanNeeds.forEach((hn) => {
-            if (this.getAll().includes(hn)) return false;
-        })
+    /**
+     *
+     * @param humanNeed {HumanNeed|string}
+     * @returns {HumanNeed}
+     */
+    opposite(humanNeed) {
+        humanNeed = HumanNeed.fromString(humanNeed);
         
-        return true;
+        switch (humanNeed) {
+            case this.OI_ORGANIZE:
+                return this.OE_GATHER;
+            case this.OE_GATHER:
+                return this.OI_ORGANIZE;
+            case this.DI_SELF:
+                return this.DE_TRIBE;
+            case this.DE_TRIBE:
+                return this.DI_SELF;
+        }
     }
 }
+
+
+
 
 /**
  * @enum {string}
@@ -188,22 +234,38 @@ export const Letter = {
     FEELING: 'F',
     THINKING: 'T',
     
-    fromCharacter(character) {
-        switch (character) {
+    fromString(letterString) {
+        switch (letterString) {
             case 'S':
+            case 'Si':
+            case 'Se':
                 return Letter.SENSING;
             case 'N':
+            case 'Ni':
+            case 'Ne':
                 return Letter.INTUITING;
             case 'F':
+            case 'Fi':
+            case 'Fe':
                 return Letter.FEELING;
             case 'T':
+            case 'Ti':
+            case 'Te':
                 return Letter.THINKING;
             default:
-                throw new Error("String is not a valid letter.");
+                throw new Error("Invalid Letter string.");
         }
     },
     
+    
+    /**
+     *
+     * @param letter {Letter|string}
+     * @returns {Letter}
+     */
     opposite(letter) {
+        letter = Letter.fromString(letter);
+        
         switch (letter) {
             case Letter.SENSING:
                 return Letter.INTUITING;
@@ -214,10 +276,12 @@ export const Letter = {
             case Letter.THINKING:
                 return Letter.FEELING;
             default:
-                throw new Error("Invalid letter.");
+                throw new Error("Invalid Letter.");
         }
     }
 }
+
+
 
 
 /**
@@ -248,8 +312,83 @@ export const CognitiveFunction = {
             this.TI,
             this.TE
         ]
+    },
+    
+    /**
+     *
+     * @param cogFunString {string}
+     * @return CognitiveFunction
+     */
+    fromString(cogFunString) {
+        switch (cogFunString) {
+            case 'Si': return this.SI;
+            case 'Se': return this.SE;
+            case 'Ni': return this.NI;
+            case 'Ne': return this.NE;
+            case 'Fi': return this.FI;
+            case 'Fe': return this.FE;
+            case 'Ti': return this.TI;
+            case 'Te': return this.TE;
+            default:
+                throw new Error("Invalid Cognitive Function string.");
+        }
+    },
+    
+    /**
+     * Tries to combine the provided strings into a single @{link CognitiveFunction}. <br>
+     * Redundant coins are ignored and conflicting ones throw an error.
+     *
+     * @param cogFunStrings {...string}
+     *
+     * @throws {Error} If any element in {@link cogFunStrings} is found to be an invalid string or it conflicts with strings
+     *                 parsed previously.
+     *
+     * @return CognitiveFunction
+     */
+    fromPartialFunctionStrings(...cogFunStrings) {
+        let axis;
+        let letter;
+        let charge;
+        
+        cogFunStrings.forEach((cf) => {
+            let tempAxis;
+            let tempLetter;
+            let tempCharge;
+            
+            try {
+                tempAxis = Axis.fromString(cf);
+            } catch {}
+            
+            try {
+                tempLetter = Letter.fromString(cf);
+            } catch {}
+            
+            try {
+                tempCharge = Charge.fromString(cf);
+            } catch {}
+            
+            // If all temp variables are null, it means every coin threw an error which means it can't be any coin.
+            if (tempAxis === tempLetter === tempCharge == null)
+                throw new Error("Found invalid Cognitive Function string.");
+            
+            if (tempAxis != null && axis !== tempAxis) throw new Error("Conflicting coins were provided.");
+            if (tempLetter != null && letter !== tempLetter) throw new Error("Conflicting coins were provided.");
+            if (tempCharge != null && charge !== tempCharge) throw new Error("Conflicting coins were provided.");
+            
+            
+            axis = tempAxis ?? axis;
+            letter = tempLetter ?? letter;
+            charge = tempCharge ?? charge;
+        });
+        
+        
+        return this.fromString(letter + charge);
     }
 }
+
+// HERE Revisit everything considering that === for strings is a content equality check.
+
+
 
 
 /**
@@ -267,40 +406,8 @@ export const Modality = {
 
 
 /**
- * @enum {{strongerIndex: number, weakerIndex: number}}
+ * @enum string
  */
-export const AnimalGrantContext = {
-    STRONGER_INFO: {
-        strongerIndex: 0,
-        weakerIndex: 1
-    },
-    STRONGER_ENERGY: {
-        strongerIndex: 0,
-        weakerIndex: 2
-    },
-    WEAKER_ENERGY: {
-        strongerIndex: 1,
-        weakerIndex: 3
-    },
-    WEAKER_INFO: {
-        strongerIndex: 2,
-        weakerIndex: 3
-    },
-    
-    /**
-     * @return {AnimalGrantContext[]}
-     */
-    getAll() {
-        return [
-            AnimalGrantContext.STRONGER_INFO,
-            AnimalGrantContext.STRONGER_ENERGY,
-            AnimalGrantContext.WEAKER_ENERGY,
-            AnimalGrantContext.WEAKER_INFO
-        ];
-    },
-    
-}
-
 export const MbtiType = {
     ISFJ: 'ISFJ',
     ISFP: 'ISFP',
@@ -321,8 +428,38 @@ export const MbtiType = {
 }
 
 
+
+
+/**
+ * @enum string
+ */
+export const AnimalGrantContext = {
+    STRONGER_INFO: 'Info1',
+    STRONGER_ENERGY: 'Energy1',
+    WEAKER_ENERGY: 'Energy2',
+    WEAKER_INFO: 'Info2',
+    
+    /**
+     * @return {AnimalGrantContext[]}
+     */
+    getAll() {
+        return [
+            AnimalGrantContext.STRONGER_INFO,
+            AnimalGrantContext.STRONGER_ENERGY,
+            AnimalGrantContext.WEAKER_ENERGY,
+            AnimalGrantContext.WEAKER_INFO
+        ];
+    }
+}
+
+
+
 export class MbtiTypeData {
     
+    /**
+     *
+     * @param mbtiType {MbtiType}
+     */
     constructor(mbtiType) {
         // DEBT Add string checks.
         
@@ -372,7 +509,7 @@ export class MbtiTypeData {
     }
     
     getCognitiveFunction(grantIndex) {
-        validateGrantIndex(grantIndex);
+        GrantIndex.validate(grantIndex);
         
         return this.grantStack[grantIndex];
     }
@@ -519,7 +656,7 @@ export class AnimalData {
     }
     
     getAnimal(stackIndex) {
-        validateGrantIndex(stackIndex);
+        GrantIndex.validate(stackIndex);
         return this.stack[stackIndex];
     }
     
