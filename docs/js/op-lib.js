@@ -1,7 +1,7 @@
 
 
 
-export const GrantIndex = {
+export class GrantIndex {
     
     /**
      * Checks if the provided {@link grantIndex} is valid.
@@ -11,7 +11,7 @@ export const GrantIndex = {
      * @throws {TypeError} If {@link grantIndex} is not a number.
      * @throws {Error} If {@link grantIndex} is not an integer or is out of bounds (0-3).
      */
-    validate(...grantIndex) {
+    static validate(...grantIndex) {
         grantIndex.forEach((grIdx) => {
             if (!Number.isInteger(grIdx))
                 throw new Error("Invalid Grant order index. Not an integer.");
@@ -19,7 +19,7 @@ export const GrantIndex = {
             if (grIdx < 0 || grIdx > 3)
                 throw new Error("Invalid Grant order index. Out of bounds (0-3).");
         })
-    },
+    }
     
     
     /**
@@ -30,7 +30,7 @@ export const GrantIndex = {
      * @throws {TypeError} If {@link grantIndex} is not a number.
      * @throws {Error} If {@link grantIndex} is not an integer or is out of range.
      */
-    opposite(grantIndex) {
+    static opposite(grantIndex) {
         this.validate(grantIndex);
         
         switch (grantIndex)         {
@@ -40,17 +40,42 @@ export const GrantIndex = {
             case 3: return 0;
             default: throw new Error("Out of range.");
         }
-    },
+    }
+    
+    /**
+     *
+     * @param animalGrantContext {AnimalGrantContext}
+     * @return {GrantIndex.Couple}
+     */
+    static animalCouple(animalGrantContext) {
+        switch (animalGrantContext) {
+            case AnimalGrantContext.STRONGER_INFO: return new this.Couple(0, 1);
+            case AnimalGrantContext.STRONGER_ENERGY: return new this.Couple(0, 2);
+            case AnimalGrantContext.WEAKER_ENERGY: return new this.Couple(1, 3);
+            case AnimalGrantContext.WEAKER_INFO: return new this.Couple(2, 3);
+            default: throw new Error("Invalid Animal grant context.");
+        }
+    }
     
     
-    Couple: class {
+    static Couple = class {
+        get weakerIndex() {
+            return this._weakerIndex;
+        }
+        
+        get strongerIndex() {
+            return this._strongerIndex;
+        }
+        
+        
+        
         constructor(index1, index2) {
             GrantIndex.validate(index1, index2)
             
             if (index1 === index2) throw new Error("Indexes in Couple can't be equal.");
             
-            this.strongerIndex = Math.max(index1, index2);
-            this.weakerIndex = Math.min(index1, index2);
+            this._strongerIndex = Math.max(index1, index2);
+            this._weakerIndex = Math.min(index1, index2);
         }
     }
 }
@@ -61,6 +86,7 @@ export const GrantIndex = {
 
 
 /**
+ * @readonly
  * @enum string
  */
 export const Axis = {
@@ -101,13 +127,21 @@ export const Axis = {
         return axis === Axis.OBSERVING ? Axis.DECIDING : Axis.OBSERVING;
     }
 }
+Object.freeze(Axis);
 
 
-
-
+/**
+ * @readonly
+ * @enum string
+ */
 export const Charge = {
     INTROVERTED: 'i',
     EXTROVERTED: 'e',
+    
+    /**
+     * @type {Charge[]}
+     */
+    All: Object.freeze([this.INTROVERTED, this.EXTROVERTED]),
     
     
     fromString(chargeString) {
@@ -153,11 +187,13 @@ export const Charge = {
         }
     }
 }
+Object.freeze(Charge);
 
 
 
 
 /**
+ * @readonly
  * @enum string
  */
 export const HumanNeed = {
@@ -167,33 +203,28 @@ export const HumanNeed = {
     DE_TRIBE: 'De',
     
     /**
-     * @return {HumanNeed[]}
+     * @type {HumanNeed[]}
      */
-    getAll() {
-        return [this.OI_ORGANIZE, this.OE_GATHER, this.DI_SELF, this.DE_TRIBE];
-    },
+    All: Object.freeze([this.OI_ORGANIZE, this.OE_GATHER, this.DI_SELF, this.DE_TRIBE]),
+    
     
     fromString(humanNeedString) {
         switch (humanNeedString) {
             case 'Di':
             case 'Ti':
             case 'Fi':
-            case 'Self':
                 return HumanNeed.DI_SELF;
             case 'De':
             case 'Te':
             case 'Fe':
-            case 'Tribe':
                 return HumanNeed.DE_TRIBE;
             case 'Oi':
             case 'Si':
             case 'Ni':
-            case 'Organize':
                 return HumanNeed.OI_ORGANIZE;
             case 'Oe':
             case 'Se':
             case 'Ne':
-            case 'Gather':
                 return HumanNeed.OE_GATHER;
             default:
                 throw new Error("Invalid Human Need string.");
@@ -220,11 +251,13 @@ export const HumanNeed = {
         }
     }
 }
+Object.freeze(HumanNeed);
 
 
 
 
 /**
+ * @readonly
  * @enum {string}
  *
  */
@@ -234,6 +267,17 @@ export const Letter = {
     FEELING: 'F',
     THINKING: 'T',
     
+    /**
+     * @type {Readonly<Letter[]>}
+     */
+    All: Object.freeze([this.SENSING, this.INTUITING, this.FEELING, this.THINKING]),
+    
+    
+    /**
+     *
+     * @param letterString {string}
+     * @return {Letter}
+     */
     fromString(letterString) {
         switch (letterString) {
             case 'S':
@@ -280,11 +324,13 @@ export const Letter = {
         }
     }
 }
+Object.freeze(Letter);
 
 
 
 
 /**
+ * @readonly
  * @enum {string}
  */
 export const CognitiveFunction = {
@@ -299,40 +345,20 @@ export const CognitiveFunction = {
     
     /**
      *
-     * @return {CognitiveFunction[]}
+     * @type {CognitiveFunction[]}
      */
-    getAll() {
-        return [
-            this.SI,
-            this.SE,
-            this.NI,
-            this.NE,
-            this.FI,
-            this.FE,
-            this.TI,
-            this.TE
-        ]
-    },
+    All: Object.freeze([
+        this.SI,
+        this.SE,
+        this.NI,
+        this.NE,
+        this.FI,
+        this.FE,
+        this.TI,
+        this.TE
+    ]),
+    // REM If adding more collections, name them AllObserving etc...
     
-    /**
-     *
-     * @param cogFunString {string}
-     * @return CognitiveFunction
-     */
-    fromString(cogFunString) {
-        switch (cogFunString) {
-            case 'Si': return this.SI;
-            case 'Se': return this.SE;
-            case 'Ni': return this.NI;
-            case 'Ne': return this.NE;
-            case 'Fi': return this.FI;
-            case 'Fe': return this.FE;
-            case 'Ti': return this.TI;
-            case 'Te': return this.TE;
-            default:
-                throw new Error("Invalid Cognitive Function string.");
-        }
-    },
     
     /**
      * Tries to combine the provided strings into a single @{link CognitiveFunction}. <br>
@@ -345,7 +371,7 @@ export const CognitiveFunction = {
      *
      * @return CognitiveFunction
      */
-    fromPartialFunctionStrings(...cogFunStrings) {
+    fromPartialCogFunStrings(...cogFunStrings) {
         let axis;
         let letter;
         let charge;
@@ -367,13 +393,14 @@ export const CognitiveFunction = {
                 tempCharge = Charge.fromString(cf);
             } catch {}
             
-            // If all temp variables are null, it means every coin threw an error which means it can't be any coin.
+            // If all temp variables are null, it means every coin threw an error which means the string doesn't represent any
+            // coin.
             if (tempAxis === tempLetter === tempCharge == null)
                 throw new Error("Found invalid Cognitive Function string.");
             
-            if (tempAxis != null && axis !== tempAxis) throw new Error("Conflicting coins were provided.");
-            if (tempLetter != null && letter !== tempLetter) throw new Error("Conflicting coins were provided.");
-            if (tempCharge != null && charge !== tempCharge) throw new Error("Conflicting coins were provided.");
+            if (tempAxis != null && axis !== tempAxis) throw new Error("Conflicting axis were provided.");
+            if (tempLetter != null && letter !== tempLetter) throw new Error("Conflicting letters were provided.");
+            if (tempCharge != null && charge !== tempCharge) throw new Error("Conflicting charges were provided.");
             
             
             axis = tempAxis ?? axis;
@@ -381,10 +408,37 @@ export const CognitiveFunction = {
             charge = tempCharge ?? charge;
         });
         
+        if (letter == null && charge == null)
+            throw new Error("A complete Cognitive Function couldn't be obtained by the provided strings.");
         
-        return this.fromString(letter + charge);
+        
+        return letter + charge;
+    },
+    
+    
+    opposite(cogFun) {
+        this.throwIfInvalid(cogFun);
+        const letter = Letter.fromString(cogFun);
+        const charge = Charge.fromString(cogFun);
+        
+        return Letter.opposite(letter) + Charge.opposite(charge);
+    },
+    
+    
+    throwIfInvalid(cogFun) {
+        if (!this.isValid(cogFun)) throw new Error("Invalid Cognitive Function.");
+    },
+    
+    /**
+     *
+     * @param cogFun {CognitiveFunction|string}
+     * @return {boolean}
+     */
+    isValid(cogFun) {
+        return this.All.includes(cogFun);
     }
 }
+Object.freeze(CognitiveFunction);
 
 // HERE Revisit everything considering that === for strings is a content equality check.
 
@@ -392,7 +446,7 @@ export const CognitiveFunction = {
 
 
 /**
- * @typedef
+ * @readonly
  * @enum string
  */
 export const Modality = {
@@ -401,7 +455,7 @@ export const Modality = {
     MF_AUDIO: 'MF',
     MM_KINESTHETIC: 'MM'
 }
-
+Object.freeze(Modality);
 
 
 
@@ -426,11 +480,13 @@ export const MbtiType = {
     ENTJ: 'ENTJ',
     ENTP: 'ENTP',
 }
+Object.freeze(MbtiType);
 
 
 
 
 /**
+ * @readonly
  * @enum string
  */
 export const AnimalGrantContext = {
@@ -440,17 +496,17 @@ export const AnimalGrantContext = {
     WEAKER_INFO: 'Info2',
     
     /**
-     * @return {AnimalGrantContext[]}
+     * @type {AnimalGrantContext[]}
      */
-    getAll() {
-        return [
-            AnimalGrantContext.STRONGER_INFO,
-            AnimalGrantContext.STRONGER_ENERGY,
-            AnimalGrantContext.WEAKER_ENERGY,
-            AnimalGrantContext.WEAKER_INFO
-        ];
-    }
+    All: Object.freeze([
+        this.STRONGER_INFO,
+        this.STRONGER_ENERGY,
+        this.WEAKER_ENERGY,
+        this.WEAKER_INFO
+    ]),
+    
 }
+Object.freeze(AnimalGrantContext);
 
 
 
@@ -517,7 +573,7 @@ export class MbtiTypeData {
 
 
 /**
- *
+ * @readonly
  * @enum string
  */
 export const Animal = {
@@ -528,15 +584,14 @@ export const Animal = {
     
     /**
      *
-     * @return {Animal[]}
+     * @type {Animal[]}
      */
-    getAll() {
-        return [Animal.SLEEP, Animal.CONSUME, Animal.BLAST, Animal.PLAY];
-    },
+    All: Object.freeze([this.SLEEP, this.CONSUME, this.BLAST, this.PLAY]),
     
     /**
      *
      * @param animalString {string}
+     * @return Animal
      */
     fromString(animalString) {
         animalString = animalString.toUpperCase();
@@ -564,12 +619,17 @@ export const Animal = {
      *
      * @param humanNeed1 {CognitiveFunction|HumanNeed|string}
      * @param humanNeed2 {CognitiveFunction|HumanNeed|string}
-     * @return {Animal|string}
+     * @return {Animal}
      */
     fromHumanNeeds(humanNeed1, humanNeed2) {
-        // Feeding both args to "fromString" to gatekeep invalid strings.
         humanNeed1 = HumanNeed.fromString(humanNeed1);
         humanNeed2 = HumanNeed.fromString(humanNeed2);
+        
+        const axis1 = Axis.fromString(humanNeed1);
+        const axis2 = Axis.fromString(humanNeed2);
+        
+        if (axis1 === axis2) throw new Error("Human Needs axis can't be the same in an Animal.");
+        
         
         switch (humanNeed1[1] + humanNeed2[1]) {
             case 'ee':
@@ -581,7 +641,7 @@ export const Animal = {
             case 'ie':
                 return humanNeed1[0] === Axis.OBSERVING ? Animal.BLAST : Animal.CONSUME;
             default:
-                throw new Error("Impossible. Foreign HumanNeed instance.");
+                throw new Error("This should've never happened wtf...");
         }
     },
     
@@ -604,6 +664,8 @@ export const Animal = {
                 return humanNeed === HumanNeed.OI_ORGANIZE || humanNeed === HumanNeed.DE_TRIBE;
             case Animal.PLAY:
                 return humanNeed === HumanNeed.OE_GATHER || humanNeed === HumanNeed.DE_TRIBE;
+            default:
+                throw new Error("This should've never happened wtf...");
         }
     },
     
@@ -624,46 +686,110 @@ export const Animal = {
                 return Animal.CONSUME;
             case Animal.PLAY:
                 return Animal.SLEEP;
+            default:
+                throw new Error("This should've never happened wtf...");
         }
     }
 }
+Object.freeze(Animal);
 
 
-// HERE Continue changing stuff, and change AnimalStack to AnimalData
 
-export class AnimalData {
+
+
+
+
+export class OpType {
     
-    constructor(stack) {
-        this.stack = new Array(4);
-        let tempStack = stack;
-        // Removing extra characters.
-        tempStack?.replaceAll(/'[^SCBP]'/, '');
-        // Splitting all letters into an array and converting to Set ensures that there are no duplicates.
-        tempStack = new Set(tempStack.split(''));
-        if (tempStack.size < 3 || tempStack.size > 4)
-            throw new Error("Invalid animal stack string length.");
-        // Adding the missing animal at the end when we have 3.
-        if (tempStack.size === 3)
-            for (const letter of Animal.getAll) {
-                if (tempStack.add(letter).size === 4)
-                    break;
-            }
-        tempStack.forEach((v) => { this.stack.push(v); });
-    }
-    
-    isCompatible(grantStack) {
-        return Animal.isCompatible(this.stack[0], grantStack.getCognitiveFunction(0).humanNeed);
-    }
-    
-    getAnimal(stackIndex) {
-        GrantIndex.validate(stackIndex);
-        return this.stack[stackIndex];
-    }
-    
-    isSavior(animal) {
-        return this.stack.indexOf(animal) <= 1;
+    /**
+     *
+     * @param firstFunction {CognitiveFunction}
+     * @param secondFunction {CognitiveFunction}
+     * @param animalStack {string}
+     * @param modality {?Modality}
+     */
+    constructor(firstFunction, secondFunction, animalStack, modality) {
+        firstFunction = CognitiveFunction.fromPartialCogFunStrings(firstFunction);
+        secondFunction = CognitiveFunction.fromPartialCogFunStrings(secondFunction);
+        
+        const axis1 = Axis.fromString(firstFunction);
+        const axis2 = Axis.fromString(secondFunction);
+        
+        if (axis1 === axis2) throw new Error("First and Second Functions can't be on the same axis.");
+        
+        if (firstFunction[1] === secondFunction[1]) secondFunction = CognitiveFunction.opposite(secondFunction);
+        
+        const grantStack = new Array(4);
+        grantStack[0] = firstFunction;
+        grantStack[1] = secondFunction;
+        grantStack[2] = CognitiveFunction.opposite(secondFunction);
+        grantStack[3] = CognitiveFunction.opposite(firstFunction);
+        
+        
+        if (typeof animalStack !== 'string') throw new TypeError("Invalid Animal Stack type.");
+        
+        // Normalizing animal stack.
+        animalStack = animalStack.toUpperCase();
+        animalStack = animalStack.replaceAll(/'[^SCBP]'/, '');
+        
+        if (animalStack.length < 3 || animalStack.length > 4) throw new Error("Invalid Animal Stack length.");
+        if (Animal.opposite(animalStack[0]) === animalStack[1]) throw new Error("Opposite animals can't be both saviors.");
+        
+        for (const an of Animal.All) {
+            let matchTimes = 0;
+            // This doesn't actually replace anything, it just checks for duplicate animals.
+            animalStack = animalStack.replace(an,() => {
+                if (matchTimes++ > 0) throw new Error("Can't have same Animal twice in the stack.");
+                
+                return an;
+            });
+            
+            // When we have a 3-letters animal stack we can fill the last one.
+            if (!animalStack.includes(an)) animalStack = animalStack + an;
+        }
+        
+        
+        
     }
 }
+
+
+
+
+// export class AnimalStack {
+//
+//     constructor(stack) {
+//         this.stack = new Array(4);
+//
+//         let tempStack = stack;
+//         // Removing extra characters.
+//         tempStack?.replaceAll(/'[^SCBP]'/, '');
+//         // Splitting all letters into an array and converting to Set ensures that there are no duplicates.
+//         tempStack = new Set(tempStack.split(''));
+//         if (tempStack.size < 3 || tempStack.size > 4)
+//             throw new Error("Invalid animal stack string length.");
+//         // Adding the missing animal at the end when we have 3.
+//         if (tempStack.size === 3)
+//             for (const letter of Animal.getAll) {
+//                 if (tempStack.add(letter).size === 4)
+//                     break;
+//             }
+//         tempStack.forEach((v) => { this.stack.push(v); });
+//     }
+//
+//     isCompatible(grantStack) {
+//         return Animal.isCompatible(this.stack[0], grantStack.getCognitiveFunction(0).humanNeed);
+//     }
+//
+//     getAnimal(stackIndex) {
+//         GrantIndex.validate(stackIndex);
+//         return this.stack[stackIndex];
+//     }
+//
+//     isSavior(animal) {
+//         return this.stack.indexOf(animal) <= 1;
+//     }
+// }
 
 
 
