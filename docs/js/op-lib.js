@@ -425,18 +425,27 @@ export const CognitiveFunction = {
     },
     
     
-    throwIfInvalid(cogFun) {
-        if (!this.isValid(cogFun)) throw new Error("Invalid Cognitive Function.");
+    /**
+     *
+     * @param cogFun {...CognitiveFunction|string}
+     * @return {boolean}
+     */
+    isValid(...cogFun) {
+        for(const cf in cogFun) {
+            if (!this.All.includes(cf)) return false;
+        }
+        
+        return true;
     },
     
     /**
      *
-     * @param cogFun {CognitiveFunction|string}
-     * @return {boolean}
+     * @param cogFun {...CognitiveFunction}
      */
-    isValid(cogFun) {
-        return this.All.includes(cogFun);
-    }
+    throwIfInvalid(...cogFun) {
+        if (!this.isValid(...cogFun)) throw new Error("Invalid Cognitive Function.");
+    },
+    
 }
 Object.freeze(CognitiveFunction);
 
@@ -453,7 +462,26 @@ export const Modality = {
     FF_TESTER: 'FF',
     FM_VISUAL: 'FM',
     MF_AUDIO: 'MF',
-    MM_KINESTHETIC: 'MM'
+    MM_KINESTHETIC: 'MM',
+    
+    /**
+     * @readonly
+     * @type {Modality[]}
+     */
+    All: Object.freeze([this.FF_TESTER, this.FM_VISUAL, this.MF_AUDIO, this.MM_KINESTHETIC]),
+    
+    
+    isValid(...modalityString) {
+        for (const ms in modalityString) {
+            if (!this.All.includes(ms)) return false;
+        }
+        
+        return true;
+    },
+    
+    throwIfInvalid(...modalityString) {
+        if (!this.isValid(...modalityString)) throw new Error("Invalid Cognitive Function.");
+    }
 }
 Object.freeze(Modality);
 
@@ -700,6 +728,22 @@ Object.freeze(Animal);
 
 
 export class OpType {
+    /**
+     *
+     * @private
+     * @type CognitiveFunction[]
+     */
+    _grantStack;
+    /**
+     * @type {Animal[]}
+     * @private
+     */
+    _animalStack;
+    /**
+     * @type {Modality}
+     * @private
+     */
+    _modality;
     
     /**
      *
@@ -709,8 +753,7 @@ export class OpType {
      * @param modality {?Modality}
      */
     constructor(firstFunction, secondFunction, animalStack, modality) {
-        firstFunction = CognitiveFunction.fromPartialCogFunStrings(firstFunction);
-        secondFunction = CognitiveFunction.fromPartialCogFunStrings(secondFunction);
+        CognitiveFunction.throwIfInvalid(firstFunction, secondFunction);
         
         const axis1 = Axis.fromString(firstFunction);
         const axis2 = Axis.fromString(secondFunction);
@@ -724,6 +767,8 @@ export class OpType {
         grantStack[1] = secondFunction;
         grantStack[2] = CognitiveFunction.opposite(secondFunction);
         grantStack[3] = CognitiveFunction.opposite(firstFunction);
+        
+        this._grantStack = Object.freeze(grantStack);
         
         
         if (typeof animalStack !== 'string') throw new TypeError("Invalid Animal Stack type.");
@@ -744,13 +789,22 @@ export class OpType {
                 return an;
             });
             
-            // When we have a 3-letters animal stack we can fill the last one.
+            // Since we allow for 3-letters stacks, then the missing animal is the one to add at the end.
             if (!animalStack.includes(an)) animalStack = animalStack + an;
         }
         
+        // noinspection JSValidateTypes | Strings are coerced to Animals
+        this._animalStack = Object.freeze(animalStack);
         
         
+        if (modality != null) {
+            Modality.throwIfInvalid(modality);
+            this._modality = modality;
+        }
     }
+    
+    // HERE Given the negligible amount of data, it's more reasonable to search for stuff on-the-fly with specific functions or
+    //      properties (e.g.: getGrantCogFun(), getCogFunFromLetter(), etc...)
 }
 
 
