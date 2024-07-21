@@ -700,6 +700,75 @@ export const Animal = {
             default:
                 throw new Error("This should've never happened wtf...");
         }
+    },
+    
+    /**
+     *
+     * @param humanNeed {CognitiveFunction}
+     * @return {{infoAnimal: Animal, energyAnimal: Animal}}
+     */
+    coupleFromHumanNeed(humanNeed) {
+        // noinspection JSValidateTypes | Needed for better switch.
+        humanNeed = HumanNeed.fromString(humanNeed);
+        
+        switch (humanNeed) {
+            case HumanNeed.DI_SELF:
+                return {
+                    infoAnimal: this.CONSUME,
+                    energyAnimal: this.SLEEP
+                }
+            case HumanNeed.DE_TRIBE:
+                return {
+                    infoAnimal: this.BLAST,
+                    energyAnimal: this.PLAY
+                }
+            case HumanNeed.OI_ORGANIZE:
+                return {
+                    infoAnimal: this.BLAST,
+                    energyAnimal: this.SLEEP
+                }
+            case HumanNeed.OE_GATHER:
+                return {
+                    infoAnimal: this.CONSUME,
+                    energyAnimal: this.PLAY
+                }
+            default:
+                throw new Error("This should've never happened wtf...");
+        }
+    },
+    
+    /**
+     *
+     * @param animal {Animal}
+     * @return {{decidingHumanNeed: HumanNeed, observingHumanNeed: HumanNeed}}
+     */
+    toHumanNeeds(animal) {
+        animal = this.fromString(animal);
+        
+        switch (animal) {
+            case this.SLEEP:
+                return {
+                    decidingHumanNeed: HumanNeed.DI_SELF,
+                    observingHumanNeed: HumanNeed.OI_ORGANIZE
+                }
+            case this.CONSUME:
+                return {
+                    decidingHumanNeed: HumanNeed.DI_SELF,
+                    observingHumanNeed: HumanNeed.OE_GATHER
+                }
+            case this.BLAST:
+                return {
+                    decidingHumanNeed: HumanNeed.DE_TRIBE,
+                    observingHumanNeed: HumanNeed.OI_ORGANIZE
+                }
+            case this.PLAY:
+                return {
+                    decidingHumanNeed: HumanNeed.DE_TRIBE,
+                    observingHumanNeed: HumanNeed.OE_GATHER
+                }
+            default:
+                throw new Error("This should've never happened wtf...");
+        }
     }
 }
 Object.freeze(Animal);
@@ -730,6 +799,18 @@ Object.freeze(Animal);
  * @property {boolean} isDoubleActivated
  */
 
+/**
+ * @typedef {Object} OpTypeModalityData
+ * @property {OpType} parentType
+ * @property {Modality} modality
+ * @property {OpTypeCogFunData} observingFunction
+ * @property {OpTypeCogFunData} decidingFunction
+ * @property {OpTypeAnimalData} doubleMasculineAnimal
+ * @property {OpTypeAnimalData} doubleFeminineAnimal
+ */
+
+
+
 
 /**
  * @class
@@ -738,11 +819,11 @@ export class OpType {
     /**
      *
      * @private
-     * @type CognitiveFunction[]
+     * @type OpTypeCogFunData[]
      */
     _grantStack;
     /**
-     * @type {Animal[]}
+     * @type {OpTypeAnimalData[]}
      * @private
      */
     _animalStack;
@@ -769,13 +850,41 @@ export class OpType {
         
         if (firstFunction[1] === secondFunction[1]) secondFunction = CognitiveFunction.opposite(secondFunction);
         
-        const grantStack = new Array(4);
-        grantStack[0] = firstFunction;
-        grantStack[1] = secondFunction;
-        grantStack[2] = CognitiveFunction.opposite(secondFunction);
-        grantStack[3] = CognitiveFunction.opposite(firstFunction);
         
-        this._grantStack = Object.freeze(grantStack);
+        const strongAnimalCouple = Animal.coupleFromHumanNeed(firstFunction);
+        
+        /** @type {OpTypeCogFunData[]} */
+        const grantStack = new Array(4);
+        // For now we only assign what we can.
+        grantStack[0] = {
+            parentType: this,
+            cogFun: firstFunction,
+            grantIndex: 0,
+            isSavior: true
+        };
+        grantStack[1] = {
+            parentType: this,
+            cogFun: secondFunction,
+            grantIndex: 1,
+            isSavior: strongAnimalCouple.energyAnimal === animalStack[0]
+        };
+        grantStack[2] = {
+            parentType: this,
+            cogFun: CognitiveFunction.opposite(secondFunction),
+            grantIndex: 2,
+            isSavior: !grantStack[1].isSavior
+        };
+        grantStack[3] = {
+            parentType: this,
+            cogFun: CognitiveFunction.opposite(firstFunction),
+            grantIndex: 3,
+            isSavior: false
+        };
+        
+        const weakAnimalCouple = Animal.coupleFromHumanNeed(grantStack[3].cogFun);
+        
+        
+        
         
         
         if (typeof animalStack !== 'string') throw new TypeError("Invalid Animal Stack type.");
@@ -800,14 +909,40 @@ export class OpType {
             if (!animalStack.includes(an)) animalStack = animalStack + an;
         }
         
+        
+        
+        
+        if (modality != null) Modality.throwIfInvalid(modality);
+        
+        
+        
+        for (let i = 0; i < 4; i++) {
+            const animal = animalStack[i];
+            // noinspection JSCheckFunctionSignatures | Guaranteed to fit Animal values.
+            const humanNeeds = Animal.toHumanNeeds(animal);
+            
+            /**
+             *
+             * @type {OpTypeAnimalData}
+             */
+            const animalData = {
+                parentType: this,
+                animal: animal,
+                stackIndex: i,
+                decidingCogFun: grantStack.find((cogFun) => {
+                    return HumanNeed.fromString(cogFun) === humanNeeds.decidingHumanNeed
+                }),
+                observingCogFun: grantStack.find((cogFun) => {
+                    return HumanNeed.fromString(cogFun) === humanNeeds.observingHumanNeed
+                }),
+                
+            }
+        }
+        
+        
+        this._grantStack = Object.freeze(grantStack);
         // noinspection JSValidateTypes | Strings are coerced to Animals
         this._animalStack = Object.freeze(animalStack);
-        
-        
-        if (modality != null) {
-            Modality.throwIfInvalid(modality);
-            this._modality = modality;
-        }
     }
     
     
