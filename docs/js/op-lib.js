@@ -507,6 +507,51 @@ export const MbtiType = {
     ENFP: 'ENFP',
     ENTJ: 'ENTJ',
     ENTP: 'ENTP',
+    
+    
+    /**
+     *
+     * @param firstFunction {CognitiveFunction}
+     * @param secondFunction {CognitiveFunction}
+     * @return MbtiType
+     */
+    fromCogFuns(firstFunction, secondFunction) {
+        CognitiveFunction.throwIfInvalid(firstFunction, secondFunction);
+        
+        const axis1 = Axis.fromString(firstFunction);
+        const axis2 = Axis.fromString(secondFunction);
+        
+        if (axis1 === axis2) throw new Error("Provided Cognitive Functions can't be on the same axis.");
+        
+        
+        const firstLetter = firstFunction[1].toUpperCase();
+        
+        // Convert second Savior function to second Grant function if needed.
+        if (secondFunction[1] === firstFunction[1]) secondFunction = CognitiveFunction.opposite(secondFunction);
+        
+        const middleLetters = axis1 === Axis.OBSERVING ?
+            firstFunction[0] + secondFunction[0] :
+            secondFunction[0] + firstFunction[0];
+        
+        let lastLetter = 'x';
+        switch (firstFunction) {
+            case 'Fi':
+            case 'Ti':
+            case 'Se':
+            case 'Ne':
+                lastLetter = 'P';
+                break;
+            case 'Fe':
+            case 'Te':
+            case 'Si':
+            case 'Ni':
+                lastLetter = 'J';
+                break;
+        }
+        
+        // noinspection JSValidateTypes | Guaranteed to match one of the types.
+        return firstLetter + middleLetters + lastLetter;
+    }
 }
 Object.freeze(MbtiType);
 
@@ -536,68 +581,6 @@ export const AnimalGrantContext = {
 }
 Object.freeze(AnimalGrantContext);
 
-
-
-export class MbtiTypeData {
-    
-    /**
-     *
-     * @param mbtiType {MbtiType}
-     */
-    constructor(mbtiType) {
-        // DEBT Add string checks.
-        
-        this.grantStack = new Array(4);
-        this.grantPositionedAnimals = new Map();
-        
-        const temperament = mbtiType[0] + mbtiType[3];
-        
-        // Get first two functions in the stack from temperament.
-        switch (temperament) {
-            case 'IP':
-                this.grantStack[0] = mbtiType[2] + 'i';
-                this.grantStack[1] = mbtiType[1] + 'e';
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_INFO, Animal.CONSUME);
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_ENERGY, Animal.SLEEP);
-                break;
-            case 'IJ':
-                this.grantStack[0] = mbtiType[1] + 'i';
-                this.grantStack[1] = mbtiType[2] + 'e';
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_INFO, Animal.BLAST);
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_ENERGY, Animal.SLEEP);
-                break;
-            case 'EP':
-                this.grantStack[0] = mbtiType[1] + 'e';
-                this.grantStack[1] = mbtiType[2] + 'i';
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_INFO, Animal.CONSUME);
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_ENERGY, Animal.PLAY);
-                break;
-            case 'EJ':
-                this.grantStack[0] = mbtiType[2] + 'e';
-                this.grantStack[1] = mbtiType[1] + 'i';
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_INFO, Animal.BLAST);
-                this.grantPositionedAnimals.set(AnimalGrantContext.STRONGER_ENERGY, Animal.PLAY);
-                break;
-            default:
-                throw new Error("Unexpected characters.");
-        }
-        
-        this.grantStack[2] = this.grantStack[1].opposite();
-        this.grantStack[3] = this.grantStack[0].opposite();
-        
-        const strongInfoAnimal = this.grantPositionedAnimals.get(AnimalGrantContext.STRONGER_INFO);
-        const strongEnergyAnimal = this.grantPositionedAnimals.get(AnimalGrantContext.STRONGER_ENERGY);
-        
-        this.grantPositionedAnimals.set(AnimalGrantContext.WEAKER_INFO, Animal.opposite(strongInfoAnimal));
-        this.grantPositionedAnimals.set(AnimalGrantContext.WEAKER_ENERGY, Animal.opposite(strongEnergyAnimal));
-    }
-    
-    getCognitiveFunction(grantIndex) {
-        GrantIndex.validate(grantIndex);
-        
-        return this.grantStack[grantIndex];
-    }
-}
 
 
 /**
@@ -722,11 +705,35 @@ export const Animal = {
 Object.freeze(Animal);
 
 
+/**
+ * @typedef {Object} OpTypeCogFunData
+ * @property {OpType} parentType
+ * @property {CognitiveFunction} cogFun
+ * @property {number} grantIndex
+ * @property {OpTypeAnimalData} parentInfoAnimal
+ * @property {OpTypeAnimalData} parentEnergyAnimal
+ * @property {boolean} isSavior
+ * @property {boolean} isMasculine
+ * @property {boolean} isDoubleActivated
+ */
+
+/**
+ * @typedef {Object} OpTypeAnimalData
+ * @property {OpType} parentType
+ * @property {Animal} animal
+ * @property {number} stackIndex
+ * @property {AnimalGrantContext} grantContext
+ * @property {GrantIndex.Couple} grantIndexCouple
+ * @property {OpTypeCogFunData} observingCogFun
+ * @property {OpTypeCogFunData} decidingCogFun
+ * @property {boolean} isSavior
+ * @property {boolean} isDoubleActivated
+ */
 
 
-
-
-
+/**
+ * @class
+ */
 export class OpType {
     /**
      *
@@ -801,6 +808,23 @@ export class OpType {
             Modality.throwIfInvalid(modality);
             this._modality = modality;
         }
+    }
+    
+    
+    /**
+     *
+     * @param reference {number|Animal|AnimalGrantContext}
+     * @return AnimalData
+     */
+    getAnimalData(reference) {
+        switch (true) {
+            case Animal.isValid(reference):
+                reference = this._animalStack.indexOf(reference);
+            case AnimalGrantContext.isValid(reference):
+                reference = this._animalConfigurationMap.get(reference);
+        }
+        
+        
     }
     
     // HERE Given the negligible amount of data, it's more reasonable to search for stuff on-the-fly with specific functions or
