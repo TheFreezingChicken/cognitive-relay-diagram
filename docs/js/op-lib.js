@@ -837,7 +837,7 @@ export class OpType {
      *
      * @param firstFunction {CognitiveFunction}
      * @param secondFunction {CognitiveFunction}
-     * @param animalStack {string}
+     * @param animalStack {string|string[]}
      * @param modality {?Modality}
      */
     constructor(firstFunction, secondFunction, animalStack, modality) {
@@ -848,6 +848,7 @@ export class OpType {
         
         if (axis1 === axis2) throw new Error("First and Second Functions can't be on the same axis.");
         
+        // Convert second Savior function to second Grant function if needed.
         if (firstFunction[1] === secondFunction[1]) secondFunction = CognitiveFunction.opposite(secondFunction);
         
         
@@ -884,9 +885,7 @@ export class OpType {
         const weakAnimalCouple = Animal.coupleFromHumanNeed(grantStack[3].cogFun);
         
         
-        
-        
-        
+        if (Array.isArray(animalStack)) animalStack = animalStack.join('');
         if (typeof animalStack !== 'string') throw new TypeError("Invalid Animal Stack type.");
         
         // Normalizing animal stack.
@@ -909,12 +908,15 @@ export class OpType {
             if (!animalStack.includes(an)) animalStack = animalStack + an;
         }
         
-        
+        animalStack = animalStack.split('');
         
         
         if (modality != null) Modality.throwIfInvalid(modality);
         
         
+        // HERE We have animals split into an array. Finish the conversion below.
+        
+        // Convert string animals to array of OpTypeAnimalData.
         
         for (let i = 0; i < 4; i++) {
             const animal = animalStack[i];
