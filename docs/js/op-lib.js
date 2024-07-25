@@ -578,6 +578,22 @@ export const AnimalGrantContext = {
         this.WEAKER_INFO
     ]),
     
+    /**
+     *
+     * @param animal {Animal|string}
+     * @param firstFunction {CognitiveFunction}
+     * @return {AnimalGrantContext}
+     */
+    inType(animal, firstFunction) {
+        CognitiveFunction.throwIfInvalid(firstFunction);
+        animal = Animal.fromString(animal);
+        
+        if (Animal.isEnergy(animal)) {
+            return Animal.isCompatible(animal, firstFunction) ? this.STRONGER_ENERGY : this.WEAKER_ENERGY;
+        } else {
+            return Animal.isCompatible(animal, firstFunction) ? this.STRONGER_INFO : this.WEAKER_INFO;
+        }
+    }
 }
 Object.freeze(AnimalGrantContext);
 
@@ -769,6 +785,18 @@ export const Animal = {
             default:
                 throw new Error("This should've never happened wtf...");
         }
+    },
+    
+    
+    /**
+     *
+     * @param animal {Animal}
+     * @return {boolean}
+     */
+    isEnergy(animal) {
+        animal = this.fromString(animal);
+        
+        return animal === this.SLEEP || animal === this.PLAY;
     }
 }
 Object.freeze(Animal);
@@ -911,10 +939,22 @@ export class OpType {
         animalStack = animalStack.split('');
         
         
-        if (modality != null) Modality.throwIfInvalid(modality);
+        if (modality != null) {
+            Modality.throwIfInvalid(modality);
+            
+            // HERE FIX This is actually dumb and wrong. Fix it.
+            
+            grantStack[0].isMasculine = firstFunction[0] === Letter.SENSING && modality[0] === 'M' ||
+                HumanNeed.fromString(firstFunction) === HumanNeed.DE_TRIBE && modality[1] === 'M'
+            
+            grantStack[1].isMasculine = secondFunction[0] === Letter.SENSING && modality[0] === 'M' ||
+                HumanNeed.fromString(secondFunction) === HumanNeed.DE_TRIBE && modality[1] === 'M'
+            
+            grantStack[2].isMasculine = !grantStack[1].isMasculine;
+            grantStack[3].isMasculine = !grantStack[0].isMasculine;
+        }
         
         
-        // HERE We have animals split into an array. Finish the conversion below.
         
         // Convert string animals to array of OpTypeAnimalData.
         
@@ -922,6 +962,8 @@ export class OpType {
             const animal = animalStack[i];
             // noinspection JSCheckFunctionSignatures | Guaranteed to fit Animal values.
             const humanNeeds = Animal.toHumanNeeds(animal);
+            const isEnergy = humanNeeds.decidingHumanNeed[1] === humanNeeds.observingHumanNeed[1];
+            const grantContext = AnimalGrantContext.inType(animal, firstFunction);
             
             /**
              *
@@ -931,20 +973,35 @@ export class OpType {
                 parentType: this,
                 animal: animal,
                 stackIndex: i,
-                decidingCogFun: grantStack.find((cogFun) => {
-                    return HumanNeed.fromString(cogFun) === humanNeeds.decidingHumanNeed
+                grantContext: grantContext,
+                grantIndexCouple: GrantIndex.animalCouple(grantContext),
+                isSavior: i < 2,
+                isDoubleActivated: i < 2 && Animal.opposite(animal) === animalStack[3],
+                decidingCogFun: grantStack.find((cfData) => {
+                    return HumanNeed.fromString(cfData.cogFun) === humanNeeds.decidingHumanNeed
                 }),
-                observingCogFun: grantStack.find((cogFun) => {
-                    return HumanNeed.fromString(cogFun) === humanNeeds.observingHumanNeed
-                }),
-                
+                observingCogFun: grantStack.find((cfData) => {
+                    return HumanNeed.fromString(cfData.cogFun) === humanNeeds.observingHumanNeed
+                })
             }
+            
+            if (isEnergy) {
+                animalData.decidingCogFun.parentEnergyAnimal = animalData;
+                animalData.observingCogFun.parentEnergyAnimal = animalData;
+            } else {
+                animalData.decidingCogFun.parentInfoAnimal = animalData;
+                animalData.observingCogFun.parentInfoAnimal = animalData;
+            }
+            
+            animalData.decidingCogFun.isDoubleActivated = animalData.isDoubleActivated;
+            animalData.observingCogFun.isDoubleActivated = animalData.isDoubleActivated;
         }
         
         
         this._grantStack = Object.freeze(grantStack);
         // noinspection JSValidateTypes | Strings are coerced to Animals
         this._animalStack = Object.freeze(animalStack);
+        this._modality = modality;
     }
     
     
