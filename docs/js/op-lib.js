@@ -449,7 +449,6 @@ export const CognitiveFunction = {
 }
 Object.freeze(CognitiveFunction);
 
-// HERE Revisit everything considering that === for strings is a content equality check.
 
 
 
@@ -557,6 +556,7 @@ Object.freeze(MbtiType);
 
 
 
+// SLEEP Find a better way to split this, maybe dividing into AnimalStrength and AnimalType.
 
 /**
  * @readonly
@@ -593,6 +593,19 @@ export const AnimalGrantContext = {
         } else {
             return Animal.isCompatible(animal, firstFunction) ? this.STRONGER_INFO : this.WEAKER_INFO;
         }
+    },
+    
+    /**
+     *
+     * @param animalGrantContext {...AnimalGrantContext}
+     * @returns {boolean}
+     */
+    isValid(...animalGrantContext) {
+        for (const agc of animalGrantContext) {
+            if (!AnimalGrantContext.All.includes(agc)) return false;
+        }
+        
+        return true;
     }
 }
 Object.freeze(AnimalGrantContext);
@@ -797,45 +810,98 @@ export const Animal = {
         animal = this.fromString(animal);
         
         return animal === this.SLEEP || animal === this.PLAY;
+    },
+    
+    
+    /**
+     *
+     * @param animals {...Animal}
+     * @returns {boolean}
+     */
+    areAllValid(...animals) {
+        for (const an of animals) {
+            if (!Animal.All.includes(an)) return false;
+        }
+        
+        return true;
     }
 }
 Object.freeze(Animal);
 
 
+
 /**
- * @typedef {Object} OpTypeCogFunData
+ * @class OpTypeCogFunData
+ *
+ * @param properties {OpTypeCogFunData}
+ *
  * @property {OpType} parentType
  * @property {CognitiveFunction} cogFun
  * @property {number} grantIndex
+ * @property {boolean} isSavior
+ * @property {boolean} [isMasculine]
  * @property {OpTypeAnimalData} parentInfoAnimal
  * @property {OpTypeAnimalData} parentEnergyAnimal
- * @property {boolean} isSavior
- * @property {boolean} isMasculine
  * @property {boolean} isDoubleActivated
+ *
  */
+function OpTypeCogFunData(properties) {
+    Object.assign(this, properties);
+}
 
 /**
- * @typedef {Object} OpTypeAnimalData
+ *
+ * @returns {OpTypeCogFunData}
+ */
+OpTypeCogFunData.prototype.getOpposite = function() {
+    return this.parentType.getCogFunData(GrantIndex.opposite(this.grantIndex));
+};
+
+
+
+/**
+ * @class OpTypeAnimalData
+ *
+ * @param properties {OpTypeAnimalData}
+ *
  * @property {OpType} parentType
  * @property {Animal} animal
  * @property {number} stackIndex
  * @property {AnimalGrantContext} grantContext
  * @property {GrantIndex.Couple} grantIndexCouple
+ * @property {boolean} isSavior
  * @property {OpTypeCogFunData} observingCogFun
  * @property {OpTypeCogFunData} decidingCogFun
- * @property {boolean} isSavior
  * @property {boolean} isDoubleActivated
+ * @property {boolean} [isDoubleMasculine]
  */
+function OpTypeAnimalData(properties) {
+    Object.assign(this, properties);
+}
 
 /**
- * @typedef {Object} OpTypeModalityData
+ *
+ * @returns {OpTypeAnimalData}
+ */
+OpTypeAnimalData.prototype.getOpposite = function() {
+    const oppositeAnimal = Animal.opposite(this.animal);
+    
+    return this.parentType.getAnimalData(oppositeAnimal);
+}
+
+
+/**
+ * @class OpTypeModalityData
+ *
  * @property {OpType} parentType
  * @property {Modality} modality
  * @property {OpTypeCogFunData} observingFunction
  * @property {OpTypeCogFunData} decidingFunction
  * @property {OpTypeAnimalData} doubleMasculineAnimal
- * @property {OpTypeAnimalData} doubleFeminineAnimal
  */
+function OpTypeModalityData(properties) {
+    Object.assign(this, properties);
+}
 
 
 
@@ -856,7 +922,7 @@ export class OpType {
      */
     _animalStack;
     /**
-     * @type {Modality}
+     * @type {OpTypeModalityData}
      * @private
      */
     _modality;
@@ -885,30 +951,30 @@ export class OpType {
         /** @type {OpTypeCogFunData[]} */
         const grantStack = new Array(4);
         // For now we only assign what we can.
-        grantStack[0] = {
+        grantStack[0] = new OpTypeCogFunData({
             parentType: this,
             cogFun: firstFunction,
             grantIndex: 0,
             isSavior: true
-        };
-        grantStack[1] = {
+        });
+        grantStack[1] = new OpTypeCogFunData({
             parentType: this,
             cogFun: secondFunction,
             grantIndex: 1,
             isSavior: strongAnimalCouple.energyAnimal === animalStack[0]
-        };
-        grantStack[2] = {
+        });
+        grantStack[2] = new OpTypeCogFunData({
             parentType: this,
             cogFun: CognitiveFunction.opposite(secondFunction),
             grantIndex: 2,
             isSavior: !grantStack[1].isSavior
-        };
-        grantStack[3] = {
+        });
+        grantStack[3] = new OpTypeCogFunData({
             parentType: this,
             cogFun: CognitiveFunction.opposite(firstFunction),
             grantIndex: 3,
             isSavior: false
-        };
+        });
         
         const weakAnimalCouple = Animal.coupleFromHumanNeed(grantStack[3].cogFun);
         
@@ -938,26 +1004,42 @@ export class OpType {
         
         animalStack = animalStack.split('');
         
-        
+        /**
+         *
+         * @type {OpTypeModalityData}
+         */
+        let modalityData;
         if (modality != null) {
             Modality.throwIfInvalid(modality);
             
-            // HERE FIX This is actually dumb and wrong. Fix it.
+            const masculineLetter = modality[0] === 'M' ? Letter.SENSING : Letter.INTUITING;
+            const masculineDeciderNeed = modality[1] === 'M' ? HumanNeed.DE_TRIBE : HumanNeed.DI_SELF;
             
-            grantStack[0].isMasculine = firstFunction[0] === Letter.SENSING && modality[0] === 'M' ||
-                HumanNeed.fromString(firstFunction) === HumanNeed.DE_TRIBE && modality[1] === 'M'
+            const masculineObserver = grantStack.find((cfData) => {
+                return cfData.cogFun[0] === masculineLetter;
+            });
             
-            grantStack[1].isMasculine = secondFunction[0] === Letter.SENSING && modality[0] === 'M' ||
-                HumanNeed.fromString(secondFunction) === HumanNeed.DE_TRIBE && modality[1] === 'M'
+            const masculineDecider = grantStack.find((cfData) => {
+                return HumanNeed.fromString(cfData.cogFun) === masculineDeciderNeed;
+            });
             
-            grantStack[2].isMasculine = !grantStack[1].isMasculine;
-            grantStack[3].isMasculine = !grantStack[0].isMasculine;
+            masculineObserver.isMasculine = true;
+            masculineDecider.isMasculine = true;
+            grantStack[GrantIndex.opposite(masculineObserver.grantIndex)].isMasculine = false;
+            grantStack[GrantIndex.opposite(masculineDecider.grantIndex)].isMasculine = false;
+            
+            
+            modalityData = new OpTypeModalityData({
+                parentType: this,
+                modality: modality,
+                observingFunction: masculineObserver,
+                decidingFunction: masculineDecider
+            });
         }
         
         
         
         // Convert string animals to array of OpTypeAnimalData.
-        
         for (let i = 0; i < 4; i++) {
             const animal = animalStack[i];
             // noinspection JSCheckFunctionSignatures | Guaranteed to fit Animal values.
@@ -969,7 +1051,7 @@ export class OpType {
              *
              * @type {OpTypeAnimalData}
              */
-            const animalData = {
+            const animalData = new OpTypeAnimalData({
                 parentType: this,
                 animal: animal,
                 stackIndex: i,
@@ -983,7 +1065,7 @@ export class OpType {
                 observingCogFun: grantStack.find((cfData) => {
                     return HumanNeed.fromString(cfData.cogFun) === humanNeeds.observingHumanNeed
                 })
-            }
+            });
             
             if (isEnergy) {
                 animalData.decidingCogFun.parentEnergyAnimal = animalData;
@@ -995,34 +1077,86 @@ export class OpType {
             
             animalData.decidingCogFun.isDoubleActivated = animalData.isDoubleActivated;
             animalData.observingCogFun.isDoubleActivated = animalData.isDoubleActivated;
+            
+            
+            if (modalityData !== null) {
+                if (modalityData.observingFunction === animalData.observingCogFun &&
+                    modalityData.decidingFunction === animalData.decidingCogFun) {
+                    animalData.isDoubleMasculine = true;
+                    modalityData.doubleMasculineAnimal = animalData;
+                }
+            }
+            
+            
+            // noinspection JSValidateTypes | We're converting.
+            animalStack[i] = animalData;
         }
         
         
+        // Freezing everything.
+        for (const cfData of grantStack) {
+            Object.freeze(cfData);
+        }
+        
+        for (const anData of animalStack) {
+            Object.freeze(anData);
+        }
+        
         this._grantStack = Object.freeze(grantStack);
-        // noinspection JSValidateTypes | Strings are coerced to Animals
+        // noinspection JSValidateTypes | Guaranteed to fit.
         this._animalStack = Object.freeze(animalStack);
-        this._modality = modality;
+        // noinspection JSValidateTypes | Guaranteed to fit.
+        this._modality = Object.freeze(modalityData);
     }
     
     
     /**
      *
-     * @param reference {number|Animal|AnimalGrantContext}
-     * @return AnimalData
+     * @param reference {number|Animal|AnimalGrantContext} Stack index, Animal, or context.
+     * @return OpTypeAnimalData
      */
     getAnimalData(reference) {
         switch (true) {
-            case Animal.isValid(reference):
-                reference = this._animalStack.indexOf(reference);
+            case Animal.areAllValid(reference):
+                return this._animalStack.find((anData) => anData.animal === reference);
             case AnimalGrantContext.isValid(reference):
-                reference = this._animalConfigurationMap.get(reference);
+                return this._animalStack.find((anData) => anData.grantContext === reference);
+            case typeof reference === 'number':
+                GrantIndex.validate(reference);
+                return this._animalStack[reference];
+            default:
+                throw new Error("Invalid Animal reference.");
         }
-        
-        
     }
     
-    // HERE Given the negligible amount of data, it's more reasonable to search for stuff on-the-fly with specific functions or
-    //      properties (e.g.: getGrantCogFun(), getCogFunFromLetter(), etc...)
+    /**
+     * @param reference {number|CognitiveFunction|Letter|HumanNeed}
+     * @throws {Error} Reference is not valid.
+     * @returns OpTypeCogFunData
+     */
+    getCogFunData(reference) {
+        
+        if (typeof reference === 'number') {
+            GrantIndex.validate(reference);
+            
+            return this._grantStack[reference];
+        }
+        
+        try {
+            const letter = Letter.fromString(reference);
+            
+            return this._grantStack.find((cfData) => cfData.cogFun[0] === letter);
+        } catch {}
+        
+        try {
+            const humanNeed = HumanNeed.fromString(reference);
+            
+            return this._grantStack.find((cfData) => HumanNeed.fromString(cfData.cogFun) === humanNeed);
+        } catch {}
+        
+        
+        throw new Error("Invalid Cognitive Function reference.");
+    }
 }
 
 

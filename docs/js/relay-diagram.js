@@ -1,41 +1,4 @@
-import {AnimalGrantContext, CognitiveFunction, Letter, OpType} from "./op-lib.js";
-
-
-/**
- * @typedef {Object} CogFunStackConfigs
- * @property {CognitiveFunction[]} cogFunStack
- * @property {CognitiveFunction[]} masculineCogFuns
- * @property {CognitiveFunction[]} saviorCogFuns
- */
-
-
-/**
- * Configurations for elements of {@link CognitiveFunctionGroup}
- * @typedef {Object} CognitiveFunctionConfigs
- * @property {number} grantIndex
- * @property {CognitiveFunction|Letter} cogFun
- * @property {boolean} isSavior
- * @property {boolean} isMasculine
- */
-
-
-/**
- * @typedef {Object} AnimalConfigs
- * @property {ConnectedGrantIndexCouple} animalGrantContext
- * @property {number} animalStackIndex
- * @property {Animal|string} animal
- * @property {boolean} isDoubleActivated
- */
-
-
-// HERE Figure out how to properly make a union for Animal, and consider making other unions for other enums.
-//      Also not really here... in op-lib.
-
-/**
- * @typedef {Object} AnimalStackConfigs
- * @property {Map<AnimalGrantContext, Animal>} animalGrantContextToIndexMap
- */
-
+import {AnimalGrantContext, GrantIndex, Letter, OpType} from "./op-lib.js";
 
 
 const devTest = false;
@@ -280,38 +243,85 @@ class DiagramGroup extends Konva.Group {
 
 
 
+
+/**
+ * @typedef CogFunStackConfigs
+ * @property {OpType} [opType]
+ */
+function CogFunStackConfigs() {}
+
+
 class CogFunStackGroup extends Konva.Group {
+    static _getDefaultLetter(grantIndex) {
+        GrantIndex.validate(grantIndex);
+        
+        switch (grantIndex) {
+            case 0:
+                return Letter.INTUITING;
+            case 1:
+                return Letter.THINKING;
+            case 2:
+                return Letter.FEELING;
+            case 3:
+                return Letter.SENSING;
+        }
+    }
+    
     /**
      *
-     * @param configs
+     * @param configs {CogFunStackConfigs}
      */
     constructor(configs) {
         super();
+        
         this._cogFunGroups = new Array(4);
+        
         for (let i = 0; i < 4; i++) {
-            const cogFun = configs.cogFunStack[i];
+            /**
+             *
+             * @type {CognitiveFunctionConfigs}
+             */
             const cogFunConfigs = {
-                cogFun: cogFun,
-                grantIndex: i,
-                isMasculine: configs.masculineCogFuns.includes(cogFun),
-                isSavior: configs.saviorCogFuns.includes(cogFun),
+                cogFunData: configs.opType?.getCogFunData(i)
+            };
+            
+            if (configs.opType == null) {
+                cogFunConfigs.cogFunDataOverride = {
+                    cogFunText: CogFunStackGroup._getDefaultLetter(i),
+                    grantIndex: i
+                }
             }
             
-            const cfg = new CognitiveFunctionGroup(configs);
+            
+            const cfg = new CognitiveFunctionGroup(cogFunConfigs);
             this._cogFunGroups[i] = cfg;
             this.add(cfg);
         }
     }
-    
-    getCognitiveFunctionGroup(grantIndex) {
-        return this._cogFunGroups[grantIndex];
-    }
 }
 
 
+/**
+ * @typedef {Object} CogFunConfigsOverride
+ *
+ * @property {string} cogFunText
+ * @property {number} grantIndex
+ */
 
 
+/**
+ * Configurations for elements of {@link CognitiveFunctionGroup}
+ *
+ * @typedef {Object} CognitiveFunctionConfigs
+ *
+ * @property {OpTypeCogFunData} [cogFunData]
+ * @property {CogFunConfigsOverride} [cogFunDataOverride]
+ */
 
+
+/**
+ * @class
+ */
 class CognitiveFunctionGroup extends Konva.Group {
     
     /**
@@ -344,18 +354,18 @@ class CognitiveFunctionCircle extends Konva.Circle {
         super({
             radius: CIRCLE_BASE_RADIUS,
             strokeWidth: CIRCLE_STROKE_WIDTH,
-            x: CogFunCirclePositions[configs.grantIndex].x,
-            y: CogFunCirclePositions[configs.grantIndex].y,
-            fill: CogFunFillColors[configs.cogFun[0]],
-            stroke: CogFunStrokeColors[configs.cogFun[0]],
+            x: CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex].x,
+            y: CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex].y,
+            fill: CogFunFillColors[configs.cogFunData?.cogFun[0] ?? configs.cogFunDataOverride.cogFunText],
+            stroke: CogFunStrokeColors[configs.cogFunData?.cogFun[0] ?? configs.cogFunDataOverride.cogFunText],
         });
         
         // DEBT Assuming non-partial diagram, so it's generic only at first rendering.
-        const isGenericDiagram = configs.cogFun.length === 1;
+        const isGenericDiagram = configs.cogFunData == null;
         
         // Making first function slightly bigger for generic because of optical illusion.
-        const genericScaleFactor = configs.grantIndex === 0 ? 1.05 : 1;
-        const grantScaleFactor = CogFunCircleScaleFactors[configs.grantIndex];
+        const genericScaleFactor = configs.cogFunDataOverride?.grantIndex === 0 ? 1.05 : 1;
+        const grantScaleFactor = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         
         // If not generic diagram use scaling, otherwise don't.
         this.scaleX(isGenericDiagram ? genericScaleFactor : grantScaleFactor);
@@ -363,6 +373,8 @@ class CognitiveFunctionCircle extends Konva.Circle {
     }
 }
 
+
+// HERE Keep fixing configs access.
 
 class CognitiveFunctionBackgroundImage extends Konva.Image {
     /**
@@ -467,10 +479,15 @@ class CognitiveFunctionText extends Konva.Text {
 
 
 
+/**
+ * @typedef {Object} AnimalStackConfigs
+ * @property {OpType} opType
+ */
 
 
-
-
+/**
+ * @class
+ */
 class AnimalStackGroup extends Konva.Group {
     
     /**
@@ -480,18 +497,15 @@ class AnimalStackGroup extends Konva.Group {
     constructor(configs) {
         super();
         
-        for (const ap of AnimalGrantContext.getAll()) {
+        for (const animalContext of AnimalGrantContext.All) {
             console.log('Constructing animal stack group...')
-            console.log(ap);
+            console.log(animalContext);
             console.log();
             
-            const biggerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.strongerIndex).circle;
-            const smallerCircle = cogFunStackGroup.getCognitiveFunctionGroup(idxCouple.weakerIndex).circle;
+            
             const ag = new AnimalGroup(
                 {
-                    animalGrantContext: ap,
-                    animalStackIndex: configs.animalGrantContextToIndexMap.get(ap),
-                    animal:
+                    animalData: configs.opType.getAnimalData(animalContext)
                 }
             );
             this.add(ag);
@@ -502,6 +516,15 @@ class AnimalStackGroup extends Konva.Group {
 
 
 
+/**
+ * @typedef {Object} AnimalConfigs
+ * @property {OpTypeAnimalData} animalData
+ */
+
+
+/**
+ * @class
+ */
 class AnimalGroup extends Konva.Group {
     
     /**
@@ -540,8 +563,8 @@ class AnimalBackgroundTriangle extends Konva.Line {
      * @param configs {AnimalConfigs}
      */
     constructor(configs) {
-        const biggerCirclePos = CogFunCirclePositions[configs.animalGrantContext.strongerIndex];
-        const smallerCirclePos = CogFunCirclePositions[configs.animalGrantContext.weakerIndex];
+        const biggerCirclePos = CogFunCirclePositions[configs.animalData.grantIndexCouple.strongerIndex];
+        const smallerCirclePos = CogFunCirclePositions[configs.animalData.grantIndexCouple.weakerIndex];
         
         super({
             points: [
@@ -556,7 +579,7 @@ class AnimalBackgroundTriangle extends Konva.Line {
         });
         
         
-        switch (configs.animalStackIndex) {
+        switch (configs.animalData.stackIndex) {
             case 0:
                 this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
                 this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
@@ -588,8 +611,8 @@ class AnimalLine extends Konva.Line {
      * @param configs {AnimalConfigs}
      */
     constructor(configs) {
-        const biggerCirclePos = CogFunCirclePositions[configs.animalGrantContext.strongerIndex];
-        const smallerCirclePos = CogFunCirclePositions[configs.animalGrantContext.weakerIndex];
+        const biggerCirclePos = CogFunCirclePositions[configs.animalData.grantIndexCouple.strongerIndex];
+        const smallerCirclePos = CogFunCirclePositions[configs.animalData.grantIndexCouple.weakerIndex];
         
         super({
             points: [
@@ -601,7 +624,7 @@ class AnimalLine extends Konva.Line {
         });
         
         
-        switch (configs.animalStackIndex) {
+        switch (configs.animalData.stackIndex) {
             case 0:
                 this.strokeWidth(FIRST_ANIMAL_STROKE_WIDTH);
                 this.dashEnabled(false);
@@ -660,7 +683,7 @@ class AnimalText extends Konva.Text {
         // The text is placed using an invisible text box and based on the position of the animal we align the text
         // to the correct corner. We then add or remove a bunch of pixels to the base box size to get a more symmetric
         // look.
-        switch (configs.animalGrantContext) {
+        switch (configs.animalData.grantContext) {
             case AnimalGrantContext.STRONGER_INFO:
                 this.align('left');
                 this.verticalAlign('top');
@@ -678,7 +701,7 @@ class AnimalText extends Konva.Text {
                 this.verticalAlign('bottom');
                 break;
             default:
-                throw new Error("Invalid Animal Position.");
+                throw new Error("Invalid Animal context.");
         }
         
         this.width(baseSize);
@@ -705,14 +728,14 @@ class AnimalLetter extends AnimalText {
      * @param configs {AnimalConfigs}
      */
     constructor(configs) {
-        super(configs, configs.animal);
+        super(configs, configs.animalData.animal);
         
         // CHECK If text shenanigans, try to uncomment this and the one below.
         //const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
         
-        if (configs.animalStackIndex === 3) {
-            this.text(`(${configs.animal ?? ''})`);
-            this.width(baseSize + 20);
+        if (configs.animalData.stackIndex === 3) {
+            this.text(`(${configs.animalData.animal ?? ''})`);
+            this.width(this._INVISIBLE_TEXT_BOX_BASE_SIZE + 20);
         }
         // else {
         //     this.width(baseSize);
@@ -729,7 +752,8 @@ class AnimalOrderNumber extends AnimalText {
      * @param configs {AnimalConfigs}
      */
     constructor(configs) {
-        const text = configs.animalStackIndex == null ? '' : (configs.animalStackIndex + 1).toString();
+        // DEBT Need to change this shit if we start using partial types.
+        const text = configs.animalData.stackIndex == null ? '' : (configs.animalData.stackIndex + 1).toString();
         super(configs, text);
     }
 }
