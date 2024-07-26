@@ -57,10 +57,10 @@ const CogFunCircleScaleFactors = Object.freeze([
 
 
 const AnimalCenterOffsets = new Map([
-    [AnimalGrantPosition.STRONGER_INFO, { x: 50, y: 50 }],
-    [AnimalGrantPosition.STRONGER_ENERGY, { x: -50, y: 50 }],
-    [AnimalGrantPosition.WEAKER_ENERGY, { x: 50, y: -50 }],
-    [AnimalGrantPosition.WEAKER_INFO, { x: -50, y: -50 }],
+    [AnimalGrantContext.STRONGER_INFO, { x: 50, y: 50 }],
+    [AnimalGrantContext.STRONGER_ENERGY, { x: -50, y: 50 }],
+    [AnimalGrantContext.WEAKER_ENERGY, { x: 50, y: -50 }],
+    [AnimalGrantContext.WEAKER_INFO, { x: -50, y: -50 }],
 ]);
 
 
@@ -388,7 +388,7 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
             image: img
         });
         
-        const pos = CogFunCirclePositions[configs.grantIndex];
+        const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
         
         this.position(pos);
         this.offsetX(this.width() / 2);
@@ -405,15 +405,15 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
      * @param configs {CognitiveFunctionConfigs}
      */
     constructor(configs) {
-        const img = configs.grantIndex === 3 ?
+        const img = configs.cogFunData?.grantIndex === 3 ?
             DiagramResources.BIG_DEMON_BG_IMG :
             DiagramResources.LITTLE_DEMON_BG_IMG;
         
         super(img, configs);
         
-        this.visible(!configs.isSavior);
+        this.visible(!(configs.cogFunData?.isSavior ?? true));
         
-        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.grantIndex];
+        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         const IMG_SCALE_FACTOR = 0.4;
         this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
         this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
@@ -429,9 +429,9 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
     constructor(configs) {
         super(DiagramResources.MASCULINE_FUNCTION_BG_IMG, configs);
         
-        this.visible(configs.isMasculine ?? false);
+        this.visible(configs.cogFunData?.isMasculine ?? false);
         
-        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.grantIndex];
+        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         const IMG_SCALE_FACTOR = 0.43;
         this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
         this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
@@ -446,8 +446,8 @@ class CognitiveFunctionText extends Konva.Text {
      * @param configs {CognitiveFunctionConfigs}
      */
     constructor(configs) {
-        const pos = CogFunCirclePositions[configs.grantIndex];
-        const scale = CogFunCircleScaleFactors[configs.grantIndex];
+        const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
+        const scale = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
         
         super({
             position: pos,
@@ -468,7 +468,7 @@ class CognitiveFunctionText extends Konva.Text {
         });
         
         
-        this.text(configs.cogFun);
+        this.text(configs.cogFunData?.cogFun ?? configs.cogFunDataOverride.cogFunText);
         this.fontSize(COGFUN_BASE_FONT_SIZE * scale);
     }
 }
@@ -476,7 +476,7 @@ class CognitiveFunctionText extends Konva.Text {
 
 
 
-
+// HERE Keep fixing configs access.
 
 
 /**
