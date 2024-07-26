@@ -138,11 +138,6 @@ export const Charge = {
     INTROVERTED: 'i',
     EXTROVERTED: 'e',
     
-    /**
-     * @type {Charge[]}
-     */
-    All: Object.freeze([this.INTROVERTED, this.EXTROVERTED]),
-    
     
     fromString(chargeString) {
         switch (chargeString) {
@@ -187,6 +182,10 @@ export const Charge = {
         }
     }
 }
+/**
+ * @type {Charge[]}
+ */
+Charge.All = Object.freeze([Charge.INTROVERTED, Charge.EXTROVERTED]);
 Object.freeze(Charge);
 
 
@@ -201,11 +200,6 @@ export const HumanNeed = {
     OE_GATHER: 'Oe',
     DI_SELF: 'Di',
     DE_TRIBE: 'De',
-    
-    /**
-     * @type {HumanNeed[]}
-     */
-    All: Object.freeze([this.OI_ORGANIZE, this.OE_GATHER, this.DI_SELF, this.DE_TRIBE]),
     
     
     fromString(humanNeedString) {
@@ -251,6 +245,10 @@ export const HumanNeed = {
         }
     }
 }
+/**
+ * @type {HumanNeed[]}
+ */
+HumanNeed.All = Object.freeze([HumanNeed.OI_ORGANIZE, HumanNeed.OE_GATHER, HumanNeed.DI_SELF, HumanNeed.DE_TRIBE]);
 Object.freeze(HumanNeed);
 
 
@@ -266,11 +264,6 @@ export const Letter = {
     INTUITING: 'N',
     FEELING: 'F',
     THINKING: 'T',
-    
-    /**
-     * @type {Readonly<Letter[]>}
-     */
-    All: Object.freeze([this.SENSING, this.INTUITING, this.FEELING, this.THINKING]),
     
     
     /**
@@ -324,6 +317,12 @@ export const Letter = {
         }
     }
 }
+
+/**
+ * @readonly
+ * @type {Letter[]}
+ */
+Letter.All =  Object.freeze([Letter.SENSING, Letter.INTUITING, Letter.FEELING, Letter.THINKING]);
 Object.freeze(Letter);
 
 
@@ -343,21 +342,6 @@ export const CognitiveFunction = {
     TI: 'Ti',
     TE: 'Te',
     
-    /**
-     *
-     * @type {CognitiveFunction[]}
-     */
-    All: Object.freeze([
-        this.SI,
-        this.SE,
-        this.NI,
-        this.NE,
-        this.FI,
-        this.FE,
-        this.TI,
-        this.TE
-    ]),
-    // REM If adding more collections, name them AllObserving etc...
     
     
     /**
@@ -447,6 +431,21 @@ export const CognitiveFunction = {
     },
     
 }
+/**
+ * @readonly
+ * @type {CognitiveFunction[]}
+ */
+CognitiveFunction.All = Object.freeze([
+    CognitiveFunction.SI,
+    CognitiveFunction.SE,
+    CognitiveFunction.NI,
+    CognitiveFunction.NE,
+    CognitiveFunction.FI,
+    CognitiveFunction.FE,
+    CognitiveFunction.TI,
+    CognitiveFunction.TE
+]);
+// REM If adding more collections, name them AllObserving etc...
 Object.freeze(CognitiveFunction);
 
 
@@ -463,12 +462,6 @@ export const Modality = {
     MF_AUDIO: 'MF',
     MM_KINESTHETIC: 'MM',
     
-    /**
-     * @readonly
-     * @type {Modality[]}
-     */
-    All: Object.freeze([this.FF_TESTER, this.FM_VISUAL, this.MF_AUDIO, this.MM_KINESTHETIC]),
-    
     
     isValid(...modalityString) {
         for (const ms in modalityString) {
@@ -482,6 +475,11 @@ export const Modality = {
         if (!this.isValid(...modalityString)) throw new Error("Invalid Cognitive Function.");
     }
 }
+/**
+ * @readonly
+ * @type {Modality[]}
+ */
+Modality.All = Object.freeze([Modality.FF_TESTER, Modality.FM_VISUAL, Modality.MF_AUDIO, Modality.MM_KINESTHETIC]);
 Object.freeze(Modality);
 
 
@@ -568,15 +566,6 @@ export const AnimalGrantContext = {
     WEAKER_ENERGY: 'Energy2',
     WEAKER_INFO: 'Info2',
     
-    /**
-     * @type {AnimalGrantContext[]}
-     */
-    All: Object.freeze([
-        this.STRONGER_INFO,
-        this.STRONGER_ENERGY,
-        this.WEAKER_ENERGY,
-        this.WEAKER_INFO
-    ]),
     
     /**
      *
@@ -608,6 +597,16 @@ export const AnimalGrantContext = {
         return true;
     }
 }
+/**
+ * @readonly
+ * @type {AnimalGrantContext[]}
+ */
+AnimalGrantContext.All = Object.freeze([
+    AnimalGrantContext.STRONGER_INFO,
+    AnimalGrantContext.STRONGER_ENERGY,
+    AnimalGrantContext.WEAKER_ENERGY,
+    AnimalGrantContext.WEAKER_INFO
+]);
 Object.freeze(AnimalGrantContext);
 
 
@@ -622,11 +621,6 @@ export const Animal = {
     BLAST: 'B',
     PLAY: 'P',
     
-    /**
-     *
-     * @type {Animal[]}
-     */
-    All: Object.freeze([this.SLEEP, this.CONSUME, this.BLAST, this.PLAY]),
     
     /**
      *
@@ -826,6 +820,11 @@ export const Animal = {
         return true;
     }
 }
+/**
+ * @readonly
+ * @type {Animal[]}
+ */
+Animal.All = Object.freeze([Animal.SLEEP, Animal.CONSUME, Animal.BLAST, Animal.PLAY]);
 Object.freeze(Animal);
 
 

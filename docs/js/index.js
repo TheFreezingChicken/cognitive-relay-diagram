@@ -1,6 +1,5 @@
 import {CRDStage} from "./relay-diagram.js";
 // TODO Add listener for page resize.
-// TODO Use "hide" option.
 // =============== MAIN ====================================================================================
 // sessionStorage.clear();
 // localStorage.clear();
