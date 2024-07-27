@@ -91,6 +91,10 @@ const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
 
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
+
+const CONTROL_BUTTON_WIDTH = 300;
+
+
 const CogFunFillColors = Object.freeze({
     F: '#c82323',
     T: '#6c6c6c',
@@ -833,7 +837,7 @@ class ControlLayer extends Konva.Layer {
         this.on('mouseenter', this.onMouseEnter);
         this.on('tap', this.onTapShow);
         this.on('mouseleave', this.onMouseLeave);
-        this.add(new BackgroundColorRect(), new MainAxisChoiceGroup(opTypeManager));
+        this.add(new BackgroundColorRect(), new ControlPageManagerGroup(opTypeManager));
     }
     
     onMouseEnter() {
@@ -842,13 +846,18 @@ class ControlLayer extends Konva.Layer {
     }
     
     onTapShow() {
-        console.log("Tap show.");
+        console.log("Tap.");
+        console.log("Showing controls.");
         this.showControls();
         this.off('tap');
         this.on('tap', this.onTapHide);
     }
     
-    onTapHide() {
+    onTapHide(event) {
+        console.log("Tap.");
+        if (event.target instanceof ControlButton) return;
+        
+        console.log("Hiding controls.");
         this.hideControls();
         this.off('tap');
         this.on('tap', this.onTapShow);
@@ -886,17 +895,82 @@ class BackgroundColorRect extends Konva.Rect {
 }
 
 
-class ControlGroup extends Konva.Group {
+class ControlPageManagerGroup extends Konva.Group {
+    /**
+     *
+     * @param opTypeManager {OpTypeManager}
+     */
     constructor(opTypeManager) {
         super();
+        
+        this._opTypeManager = opTypeManager;
+        this.add(new ModalityChoicePageGroup(this, opTypeManager));
+    }
+    
+    goToTemperamentChoice() {
+        this.removeChildren();
+        this.add(new TemperamentChoicePageGroup(this, this._opTypeManager));
+    }
+    
+    goToFirstFunctionChoice() {
+        this.removeChildren();
+        this.add(new FirstFunctionChoicePageGroup(this, this._opTypeManager));
+    }
+    
+    goToMiddleAxisChoice() {
+        this.removeChildren();
+        this.add(new MiddleAxisChoicePageGroup(this, this._opTypeManager));
+    }
+    
+    goToSaviorAnimalsChoice() {
+        this.removeChildren();
+        this.add(new SaviorAnimalsChoicePageGroup(this, this._opTypeManager));
+    }
+    
+    goToLastAnimalChoice() {
+        this.removeChildren();
+        this.add(new LastAnimalChoicePageGroup(this, this._opTypeManager));
     }
 }
 
-class MainAxisChoiceGroup extends ControlGroup {
-    constructor(opTypeManager) {
-        super(opTypeManager);
+
+class ChoicePageGroup extends Konva.Group {
+    /**
+     *
+     * @param leftButtons {ControlButton[]}
+     * @param rightButtons {ControlButton[]}
+     * @param [hasSkip] {boolean}
+     */
+    constructor(leftButtons, rightButtons, hasSkip) {
+        super();
+        
+        // HERE Consider splitting the two groups below so that the page manager handles them separately (that way they should
+        //      also be easier to position because the generic buttons can have a position independent of specific buttons)
+        
+        const specificButtonsGroup = new Konva.Group();
+        const genericButtonsGroup = new Konva.Group();
+        
+        let yOffset = 0;
+        for (const button of leftButtons) {
+            button.x(0);
+            button.y(yOffset);
+            this.add(button);
+            
+            yOffset += button.height() - 50;
+        }
+        
+        yOffset = 0;
+        for (const button of leftButtons) {
+            button.x(CONTROL_BUTTON_WIDTH + 100);
+            button.y(yOffset);
+            this.add(button);
+            
+            yOffset += button.height() - 50;
+        }
     }
 }
+
+
 
 class ControlButton extends Konva.Rect {
     constructor() {
