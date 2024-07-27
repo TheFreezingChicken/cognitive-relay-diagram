@@ -731,7 +731,10 @@ class AnimalText extends Konva.Text {
             strokeEnabled: false
         });
         
-        this.position(DIAGRAM_CENTER);
+        this.position({
+            x: DIAGRAM_CENTER,
+            y: DIAGRAM_CENTER
+        });
         const baseSize = this._INVISIBLE_TEXT_BOX_BASE_SIZE;
         
         // The text is placed using an invisible text box and based on the position of the animal we align the text
@@ -793,7 +796,11 @@ class AnimalLetter extends AnimalText {
         
         if (configs.animalData?.stackIndex === 3) {
             this.text(`(${configs.animalData.animal ?? ''})`);
-            this.width(this._INVISIBLE_TEXT_BOX_BASE_SIZE + 20);
+            
+            // Enlarging the width to have the alignment naturally pushing the text to the corner.
+            this.width(this._INVISIBLE_TEXT_BOX_BASE_SIZE + 21);
+            // Need to readjust the offset to recenter the invisible box and obtain the effect mentioned above.
+            this.offsetX(this.width() / 2);
         }
         // else {
         //     this.width(baseSize);
