@@ -190,7 +190,6 @@ class OpTypeManager {
 
 
 export class CRDStage extends Konva.Stage {
-    //private readonly controlLayer: ControlLayer;
     /**
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
      * @returns {Promise<void>}
@@ -225,10 +224,10 @@ export class CRDStage extends Konva.Stage {
         const opTypeManager = new OpTypeManager(startingOpType);
         
         this._diagramLayer = new DiagramLayer(opTypeManager);
-        
-        //this.controlLayer = new ControlLayer(opTypeManager);
         this.add(this._diagramLayer);
-        //this.add(this.controlLayer);
+        
+        this._controlLayer = new ControlLayer(opTypeManager);
+        this.add(this._controlLayer);
     }
 }
 
@@ -834,10 +833,11 @@ class ControlLayer extends Konva.Layer {
         this.on('mouseenter', this.onMouseEnter);
         this.on('tap', this.onTapShow);
         this.on('mouseleave', this.onMouseLeave);
-        this.add(new MainAxisChoiceGroup(opTypeManager));
+        this.add(new BackgroundColorRect(), new MainAxisChoiceGroup(opTypeManager));
     }
     
     onMouseEnter() {
+        console.log("Mouse enter.")
         this.showControls();
     }
     
@@ -855,6 +855,7 @@ class ControlLayer extends Konva.Layer {
     }
     
     onMouseLeave() {
+        console.log("Mouse leave.")
         this.hideControls();
     }
     
@@ -867,11 +868,27 @@ class ControlLayer extends Konva.Layer {
     }
 }
 
+
+
+class BackgroundColorRect extends Konva.Rect {
+    constructor() {
+        super({
+            position: {
+                x: 0,
+                y: 0
+            },
+            width: DIAGRAM_SIZE,
+            height: DIAGRAM_SIZE,
+            fill: 'grey',
+            opacity: 0.8
+        });
+    }
+}
+
+
 class ControlGroup extends Konva.Group {
     constructor(opTypeManager) {
         super();
-        // HERE Base class, with the background semi-transparent "full-size" rectangle.
-        throw new Error("Not implemented yet.");
     }
 }
 
