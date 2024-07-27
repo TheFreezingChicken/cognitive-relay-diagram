@@ -415,7 +415,9 @@ export const CognitiveFunction = {
      * @return {boolean}
      */
     isValid(...cogFun) {
-        for(const cf in cogFun) {
+        console.log(cogFun.length);
+        for(const cf of cogFun) {
+            console.log(`Validating ${cf}`);
             if (!this.All.includes(cf)) return false;
         }
         
@@ -464,7 +466,7 @@ export const Modality = {
     
     
     isValid(...modalityString) {
-        for (const ms in modalityString) {
+        for (const ms of modalityString) {
             if (!this.All.includes(ms)) return false;
         }
         
@@ -472,7 +474,7 @@ export const Modality = {
     },
     
     throwIfInvalid(...modalityString) {
-        if (!this.isValid(...modalityString)) throw new Error("Invalid Cognitive Function.");
+        if (!this.isValid(...modalityString)) throw new Error("Invalid modality.");
     }
 }
 /**
@@ -934,6 +936,11 @@ export class OpType {
      * @param modality {?Modality}
      */
     constructor(firstFunction, secondFunction, animalStack, modality) {
+        console.log("Constructing OP Type.");
+        console.log(`First function: ${firstFunction}`);
+        console.log(`Second function: ${secondFunction}`);
+        console.log(`Animals: ${animalStack}`);
+        console.log(`Modality: ${modality}`);
         CognitiveFunction.throwIfInvalid(firstFunction, secondFunction);
         
         const axis1 = Axis.fromString(firstFunction);
@@ -945,45 +952,12 @@ export class OpType {
         if (firstFunction[1] === secondFunction[1]) secondFunction = CognitiveFunction.opposite(secondFunction);
         
         
-        const strongAnimalCouple = Animal.coupleFromHumanNeed(firstFunction);
-        
-        /** @type {OpTypeCogFunData[]} */
-        const grantStack = new Array(4);
-        // For now we only assign what we can.
-        grantStack[0] = new OpTypeCogFunData({
-            parentType: this,
-            cogFun: firstFunction,
-            grantIndex: 0,
-            isSavior: true
-        });
-        grantStack[1] = new OpTypeCogFunData({
-            parentType: this,
-            cogFun: secondFunction,
-            grantIndex: 1,
-            isSavior: strongAnimalCouple.energyAnimal === animalStack[0]
-        });
-        grantStack[2] = new OpTypeCogFunData({
-            parentType: this,
-            cogFun: CognitiveFunction.opposite(secondFunction),
-            grantIndex: 2,
-            isSavior: !grantStack[1].isSavior
-        });
-        grantStack[3] = new OpTypeCogFunData({
-            parentType: this,
-            cogFun: CognitiveFunction.opposite(firstFunction),
-            grantIndex: 3,
-            isSavior: false
-        });
-        
-        const weakAnimalCouple = Animal.coupleFromHumanNeed(grantStack[3].cogFun);
-        
-        
         if (Array.isArray(animalStack)) animalStack = animalStack.join('');
         if (typeof animalStack !== 'string') throw new TypeError("Invalid Animal Stack type.");
         
         // Normalizing animal stack.
         animalStack = animalStack.toUpperCase();
-        animalStack = animalStack.replaceAll(/'[^SCBP]'/, '');
+        animalStack = animalStack.replaceAll(/[^SCBP]/g, '');
         
         if (animalStack.length < 3 || animalStack.length > 4) throw new Error("Invalid Animal Stack length.");
         if (Animal.opposite(animalStack[0]) === animalStack[1]) throw new Error("Opposite animals can't be both saviors.");
@@ -1002,6 +976,40 @@ export class OpType {
         }
         
         animalStack = animalStack.split('');
+        
+        
+        
+        const strongAnimalCouple = Animal.coupleFromHumanNeed(firstFunction);
+        
+        /** @type {OpTypeCogFunData[]} */
+        const grantStack = new Array(4);
+        // For now we only assign what we can.
+        grantStack[0] = new OpTypeCogFunData({
+            parentType: this,
+            cogFun: firstFunction,
+            grantIndex: 0,
+            isSavior: true
+        });
+        grantStack[1] = new OpTypeCogFunData({
+            parentType: this,
+            cogFun: secondFunction,
+            grantIndex: 1,
+            isSavior: strongAnimalCouple.energyAnimal !== animalStack[0]
+        });
+        grantStack[2] = new OpTypeCogFunData({
+            parentType: this,
+            cogFun: CognitiveFunction.opposite(secondFunction),
+            grantIndex: 2,
+            isSavior: !grantStack[1].isSavior
+        });
+        grantStack[3] = new OpTypeCogFunData({
+            parentType: this,
+            cogFun: CognitiveFunction.opposite(firstFunction),
+            grantIndex: 3,
+            isSavior: false
+        });
+        
+        
         
         /**
          *
@@ -1041,6 +1049,7 @@ export class OpType {
         // Convert string animals to array of OpTypeAnimalData.
         for (let i = 0; i < 4; i++) {
             const animal = animalStack[i];
+            console.log(animal);
             // noinspection JSCheckFunctionSignatures | Guaranteed to fit Animal values.
             const humanNeeds = Animal.toHumanNeeds(animal);
             const isEnergy = humanNeeds.decidingHumanNeed[1] === humanNeeds.observingHumanNeed[1];
@@ -1078,7 +1087,7 @@ export class OpType {
             animalData.observingCogFun.isDoubleActivated = animalData.isDoubleActivated;
             
             
-            if (modalityData !== null) {
+            if (modalityData != null) {
                 if (modalityData.observingFunction === animalData.observingCogFun &&
                     modalityData.decidingFunction === animalData.decidingCogFun) {
                     animalData.isDoubleMasculine = true;
@@ -1155,6 +1164,27 @@ export class OpType {
         
         
         throw new Error("Invalid Cognitive Function reference.");
+    }
+    
+    
+    toString() {
+        let result = "";
+        
+        if (this._modality != null) result += this._modality.modality + '-';
+        
+        const secondSaviorFunction = this._grantStack[this._animalStack[0].grantIndexCouple.weakerIndex].cogFun;
+        result += this._grantStack[0] + '/' + secondSaviorFunction + '-';
+        
+        for (const anData of this._animalStack) {
+            // Add slash before third animal.
+            if (anData.stackIndex === 2) result += '/'
+            // Surround with parenthesis if last animal.
+            const animal = anData.stackIndex === 3 ? '(' + anData.animal + ')' : anData.animal;
+            
+            result += animal;
+        }
+        
+        return result;
     }
 }
 

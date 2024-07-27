@@ -50,9 +50,9 @@ const CogFunCirclePositions = Object.freeze([
  */
 const CogFunCircleScaleFactors = Object.freeze([
     1,
-    0.82,
-    0.68,
-    0.53
+    0.81,
+    0.65,
+    0.48
 ]);
 
 
@@ -64,7 +64,7 @@ const AnimalCenterOffsets = new Map([
 ]);
 
 
-const COGFUN_BASE_FONT_SIZE = 58;
+const COGFUN_BASE_FONT_SIZE = 60;
 
 const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
 
@@ -200,7 +200,14 @@ export class CRDStage extends Konva.Stage {
     }
     
     
+    /**
+     *
+     * @param diagramContainer {HTMLElement}
+     * @param startingOpType {OpType}
+     */
     constructor(diagramContainer, startingOpType) {
+        console.log(`Constructing Stage with type ${startingOpType.toString()}`);
+        
         if (!isLibraryReady)
             throw new Error("Library resources must be initialized before using diagrams.");
         
@@ -227,8 +234,13 @@ export class CRDStage extends Konva.Stage {
 
 
 class DiagramLayer extends Konva.Layer {
+    /**
+     *
+     * @param opTypeManager {OpTypeManager}
+     */
     constructor(opTypeManager) {
         super();
+        console.log(`Constructing diagram layer with type ${opTypeManager.opType.toString()}`)
         
         this.add(new DiagramGroup(opTypeManager.opType));
         
@@ -409,7 +421,6 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
 
 
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
-    
     /**
      *
      * @param configs {CognitiveFunctionConfigs}
@@ -456,21 +467,22 @@ class CognitiveFunctionText extends Konva.Text {
      * @param configs {CognitiveFunctionConfigs}
      */
     constructor(configs) {
-        // HERE Position and scaling must be fixed when diagram is generic.
+        console.log("Constructing CognitiveFunctionText with:");
+        console.log(configs);
+        const text = configs.cogFunData?.cogFun ?? configs.cogFunDataOverride.cogFunText;
+        console.log(text);
+        console.log();
+        
         const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
-        const scale = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
+        const scale = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         
         super({
             position: pos,
-            offset: {
-                x: pos / 2 + 1.3,
-                y: pos / 2
-            },
-            height: CIRCLE_BASE_RADIUS * 2 * scale,
-            width: CIRCLE_BASE_RADIUS * 2 * scale,
+            height: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) * 2,
+            width: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) * 2,
             align: 'center',
             verticalAlign: 'middle',
-            fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+            fontFamily: 'Fira Code, monospace',
             fontStyle: 'bold',
             fontSize: COGFUN_BASE_FONT_SIZE * scale,
             fill: 'white',
@@ -479,8 +491,15 @@ class CognitiveFunctionText extends Konva.Text {
         });
         
         
-        this.text(configs.cogFunData?.cogFun ?? configs.cogFunDataOverride.cogFunText);
-        this.fontSize(COGFUN_BASE_FONT_SIZE * scale);
+        const baseOffsetX = this.width() / 2;
+        const baseOffsetY = this.height() / 2;
+        // Adding a tiny delta to make the text look more centered.
+        const visualCenterDeltaX = -0.95 * scale;
+        const visualCenterDeltaY = -5 * scale;
+        
+        this.text(text);
+        this.offsetX(baseOffsetX + visualCenterDeltaX);
+        this.offsetY(baseOffsetY + visualCenterDeltaY);
     }
 }
 
@@ -693,6 +712,8 @@ class AnimalLine extends Konva.Line {
 
 class AnimalText extends Konva.Text {
     get _INVISIBLE_TEXT_BOX_BASE_SIZE() { return 32; }
+    
+    // HERE FIX Text is shown in the top left corner of the stage.
     
     /**
      *
