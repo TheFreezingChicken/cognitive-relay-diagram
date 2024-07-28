@@ -1,4 +1,4 @@
-import {AnimalGrantContext, GrantIndex, Letter, OpType} from "./op-lib.js";
+import {AnimalGrantContext, GrantIndex, Letter, Modality, OpType} from "./op-lib.js";
 
 
 const devTest = false;
@@ -92,7 +92,7 @@ const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
 
-const CONTROL_BUTTON_WIDTH = 300;
+const CONTROL_BUTTON_FONT_SIZE = 60;
 
 
 const CogFunFillColors = Object.freeze({
@@ -175,6 +175,18 @@ class ResourceLoader {
 const diagramResources = new ResourceLoader();
 
 class OpTypeManager {
+    _opType;
+    /**
+     *
+     * @private
+     * @type {OpTypeChangeListener[]}
+     */
+    _listeners;
+    
+    /**
+     *
+     * @return {OpType|null|undefined}
+     */
     get opType() {
         return this._opType;
     }
@@ -187,8 +199,39 @@ class OpTypeManager {
         this._opType = startingOpType;
     }
     
+    /**
+     * @callback OpTypeChangeListener
+     * @param {OpType} opType
+     */
+    
+    
+    /**
+     *
+     * @param listener {OpTypeChangeListener}
+     */
     addListener(listener) {
-        console.log("implement OpTypeManager.addListener");
+        this._listeners.push(listener);
+    }
+    
+    //DEBT For now we don't need a "removeListener" method. Implement if needed to avoid leaks.
+    
+    
+    reset() {
+        this._opType = null;
+    }
+    
+    
+    /**
+     * 
+     * @param opType {OpType}
+     */
+    update(opType) {
+        if (!(opType instanceof OpType)) throw new Error("Not an OpType.");
+        
+        this._opType = opType;
+        for (const listener of this._listeners) {
+            listener()
+        }
     }
 }
 
@@ -855,7 +898,7 @@ class ControlLayer extends Konva.Layer {
     
     onTapHide(event) {
         console.log("Tap.");
-        if (event.target instanceof ControlButton) return;
+        if (event.target instanceof ControlButtonGroup) return;
         
         console.log("Hiding controls.");
         this.hideControls();
@@ -895,7 +938,42 @@ class BackgroundColorRect extends Konva.Rect {
 }
 
 
+
 class ControlPageManagerGroup extends Konva.Group {
+    _opTypeManager;
+    
+    _modalityPage;
+    _temperamentPage;
+    
+    _modality;
+    _firstFunction;
+    _secondGrantFunction;
+    _saviorAnimals;
+    _demonAnimals;
+    
+    _selectionButtonsGroup;
+    _navigationButtonsGroup;
+    
+    /**
+     * @type {ChoicePageGroup[]}
+     * @private
+     */
+    _previousPages;
+    /**
+     * @type {ChoicePageGroup}
+     * @private
+     */
+    _currentPage;
+    
+    /**
+     * @type {ControlButtonGroup}
+     * @private
+     */
+    _skipModalityButton;
+    _backButton;
+    _clearButton;
+    
+    
     /**
      *
      * @param opTypeManager {OpTypeManager}
@@ -904,51 +982,116 @@ class ControlPageManagerGroup extends Konva.Group {
         super();
         
         this._opTypeManager = opTypeManager;
-        this.add(new ModalityChoicePageGroup(this, opTypeManager));
+        
+        const selectionButtonsGroup = new Konva.Group();
+        const navigationButtonsGroup = new Konva.Group();
+        this._selectionButtonsGroup = selectionButtonsGroup;
+        this._navigationButtonsGroup = navigationButtonsGroup;
+
+        // DEBT Might need to make this more generic if we're implementing partial types.
+        this._skipModalityButton = new ControlButtonGroup(() => {
+            this._swapPage(this._temperamentPage)
+            this._hideSkipButton();
+            this._modality = '';
+        });
+        
+        this._backButton = new ControlButtonGroup(() => {
+            selectionButtonsGroup.removeChildren();
+            this._currentPage = this._previousPages.pop();
+            selectionButtonsGroup.add(this._currentPage);
+        })
+        
+        this._clearButton = new ControlButtonGroup(() => {
+            this._modality = '';
+            this._firstFunction = '';
+            this._secondGrantFunction = '';
+            this._saviorAnimals = '';
+            this._demonAnimals = '';
+            this._previousPages = [];
+            opTypeManager.reset();
+        });
+        
+        
+        // Modality and Temperament pages are always the same, we don't need builders.
+        
+        this._modalityPage = new ModalityChoicePageGroup((modality) => {
+            this._modality = modality;
+            this._swapPage(this._temperamentPage);
+            this._hideSkipButton();
+        });
+        
+        this._temperamentPage = new TemperamentChoicePageGroup((temperament) => {
+            this._swapPage(this._buildFirstFunctionPage(temperament));
+        });
+        
+        
+        selectionButtonsGroup.add(this._modalityPage);
+        navigationButtonsGroup.add(this._backButton, this._skipModalityButton, this._clearButton);
+        
+        this.add(selectionButtonsGroup, navigationButtonsGroup);
     }
     
-    goToTemperamentChoice() {
-        this.removeChildren();
-        this.add(new TemperamentChoicePageGroup(this, this._opTypeManager));
+    
+    
+    
+    _buildFirstFunctionPage(temperament) {
+        return new FirstFunctionChoicePageGroup(temperament, (firstFunction) => {
+            this._firstFunction = firstFunction;
+            this._swapPage(this._buildMiddleAxisPage(firstFunction))
+        });
     }
     
-    goToFirstFunctionChoice() {
-        this.removeChildren();
-        this.add(new FirstFunctionChoicePageGroup(this, this._opTypeManager));
+    _buildMiddleAxisPage() {
+        return new MiddleAxisChoicePageGroup(firstFunction, () => {})
     }
     
-    goToMiddleAxisChoice() {
-        this.removeChildren();
-        this.add(new MiddleAxisChoicePageGroup(this, this._opTypeManager));
+    _buildSaviorAnimalsPage() {
+        return new SaviorAnimalsChoicePageGroup(this, this._opTypeManager)
     }
     
-    goToSaviorAnimalsChoice() {
-        this.removeChildren();
-        this.add(new SaviorAnimalsChoicePageGroup(this, this._opTypeManager));
+    _buildLastAnimalPage() {
+        return new LastAnimalChoicePageGroup(() => {
+            
+            
+            this._showSkipButton()
+        })
     }
     
-    goToLastAnimalChoice() {
-        this.removeChildren();
-        this.add(new LastAnimalChoicePageGroup(this, this._opTypeManager));
+    _hideSkipButton() {
+        throw new Error("Not implemented yet.");
+        // Remember to adjust position.
+    }
+    
+    _showSkipButton() {
+        throw new Error("Not implemented yet.");
+    }
+    
+    /**
+     *
+     * @param page {ChoicePageGroup}
+     * @private
+     */
+    _swapPage(page) {
+        this._selectionButtonsGroup.removeChildren();
+        this._selectionButtonsGroup.add(page);
+        this._previousPages.push(this._currentPage);
+        this._currentPage = page;
     }
 }
+
 
 
 class ChoicePageGroup extends Konva.Group {
     /**
      *
-     * @param leftButtons {ControlButton[]}
-     * @param rightButtons {ControlButton[]}
-     * @param [hasSkip] {boolean}
+     * @param leftButtons {ControlButtonGroup[]}
+     * @param rightButtons {ControlButtonGroup[]}
      */
-    constructor(leftButtons, rightButtons, hasSkip) {
+    constructor(leftButtons, rightButtons) {
         super();
         
-        // HERE Consider splitting the two groups below so that the page manager handles them separately (that way they should
-        //      also be easier to position because the generic buttons can have a position independent of specific buttons)
         
-        const specificButtonsGroup = new Konva.Group();
-        const genericButtonsGroup = new Konva.Group();
+        // The size of buttons should be the same in the same page, so we can use any one to calculate positions.
         
         let yOffset = 0;
         for (const button of leftButtons) {
@@ -960,8 +1103,8 @@ class ChoicePageGroup extends Konva.Group {
         }
         
         yOffset = 0;
-        for (const button of leftButtons) {
-            button.x(CONTROL_BUTTON_WIDTH + 100);
+        for (const button of rightButtons) {
+            button.x(button.width() + 100);
             button.y(yOffset);
             this.add(button);
             
@@ -972,8 +1115,235 @@ class ChoicePageGroup extends Konva.Group {
 
 
 
-class ControlButton extends Konva.Rect {
-    constructor() {
+
+class ModalityChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param onSelectionConfirmed {function(Modality): void}
+     */
+    constructor(onSelectionConfirmed) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+        
+        const ffButton = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: Modality.FF_TESTER,
+            onClick: () => { onSelectionConfirmed(Modality.FF_TESTER) }
+        });
+        
+        const fmButton = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: Modality.FM_VISUAL,
+            onClick: () => { onSelectionConfirmed(Modality.FM_VISUAL) }
+        });
+        
+        const mfButton = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: Modality.MF_AUDIO,
+            onClick: () => { onSelectionConfirmed(Modality.MF_AUDIO) }
+        });
+        
+        const mmButton = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: Modality.MM_KINESTHETIC,
+            onClick: () => { onSelectionConfirmed(Modality.MM_KINESTHETIC) }
+        });
+        
+        
+        super(
+            [ffButton, mfButton],
+            [fmButton, mmButton]
+        )
+    }
+    
+}
+
+
+
+class TemperamentChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param onSelectionConfirmed {function(string): void}
+     */
+    constructor(onSelectionConfirmed) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+        
+        const leftTemperaments = ['IxxP', 'ExxJ'];
+        const rightTemperaments = ['IxxJ', 'ExxP'];
+        
+        const leftButtons = [];
+        const rightButtons = [];
+        
+        for (let i = 0; i < 2; i++) {
+            leftButtons.push(
+                new ControlButtonGroup({
+                    size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                    text: leftTemperaments[i],
+                    onClick: () => {
+                        onSelectionConfirmed(leftTemperaments[i])
+                    }
+                })
+            );
+        }
+        
+        for (let i = 0; i < 2; i++) {
+            rightButtons.push(
+                new ControlButtonGroup({
+                    size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                    text: rightTemperaments[i],
+                    onClick: () => {
+                        onSelectionConfirmed(rightTemperaments[i])
+                    }
+                })
+            );
+        }
+        
+        super(leftButtons, rightButtons);
+    }
+    
+}
+
+class FirstFunctionChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param temperament {string}
+     * @param onSelectionConfirmed {function(string): void}
+     */
+    constructor(temperament, onSelectionConfirmed) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+        
+        let firstHumanNeed;
+        switch (temperament) {
+            case 'IxxP':
+                firstHumanNeed = 'Di';
+                break;
+            case 'ExxJ':
+                firstHumanNeed = 'De';
+                break;
+            case 'IxxJ':
+                firstHumanNeed = 'Oi';
+                break;
+            case 'ExxP':
+                firstHumanNeed = 'Oe';
+                break;
+        }
+        
+        let leftButtonText = '';
+        let rightButtonText = '';
+        switch (firstHumanNeed[0]) {
+            case 'D':
+                leftButtonText = Letter.FEELING;
+                rightButtonText = Letter.THINKING;
+                break;
+            case 'O':
+                leftButtonText = Letter.SENSING;
+                rightButtonText = Letter.INTUITING;
+                break;
+        }
+        
+        leftButtonText += firstHumanNeed[1];
+        rightButtonText += firstHumanNeed[1];
+        
+        super(
+            [new ControlButtonGroup({
+                size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                text: leftButtonText,
+                onClick: () => { onConfirmSelection(leftButtonText) }
+            })],
+            [new ControlButtonGroup({
+                size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                text: rightButtonText,
+                onClick: () => { onConfirmSelection(rightButtonText) }
+            })]
+        )
+    }
+    
+}
+
+class MiddleAxisChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param firstFunction {CognitiveFunction}
+     * @param onSelectionConfirmed {function(string): void}
+     */
+    constructor(firstFunction, onSelectionConfirmed) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+    
+    }
+    
+}
+
+class SaviorAnimalsChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param onSelectionConfirmed {function(string): void}
+     */
+    constructor(controlPageManagerGroup, _opTypeManager) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+    
+    }
+    
+}
+
+class LastAnimalChoicePageGroup extends ChoicePageGroup {
+    /**
+     *
+     * @param onSelectionConfirmed {function(string): void}
+     */
+    constructor(param) {
+        const BUTTON_WIDTH = 100;
+        const BUTTON_HEIGHT = 50;
+    
+    }
+    
+}
+
+
+/**
+ * @typedef ControlButtonConfigs
+ * @property {{width: number, height: number}} size
+ * @property {string} text
+ * @property {function(): void} onClick
+ */
+
+/**
+ * @class
+ */
+class ControlButtonGroup extends Konva.Group {
+    /**
+     *
+     * @param configs {ControlButtonConfigs}
+     */
+    constructor(configs) {
         super();
+        
+        const bgRect = new Konva.Rect({
+            width: configs.size.width,
+            height: configs.size.height,
+            fill: 'grey',
+            stroke: 'black',
+            strokeWidth: 1
+        });
+        
+        const text = new Konva.Text({
+            width: bgRect.width(),
+            height: bgRect.height(),
+            align: 'center',
+            verticalAlign: 'middle',
+            fontFamily: 'Arial, sans serif',
+            fontStyle: 'bold',
+            fontSize: CONTROL_BUTTON_FONT_SIZE,
+            fill: 'white',
+            stroke: 'black',
+            strokeWidth: 1,
+            text: configs.text,
+        });
+        
+        this.add(bgRect, text);
+        this.on('click', configs.onClick);
     }
 }
