@@ -1,4 +1,4 @@
-import {AnimalGrantContext, GrantIndex, Letter, Modality, OpType} from "./op-lib.js";
+import {Animal, AnimalGrantContext, Axis, Charge, CognitiveFunction, GrantIndex, Letter, Modality, OpType} from "./op-lib.js";
 
 
 const devTest = false;
@@ -81,13 +81,14 @@ const SECOND_ANIMAL_STROKE_WIDTH = 3;
 const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_DASH_PATTERN = [6, 17];
 
-const SAVIOR_ANIMAL_TRIANGLE_COLOR = "green";
-const DEMON_ANIMAL_TRIANGLE_COLOR = "red";
+const SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
+const THIRD_ANIMAL_TRIANGLE_COLOR = 'orange';
+const LAST_ANIMAL_TRIANGLE_COLOR = 'red';
 
 const FIRST_ANIMAL_TRIANGLE_OPACITY = 0.1;
-const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.05;
-const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.03;
-const LAST_ANIMAL_TRIANGLE_OPACITY = 0.05;
+const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.08;
+const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.1;
+const LAST_ANIMAL_TRIANGLE_OPACITY = 0.1;
 
 const LAST_ANIMAL_LINE_OPACITY = 0.4;
 
@@ -196,6 +197,7 @@ class OpTypeManager {
      * @param [startingOpType] {OpType}
      */
     constructor(startingOpType) {
+        this._listeners = [];
         this._opType = startingOpType;
     }
     
@@ -230,7 +232,7 @@ class OpTypeManager {
         
         this._opType = opType;
         for (const listener of this._listeners) {
-            listener()
+            listener(opType);
         }
     }
 }
@@ -286,7 +288,6 @@ class DiagramLayer extends Konva.Layer {
      */
     constructor(opTypeManager) {
         super();
-        console.log(`Constructing diagram layer with type ${opTypeManager.opType.toString()}`)
         
         this.add(new DiagramGroup(opTypeManager.opType));
         
@@ -302,6 +303,7 @@ class DiagramLayer extends Konva.Layer {
 class DiagramGroup extends Konva.Group {
     constructor(opType) {
         super();
+        console.log(`Constructing new diagram with type ${opType.toString()}`)
         // Create group for the whole stack of functions and then create every single one of them and add them.
         this._cogFunStackGroup = new CogFunStackGroup({opType: opType});
         this._animalStackGroup = new AnimalStackGroup({opType: opType});
@@ -652,9 +654,9 @@ class AnimalBackgroundTriangle extends Konva.Line {
      * @param configs {AnimalConfigs}
      */
     constructor(configs) {
-        const biggerIndex = configs.animalData?.grantIndexCouple.strongerIndex ??
+        const biggerIndex = configs.animalData?.grantIndexCouple?.strongerIndex ??
             configs.animalDataOverride.grantIndexCouple.strongerIndex;
-        const smallerIndex = configs.animalData?.grantIndexCouple.weakerIndex ??
+        const smallerIndex = configs.animalData?.grantIndexCouple?.weakerIndex ??
             configs.animalDataOverride.grantIndexCouple.weakerIndex;
         const biggerCirclePos = CogFunCirclePositions[biggerIndex];
         const smallerCirclePos = CogFunCirclePositions[smallerIndex];
@@ -683,11 +685,11 @@ class AnimalBackgroundTriangle extends Konva.Line {
                 break;
             case 2:
                 this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                this.fill(THIRD_ANIMAL_TRIANGLE_COLOR);
                 break;
             case 3:
                 this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(DEMON_ANIMAL_TRIANGLE_COLOR);
+                this.fill(LAST_ANIMAL_TRIANGLE_COLOR);
                 break;
             default:
                 this.visible(false);
@@ -881,6 +883,9 @@ class ControlLayer extends Konva.Layer {
         this.on('tap', this.onTapShow);
         this.on('mouseleave', this.onMouseLeave);
         this.add(new BackgroundColorRect(), new ControlPageManagerGroup(opTypeManager));
+        opTypeManager.addListener(() => {
+            this.hideControls();
+        });
     }
     
     onMouseEnter() {
@@ -892,8 +897,6 @@ class ControlLayer extends Konva.Layer {
         console.log("Tap.");
         console.log("Showing controls.");
         this.showControls();
-        this.off('tap');
-        this.on('tap', this.onTapHide);
     }
     
     onTapHide(event) {
@@ -902,8 +905,6 @@ class ControlLayer extends Konva.Layer {
         
         console.log("Hiding controls.");
         this.hideControls();
-        this.off('tap');
-        this.on('tap', this.onTapShow);
     }
     
     onMouseLeave() {
@@ -913,10 +914,16 @@ class ControlLayer extends Konva.Layer {
     
     showControls() {
         this.opacity(1);
+        // noinspection JSCheckFunctionSignatures || Lies.
+        this.off('tap');
+        this.on('tap', this.onTapHide);
     }
     
     hideControls() {
         this.opacity(0);
+        // noinspection JSCheckFunctionSignatures || Lies.
+        this.off('tap');
+        this.on('tap', this.onTapShow);
     }
 }
 
@@ -940,6 +947,7 @@ class BackgroundColorRect extends Konva.Rect {
 
 
 class ControlPageManagerGroup extends Konva.Group {
+    /** @type {OpTypeManager} */
     _opTypeManager;
     
     _modalityPage;
@@ -982,33 +990,43 @@ class ControlPageManagerGroup extends Konva.Group {
         super();
         
         this._opTypeManager = opTypeManager;
+        this._previousPages = [];
         
         const selectionButtonsGroup = new Konva.Group();
         const navigationButtonsGroup = new Konva.Group();
         this._selectionButtonsGroup = selectionButtonsGroup;
         this._navigationButtonsGroup = navigationButtonsGroup;
 
+        const NAVIGATION_BUTTON_WIDTH = 100;
+        const NAVIGATION_BUTTON_HEIGHT = 50;
+        
         // DEBT Might need to make this more generic if we're implementing partial types.
-        this._skipModalityButton = new ControlButtonGroup(() => {
-            this._swapPage(this._temperamentPage)
-            this._hideSkipButton();
-            this._modality = '';
+        this._skipModalityButton = new ControlButtonGroup({
+            size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
+            text: "Skip",
+            onClick: () => {
+                this._swapPage(this._temperamentPage)
+                this._hideSkipButton();
+                this._modality = '';
+            }
         });
         
-        this._backButton = new ControlButtonGroup(() => {
-            selectionButtonsGroup.removeChildren();
-            this._currentPage = this._previousPages.pop();
-            selectionButtonsGroup.add(this._currentPage);
-        })
+        this._backButton = new ControlButtonGroup({
+            size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
+            text: "⇦ Back",
+            onClick: () => {
+                selectionButtonsGroup.removeChildren();
+                this._currentPage = this._previousPages.pop();
+                selectionButtonsGroup.add(this._currentPage);
+            }
+        });
         
-        this._clearButton = new ControlButtonGroup(() => {
-            this._modality = '';
-            this._firstFunction = '';
-            this._secondGrantFunction = '';
-            this._saviorAnimals = '';
-            this._demonAnimals = '';
-            this._previousPages = [];
-            opTypeManager.reset();
+        this._clearButton = new ControlButtonGroup({
+            size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
+            text: "Reset",
+            onClick: () => {
+                this._clear(true)
+            }
         });
         
         
@@ -1029,42 +1047,9 @@ class ControlPageManagerGroup extends Konva.Group {
         navigationButtonsGroup.add(this._backButton, this._skipModalityButton, this._clearButton);
         
         this.add(selectionButtonsGroup, navigationButtonsGroup);
-    }
+    }clearTypeToo
     
     
-    
-    
-    _buildFirstFunctionPage(temperament) {
-        return new FirstFunctionChoicePageGroup(temperament, (firstFunction) => {
-            this._firstFunction = firstFunction;
-            this._swapPage(this._buildMiddleAxisPage(firstFunction))
-        });
-    }
-    
-    _buildMiddleAxisPage() {
-        return new MiddleAxisChoicePageGroup(firstFunction, () => {})
-    }
-    
-    _buildSaviorAnimalsPage() {
-        return new SaviorAnimalsChoicePageGroup(this, this._opTypeManager)
-    }
-    
-    _buildLastAnimalPage() {
-        return new LastAnimalChoicePageGroup(() => {
-            
-            
-            this._showSkipButton()
-        })
-    }
-    
-    _hideSkipButton() {
-        throw new Error("Not implemented yet.");
-        // Remember to adjust position.
-    }
-    
-    _showSkipButton() {
-        throw new Error("Not implemented yet.");
-    }
     
     /**
      *
@@ -1076,6 +1061,85 @@ class ControlPageManagerGroup extends Konva.Group {
         this._selectionButtonsGroup.add(page);
         this._previousPages.push(this._currentPage);
         this._currentPage = page;
+    }
+    
+    
+    
+    _buildFirstFunctionPage(temperament) {
+        return new FirstFunctionChoicePageGroup(temperament, (firstFunction) => {
+            this._firstFunction = firstFunction;
+            this._swapPage(this._buildMiddleAxisPage(firstFunction))
+        });
+    }
+    
+    _buildMiddleAxisPage(firstFunction) {
+        return new MiddleAxisChoicePageGroup(firstFunction, (secondFunction) => {
+            this._secondGrantFunction = secondFunction;
+            this._swapPage(this._buildSaviorAnimalsPage(firstFunction));
+        });
+    }
+    
+    _buildSaviorAnimalsPage(firstFunction) {
+        return new SaviorAnimalsChoicePageGroup(firstFunction, (saviorAnimals) => {
+            this._saviorAnimals = saviorAnimals;
+            this._swapPage(this._buildLastAnimalPage(saviorAnimals));
+        });
+    }
+    
+    /**
+     *
+     * @param saviorAnimals {string}
+     * @return {LastAnimalChoicePageGroup}
+     * @private
+     */
+    _buildLastAnimalPage(saviorAnimals) {
+        return new LastAnimalChoicePageGroup(saviorAnimals, (demonAnimals) => {
+            this._demonAnimals = demonAnimals;
+            this._confirmType();
+        })
+    }
+    
+    _hideSkipButton() {
+        this._skipModalityButton.remove();
+        const xOffset = this._navigationButtonsGroup.width() / 2;
+        
+        this._navigationButtonsGroup.offsetX(xOffset);
+    }
+    
+    _showSkipButton() {
+        this._navigationButtonsGroup.removeChildren();
+        this._navigationButtonsGroup.add(this._backButton, this._skipModalityButton, this._clearButton);
+        const xOffset = this._navigationButtonsGroup.width() / 2;
+        
+        this._navigationButtonsGroup.offsetX(xOffset);
+    }
+    
+    
+    _confirmType() {
+        this._opTypeManager.update(new OpType(
+            this._firstFunction,
+            this._secondGrantFunction,
+            this._saviorAnimals + this._demonAnimals,
+            this._modality
+        ));
+        this._clear();
+    }
+    
+    /**
+     *
+     * @param [clearTypeToo] {boolean}
+     * @private
+     */
+    _clear(clearTypeToo) {
+        this._modality = '';
+        this._firstFunction = '';
+        this._secondGrantFunction = '';
+        this._saviorAnimals = '';
+        this._demonAnimals = '';
+        this._previousPages = [];
+        if (clearTypeToo) this._opTypeManager.reset();
+        this._swapPage(this._modalityPage);
+        this._showSkipButton();
     }
 }
 
@@ -1089,27 +1153,31 @@ class ChoicePageGroup extends Konva.Group {
      */
     constructor(leftButtons, rightButtons) {
         super();
-        
-        
+        console.log(`Left buttons amount: ${leftButtons.length}`);
+        console.log(`Right buttons amount: ${rightButtons.length}`);
         // The size of buttons should be the same in the same page, so we can use any one to calculate positions.
+        
+        const VERTICAL_OFFSET_GAP = 50;
         
         let yOffset = 0;
         for (const button of leftButtons) {
-            button.x(0);
-            button.y(yOffset);
+            console.log(`Placing button ${button._text}`);
+            button.offsetX(0);
+            button.offsetY(yOffset);
             this.add(button);
             
-            yOffset += button.height() - 50;
-        }
+            yOffset -= button.getClientRect().height + VERTICAL_OFFSET_GAP;
+        };
         
         yOffset = 0;
         for (const button of rightButtons) {
-            button.x(button.width() + 100);
-            button.y(yOffset);
+            console.log(`Placing button ${button._text}`);
+            button.offsetX(-button.getClientRect().width - 30);
+            button.offsetY(yOffset);
             this.add(button);
             
-            yOffset += button.height() - 50;
-        }
+            yOffset -= button.getClientRect().height + VERTICAL_OFFSET_GAP;
+        };
     }
 }
 
@@ -1208,7 +1276,7 @@ class FirstFunctionChoicePageGroup extends ChoicePageGroup {
     /**
      *
      * @param temperament {string}
-     * @param onSelectionConfirmed {function(string): void}
+     * @param onSelectionConfirmed {function(CognitiveFunction): void}
      */
     constructor(temperament, onSelectionConfirmed) {
         const BUTTON_WIDTH = 100;
@@ -1250,12 +1318,12 @@ class FirstFunctionChoicePageGroup extends ChoicePageGroup {
             [new ControlButtonGroup({
                 size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
                 text: leftButtonText,
-                onClick: () => { onConfirmSelection(leftButtonText) }
+                onClick: () => { onSelectionConfirmed(leftButtonText) }
             })],
             [new ControlButtonGroup({
                 size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
                 text: rightButtonText,
-                onClick: () => { onConfirmSelection(rightButtonText) }
+                onClick: () => { onSelectionConfirmed(rightButtonText) }
             })]
         )
     }
@@ -1266,45 +1334,135 @@ class MiddleAxisChoicePageGroup extends ChoicePageGroup {
     /**
      *
      * @param firstFunction {CognitiveFunction}
-     * @param onSelectionConfirmed {function(string): void}
+     * @param onSelectionConfirmed {function(CognitiveFunction): void}
      */
     constructor(firstFunction, onSelectionConfirmed) {
         const BUTTON_WIDTH = 100;
         const BUTTON_HEIGHT = 50;
-    
+        
+        const axis = Axis.opposite(firstFunction);
+        const charge = Charge.opposite(firstFunction);
+        
+        let firstLetter = '';
+        let secondLetter = '';
+        if (axis === Axis.OBSERVING) {
+            firstLetter = Letter.SENSING;
+            secondLetter = Letter.INTUITING;
+        } else {
+            firstLetter = Letter.FEELING;
+            secondLetter = Letter.THINKING;
+        }
+        
+        const leftSecondFunction = firstLetter + charge;
+        const rightSecondFunction = secondLetter + charge;
+        
+        const leftButtonText = leftSecondFunction + '/' + CognitiveFunction.opposite(leftSecondFunction);
+        const rightButtonText = rightSecondFunction + '/' + CognitiveFunction.opposite(rightSecondFunction);
+        
+        super(
+            [
+                new ControlButtonGroup({
+                    size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                    text: leftButtonText,
+                    onClick: () => { // noinspection JSCheckFunctionSignatures | Guaranteed.
+                        onSelectionConfirmed(leftSecondFunction);
+                    }
+                })
+            ],
+            [
+                new ControlButtonGroup({
+                    size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                    text: rightButtonText,
+                    onClick: () => { // noinspection JSCheckFunctionSignatures | Guaranteed.
+                        onSelectionConfirmed(rightSecondFunction);
+                    }
+                })
+            ]
+        )
     }
     
 }
 
 class SaviorAnimalsChoicePageGroup extends ChoicePageGroup {
     /**
-     *
+     * @param firstFunction {CognitiveFunction}
      * @param onSelectionConfirmed {function(string): void}
      */
-    constructor(controlPageManagerGroup, _opTypeManager) {
+    constructor(firstFunction, onSelectionConfirmed) {
         const BUTTON_WIDTH = 100;
         const BUTTON_HEIGHT = 50;
-    
+        
+        
+        let saviorAnimalCouples = [];
+        for (const firstAnimal of Animal.All) {
+            if (!Animal.isCompatible(firstAnimal, firstFunction)) continue;
+            
+            for (const secondAnimal of Animal.All) {
+                if (secondAnimal === firstAnimal || secondAnimal === Animal.opposite(firstAnimal)) continue;
+                
+                saviorAnimalCouples.push(firstAnimal + secondAnimal);
+            }
+        }
+        
+        let leftButtons = [];
+        let rightButtons = [];
+        for (let i = 0; i < saviorAnimalCouples.length; i++) {
+            // noinspection JSMismatchedCollectionQueryUpdate | Used as selector.
+            /** @type {ControlButtonGroup[]} */
+            const targetArray = i < saviorAnimalCouples.length / 2 ? leftButtons : rightButtons;
+            
+            targetArray.push(new ControlButtonGroup({
+                size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+                text: saviorAnimalCouples[i],
+                onClick: () => { // noinspection JSCheckFunctionSignatures | Guaranteed.
+                    onSelectionConfirmed(saviorAnimalCouples[i]);
+                }
+            }));
+        }
+        
+        super(leftButtons, rightButtons);
     }
+    
     
 }
 
 class LastAnimalChoicePageGroup extends ChoicePageGroup {
     /**
      *
-     * @param onSelectionConfirmed {function(string): void}
+     * @param saviorAnimals {string}
+     * @param onSelectionConfirmed {function(Animal): void}
      */
-    constructor(param) {
+    constructor(saviorAnimals, onSelectionConfirmed) {
         const BUTTON_WIDTH = 100;
         const BUTTON_HEIGHT = 50;
-    
+        
+        const animalOption1 = Animal.opposite(saviorAnimals[0]);
+        const animalOption2 = Animal.opposite(saviorAnimals[1]);
+        
+        const button1 = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: '(' + animalOption1 + ')',
+            onClick: () => { // noinspection JSCheckFunctionSignatures | Guaranteed.
+                onSelectionConfirmed(animalOption2 + animalOption1);
+            }
+        });
+        
+        const button2 = new ControlButtonGroup({
+            size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
+            text: '(' + animalOption2 + ')',
+            onClick: () => { // noinspection JSCheckFunctionSignatures | Guaranteed.
+                onSelectionConfirmed(animalOption1 + animalOption2);
+            }
+        });
+        
+        super([button1], [button2]);
     }
-    
 }
 
 
 /**
- * @typedef ControlButtonConfigs
+ * @typedef {Object} ControlButtonConfigs
+ * @property {{x: number, y: number}} [position]
  * @property {{width: number, height: number}} size
  * @property {string} text
  * @property {function(): void} onClick
@@ -1321,15 +1479,21 @@ class ControlButtonGroup extends Konva.Group {
     constructor(configs) {
         super();
         
+        this._text = configs.text;
+        
         const bgRect = new Konva.Rect({
+            x: configs.position ?? 0,
+            y: configs.position ?? 0,
             width: configs.size.width,
             height: configs.size.height,
-            fill: 'grey',
+            fill: '#cdd2d3',
             stroke: 'black',
             strokeWidth: 1
         });
         
         const text = new Konva.Text({
+            x: configs.position ?? 0,
+            y: configs.position ?? 0,
             width: bgRect.width(),
             height: bgRect.height(),
             align: 'center',

@@ -74,8 +74,8 @@ export class GrantIndex {
             
             if (index1 === index2) throw new Error("Indexes in Couple can't be equal.");
             
-            this._strongerIndex = Math.max(index1, index2);
-            this._weakerIndex = Math.min(index1, index2);
+            this._strongerIndex = Math.min(index1, index2);
+            this._weakerIndex = Math.max(index1, index2);
         }
     }
 }
@@ -963,13 +963,10 @@ export class OpType {
         if (Animal.opposite(animalStack[0]) === animalStack[1]) throw new Error("Opposite animals can't be both saviors.");
         
         for (const an of Animal.All) {
-            let matchTimes = 0;
-            // This doesn't actually replace anything, it just checks for duplicate animals.
-            animalStack = animalStack.replace(an,() => {
-                if (matchTimes++ > 0) throw new Error("Can't have same Animal twice in the stack.");
-                
-                return an;
-            });
+            const firstIndex = animalStack.indexOf(an);
+            const lastIndex = animalStack.lastIndexOf(an);
+            if (firstIndex !== lastIndex) throw new Error("Can't have same Animal twice in the stack.");
+            
             
             // Since we allow for 3-letters stacks, then the missing animal is the one to add at the end.
             if (!animalStack.includes(an)) animalStack = animalStack + an;
@@ -1173,7 +1170,7 @@ export class OpType {
         if (this._modality != null) result += this._modality.modality + '-';
         
         const secondSaviorFunction = this._grantStack[this._animalStack[0].grantIndexCouple.weakerIndex].cogFun;
-        result += this._grantStack[0] + '/' + secondSaviorFunction + '-';
+        result += this._grantStack[0].cogFun + '/' + secondSaviorFunction + '-';
         
         for (const anData of this._animalStack) {
             // Add slash before third animal.
