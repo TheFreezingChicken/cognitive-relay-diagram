@@ -3,7 +3,10 @@ import {CRDStage} from "./relay-diagram.js";
 // =============== MAIN ====================================================================================
 // sessionStorage.clear();
 // localStorage.clear();
-CRDStage.initializeResources().then(() => {
-    console.log("Resources were marked ready, drawing diagram...");
-    new CRDStage(document.getElementById('cognitive-diagram-container'));
+
+document.addEventListener('DOMContentLoaded', () => {
+    CRDStage.initializeResources().then(() => {
+        console.log("Resources were marked ready, drawing diagram...");
+        new CRDStage(document.getElementById('cognitive-diagram-container'));
+    });
 });

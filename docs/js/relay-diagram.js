@@ -4,6 +4,9 @@ import {Animal, AnimalGrantContext, Axis, Charge, CognitiveFunction, GrantIndex,
 const devTest = false;
 let isLibraryReady = false;
 
+// Object properties constants.
+const DENY_DOUBLECLICK_PROPERTY = 'denyDoubleClick';
+
 
 // Size constants.
 
@@ -283,9 +286,37 @@ export class CRDStage extends Konva.Stage {
         this._diagramLayer = new DiagramLayer(opTypeManager);
         this.add(this._diagramLayer);
         
-        this._controlLayer = new ControlLayer(opTypeManager);
+        this._controlLayer = new ControlLayer(this, opTypeManager);
         this.add(this._controlLayer);
+        
+        this._hideControls();
+        
+        // HERE Figure out why "Reset" doesn't hide controls and then add the angel thingy.
+        opTypeManager.addListener(() => {
+            this._hideControls();
+        });
     }
+    
+    
+    _showControls() {
+        this._controlLayer.visible(true);
+        // noinspection JSCheckFunctionSignatures || Lies.
+        this.off('click tap');
+        setTimeout(() => {
+            this.on('click tap', this._hideControls);
+        }, 500);
+    }
+    
+    _hideControls(evt) {
+        if (evt?.target[DENY_DOUBLECLICK_PROPERTY] ?? false) return;
+        
+        this._controlLayer.visible(false);
+        // noinspection JSCheckFunctionSignatures || Lies.
+        this.off('click tap');
+        this.on('click tap', this._showControls);
+    }
+    
+    
 }
 
 
@@ -969,54 +1000,10 @@ class AnimalOrderNumber extends AnimalText {
 
 
 class ControlLayer extends Konva.Layer {
-    constructor(opTypeManager) {
+    constructor(stage, opTypeManager) {
         super();
-        this.hideControls();
-        this.on('mouseenter', this.onMouseEnter);
-        this.on('tap', this.onTapShow);
-        this.on('mouseleave', this.onMouseLeave);
-        this.add(new BackgroundColorRect(), new ControlPageManagerGroup(opTypeManager));
-        opTypeManager.addListener(() => {
-            this.hideControls();
-        });
-    }
-    
-    onMouseEnter() {
-        console.log("Mouse enter.")
-        this.showControls();
-    }
-    
-    onTapShow() {
-        console.log("Tap.");
-        console.log("Showing controls.");
-        this.showControls();
-    }
-    
-    onTapHide(event) {
-        console.log("Tap.");
-        if (event.target instanceof ControlButtonGroup) return;
         
-        console.log("Hiding controls.");
-        this.hideControls();
-    }
-    
-    onMouseLeave() {
-        console.log("Mouse leave.")
-        this.hideControls();
-    }
-    
-    showControls() {
-        this.opacity(1);
-        // noinspection JSCheckFunctionSignatures || Lies.
-        this.off('tap');
-        this.on('tap', this.onTapHide);
-    }
-    
-    hideControls() {
-        this.opacity(0);
-        // noinspection JSCheckFunctionSignatures || Lies.
-        this.off('tap');
-        this.on('tap', this.onTapShow);
+        this.add(new BackgroundColorRect(), new ControlPageManagerGroup(opTypeManager));
     }
 }
 
@@ -1604,6 +1591,7 @@ class ControlButtonGroup extends Konva.Group {
             stroke: 'black',
             strokeWidth: 1
         });
+        bgRect[DENY_DOUBLECLICK_PROPERTY] = true;
         
         const text = new Konva.Text({
             x: configs.position?.x ?? 0,
@@ -1620,8 +1608,10 @@ class ControlButtonGroup extends Konva.Group {
             strokeWidth: 1,
             text: configs.text,
         });
+        text[DENY_DOUBLECLICK_PROPERTY] = true;
         
         this.add(bgRect, text);
-        this.on('click', configs.onClick);
+        this.on('pointerclick', configs.onClick);
+        this[DENY_DOUBLECLICK_PROPERTY] = true;
     }
 }
