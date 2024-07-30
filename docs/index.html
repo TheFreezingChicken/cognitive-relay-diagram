@@ -10,7 +10,16 @@
             font-family: 'Fira Code';
             src: url('assets/fonts/woff2/FiraCode-Bold.woff2') format('woff2'),
             url("assets/fonts/woff/FiraCode-Bold.woff") format("woff");
-            font-weight: 700;
+            font-weight: bold;
+            font-style: normal;
+        }
+
+
+        @font-face {
+            font-family: 'Fira Code';
+            src: url('assets/fonts/woff2/FiraCode-Regular.woff2') format('woff2'),
+            url("assets/fonts/woff/FiraCode-Regular.woff") format("woff");
+            font-weight: normal;
             font-style: normal;
         }
 
@@ -80,10 +89,10 @@
         .main-container {
             display: flex;
             flex-flow: row wrap;
+            align-self: center;
             align-items: flex-start;
             justify-content: center;
             gap: 20px;
-            margin-left: 3vw;
         }
 
         .selection-group {

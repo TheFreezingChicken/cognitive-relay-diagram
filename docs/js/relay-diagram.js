@@ -2,27 +2,51 @@ import {Animal, AnimalGrantContext, Axis, Charge, CognitiveFunction, GrantIndex,
 
 
 const devTest = false;
-
 let isLibraryReady = false;
 
-// To change the base size of each circle (before scaling is applied).
-const CIRCLE_BASE_RADIUS = 60;
 
-// Multiplier applied to CIRCLE_BASE_RADIUS to get the width of each circle stroke.
-const CIRCLE_STROKE_FACTOR = 0.15;
+// Size constants.
 
+const CIRCLE_BASE_RADIUS = 55;
+const CIRCLE_STROKE_FACTOR = 0.1;
 const CIRCLE_STROKE_WIDTH = CIRCLE_BASE_RADIUS * CIRCLE_STROKE_FACTOR;
 
-const CONTROL_CIRCLE_BASE_RADIUS = 25;
+/**
+ * @readonly
+ */
+const CogFunCircleScaleFactors = Object.freeze([
+    1,
+    0.81,
+    0.65,
+    0.48
+]);
 
-// To change the distante between circles on the same "axis".
-const OPPOSITE_CIRCLE_DISTANCE = 350;
+const FIRST_ANIMAL_STROKE_WIDTH = 5;
+const SECOND_ANIMAL_STROKE_WIDTH = 3;
+const THIRD_ANIMAL_STROKE_WIDTH = 2;
+const LAST_ANIMAL_STROKE_WIDTH = 1;
 
-// Width and height of the diagram stage.
+const COGFUN_BASE_FONT_SIZE = 60;
+const ANIMAL_LABEL_FONT_SIZE = 20;
+const BUTTON_FONT_SIZE = 55;
+
+
+
+// Distance constants.
+
+const OPPOSITE_CIRCLE_DISTANCE = 320;
 export const DIAGRAM_SIZE = OPPOSITE_CIRCLE_DISTANCE + CIRCLE_BASE_RADIUS * 4;
-
 const DIAGRAM_CENTER = DIAGRAM_SIZE / 2;
 
+const ANIMAL_X2_OFFSET_FROM_LINE = 25;
+const ANIMAL_BG_TRIANGLE_OFFSET = 17;
+
+const BUTTON_VERTICAL_GAP = 50;
+const CHOICE_PAGE_TOP_MARGIN = 70;
+const GLOBAL_BUTTON_HEIGHT = 70;
+
+
+// Position constants.
 
 const CogFunCirclePositions = Object.freeze([
     Object.freeze({
@@ -44,18 +68,6 @@ const CogFunCirclePositions = Object.freeze([
 ])
 
 
-
-/**
- * @readonly
- */
-const CogFunCircleScaleFactors = Object.freeze([
-    1,
-    0.81,
-    0.65,
-    0.48
-]);
-
-
 const AnimalCenterOffsets = new Map([
     [AnimalGrantContext.STRONGER_INFO, { x: 50, y: 50 }],
     [AnimalGrantContext.STRONGER_ENERGY, { x: -50, y: 50 }],
@@ -64,37 +76,7 @@ const AnimalCenterOffsets = new Map([
 ]);
 
 
-const COGFUN_BASE_FONT_SIZE = 60;
-
-const ANIMAL_LETTER_BASE_FONT_SIZE = 20;
-
-const ANIMAL_LETTER_OFFSET_FROM_LINE = -15;
-
-// Offset of the semi-transparent colored triangles from the lines.
-const ANIMAL_BG_TRIANGLE_OFFSET = 17;
-
-const FIRST_ANIMAL_STROKE_WIDTH = 5;
-const THIRD_ANIMAL_STROKE_WIDTH = 2;
-const LAST_ANIMAL_STROKE_WIDTH = 1;
-
-const SECOND_ANIMAL_STROKE_WIDTH = 3;
-const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
-const LAST_ANIMAL_DASH_PATTERN = [6, 17];
-
-const SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
-const THIRD_ANIMAL_TRIANGLE_COLOR = 'orange';
-const LAST_ANIMAL_TRIANGLE_COLOR = 'red';
-
-const FIRST_ANIMAL_TRIANGLE_OPACITY = 0.1;
-const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.08;
-const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.1;
-const LAST_ANIMAL_TRIANGLE_OPACITY = 0.1;
-
-const LAST_ANIMAL_LINE_OPACITY = 0.4;
-
-
-const CONTROL_BUTTON_FONT_SIZE = 60;
-
+// Style and Color constants.
 
 const CogFunFillColors = Object.freeze({
     F: '#c82323',
@@ -115,6 +97,22 @@ const CogFunStrokeColors = Object.freeze({
     D: 'black'
 });
 
+const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
+const LAST_ANIMAL_DASH_PATTERN = [6, 17];
+
+const SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
+const THIRD_ANIMAL_TRIANGLE_COLOR = 'orange';
+const LAST_ANIMAL_TRIANGLE_COLOR = 'red';
+
+const FIRST_ANIMAL_TRIANGLE_OPACITY = 0.1;
+const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.08;
+const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.1;
+const LAST_ANIMAL_TRIANGLE_OPACITY = 0.1;
+
+const LAST_ANIMAL_LINE_OPACITY = 0.4;
+
+
+// Resource Management
 
 const IMG_DIR_PATH = './assets/img';
 
@@ -175,6 +173,11 @@ class ResourceLoader {
 
 const diagramResources = new ResourceLoader();
 
+
+
+// Start of Diagram code
+
+
 class OpTypeManager {
     _opType;
     /**
@@ -220,6 +223,13 @@ class OpTypeManager {
     
     reset() {
         this._opType = null;
+        this._fireChange();
+    }
+    
+    _fireChange() {
+        for (const listener of this._listeners) {
+            listener(this._opType);
+        }
     }
     
     
@@ -231,9 +241,7 @@ class OpTypeManager {
         if (!(opType instanceof OpType)) throw new Error("Not an OpType.");
         
         this._opType = opType;
-        for (const listener of this._listeners) {
-            listener(opType);
-        }
+        this._fireChange()
     }
 }
 
@@ -251,10 +259,10 @@ export class CRDStage extends Konva.Stage {
     /**
      *
      * @param diagramContainer {HTMLElement}
-     * @param startingOpType {OpType}
+     * @param [startingOpType] {OpType}
      */
     constructor(diagramContainer, startingOpType) {
-        console.log(`Constructing Stage with type ${startingOpType.toString()}`);
+        console.log(`Constructing Stage with type ${startingOpType?.toString()}`);
         
         if (!isLibraryReady)
             throw new Error("Library resources must be initialized before using diagrams.");
@@ -303,7 +311,7 @@ class DiagramLayer extends Konva.Layer {
 class DiagramGroup extends Konva.Group {
     constructor(opType) {
         super();
-        console.log(`Constructing new diagram with type ${opType.toString()}`)
+        console.log(`Constructing new diagram with type ${opType?.toString()}`)
         // Create group for the whole stack of functions and then create every single one of them and add them.
         this._cogFunStackGroup = new CogFunStackGroup({opType: opType});
         this._animalStackGroup = new AnimalStackGroup({opType: opType});
@@ -389,6 +397,7 @@ class CogFunStackGroup extends Konva.Group {
  */
 
 
+
 /**
  * @class
  */
@@ -405,9 +414,10 @@ class CognitiveFunctionGroup extends Konva.Group {
         
         const demonBgImg = new DemonBackgroundImage(configs);
         const masculineBgImg = new MasculineBackgroundImage(configs);
-        const text = new CognitiveFunctionText(configs);
+        const cogFunText = new CognitiveFunctionText(configs);
+        // const doubleActivationText = new DoubleActivationText(configs);
         
-        this.add(demonBgImg, masculineBgImg, this.circle, text);
+        this.add(demonBgImg, masculineBgImg, this.circle, cogFunText/*, doubleActivationText*/);
     }
 }
 
@@ -434,7 +444,7 @@ class CognitiveFunctionCircle extends Konva.Circle {
         const isGenericDiagram = configs.cogFunData == null;
         
         // Making first function slightly bigger for generic because of optical illusion.
-        const genericScaleFactor = configs.cogFunDataOverride?.grantIndex === 0 ? 1.05 : 1;
+        const genericScaleFactor = configs.cogFunDataOverride?.grantIndex === 0 ? 1.075 : 1;
         const grantScaleFactor = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         
         // If not generic diagram use scaling, otherwise don't.
@@ -483,7 +493,7 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
         this.visible(!(configs.cogFunData?.isSavior ?? true));
         
         const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
-        const IMG_SCALE_FACTOR = 0.4;
+        const IMG_SCALE_FACTOR = 0.35;
         this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
         this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
     }
@@ -501,7 +511,7 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
         this.visible(configs.cogFunData?.isMasculine ?? false);
         
         const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
-        const IMG_SCALE_FACTOR = 0.43;
+        const IMG_SCALE_FACTOR = 0.37;
         this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
         this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
     }
@@ -551,6 +561,47 @@ class CognitiveFunctionText extends Konva.Text {
     }
 }
 
+
+
+
+// class DoubleActivationText extends Konva.Text {
+//     /**
+//      *
+//      * @param configs {CognitiveFunctionConfigs}
+//      */
+//     constructor(configs) {
+//
+//         const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
+//         const scale = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
+//
+//         super({
+//             position: pos,
+//             height: CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH,
+//             width: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) * 2,
+//             align: 'center',
+//             verticalAlign: 'middle',
+//             fontFamily: 'Fira Code, monospace',
+//             fontStyle: 'bold',
+//             fontSize: COGFUN_BASE_FONT_SIZE * 0.7 * scale,
+//             fill: 'white',
+//             stroke: 'black',
+//             strokeWidth: 2,
+//             text: 'x2'
+//         });
+//
+//         const baseOffsetX = this.width() / 2;
+//         const baseOffsetY = this.height() / 2;
+//         // Adding a tiny delta to make the text look more centered.
+//         const visualCenterDeltaX = -0.95 * scale;
+//         const visualCenterDeltaY = -5 * scale;
+//
+//         this.offsetX(baseOffsetX + visualCenterDeltaX);
+//         this.offsetY(baseOffsetY + visualCenterDeltaY - (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH - 15) * scale);
+//
+//         this.visible(true);
+//     }
+//
+// }
 
 
 
@@ -629,8 +680,9 @@ class AnimalGroup extends Konva.Group {
         const line = new AnimalLine(configs);
         const letterText = new AnimalLetter(configs);
         const orderText = new AnimalOrderNumber(configs);
+        const doubleActivationText = new AnimalDoubleActivationText(configs);
         
-        this.add(bgTriangle, line, letterText, orderText);
+        this.add(bgTriangle, line, letterText, orderText, doubleActivationText);
     }
 }
 
@@ -756,6 +808,51 @@ class AnimalLine extends Konva.Line {
 }
 
 
+class AnimalDoubleActivationText extends Konva.Text {
+    /**
+     *
+     * @param configs {AnimalConfigs}
+     */
+    constructor(configs) {
+        const biggerIndex = configs.animalData?.grantIndexCouple.strongerIndex ??
+            configs.animalDataOverride.grantIndexCouple.strongerIndex;
+        const smallerIndex = configs.animalData?.grantIndexCouple.weakerIndex ??
+            configs.animalDataOverride.grantIndexCouple.weakerIndex;
+        const biggerCirclePos = CogFunCirclePositions[biggerIndex];
+        const smallerCirclePos = CogFunCirclePositions[smallerIndex];
+        
+        const rightMostX = Math.max(smallerCirclePos.x, biggerCirclePos.x);
+        const leftMostX = Math.min(smallerCirclePos.x, biggerCirclePos.x);
+        
+        super({
+            x: rightMostX - (rightMostX - leftMostX) / 2,
+            y: smallerCirclePos.y - (smallerCirclePos.y - biggerCirclePos.y) / 2,
+            fontFamily: 'Fira Code, monospace',
+            fontSize: ANIMAL_LABEL_FONT_SIZE * 1.2,
+            fontStyle: 'bold',
+            text: 'x2',
+            fill: 'black',
+            // stroke: 'black',
+            // strokeWidth: 1,
+            strokeEnabled: true
+        });
+        
+        this.visible(configs.animalData?.isDoubleActivated ?? false);
+        if (configs.animalData == null) return;
+        
+        const indexes = [
+            configs.animalData.grantIndexCouple.weakerIndex,
+            configs.animalData.grantIndexCouple.strongerIndex
+        ];
+        
+        const xOffsetFromLine = indexes.includes(1) ? ANIMAL_X2_OFFSET_FROM_LINE : -ANIMAL_X2_OFFSET_FROM_LINE;
+        const yOffsetFromLine = indexes.includes(0) ? ANIMAL_X2_OFFSET_FROM_LINE * 0.5 : -ANIMAL_X2_OFFSET_FROM_LINE;
+        this.offsetX(this.getClientRect().width / 2 + xOffsetFromLine);
+        this.offsetY(this.getClientRect().height / 2 + yOffsetFromLine);
+    }
+}
+
+
 
 
 class AnimalText extends Konva.Text {
@@ -770,13 +867,10 @@ class AnimalText extends Konva.Text {
      */
     constructor(configs, text) {
         super({
-            fontSize: ANIMAL_LETTER_BASE_FONT_SIZE,
-            fontFamily: 'Fira Code,Roboto Mono,Liberation Mono,Consolas,monospace',
+            fontSize: ANIMAL_LABEL_FONT_SIZE,
+            fontFamily: 'Fira Code,monospace',
             //fontStyle: 'bold',
             fill: 'black',
-            stroke: 'black',
-            strokeWidth: 1,
-            strokeEnabled: false
         });
         
         this.position({
@@ -818,8 +912,7 @@ class AnimalText extends Konva.Text {
         
         this.text(text);
         
-        this.fontStyle(configs.isDoubleActivated ? "bold" : "normal");
-        this.strokeEnabled(configs.isDoubleActivated ?? false);
+        this.fontStyle(configs.animalData?.isDoubleActivated ? "bold" : "normal");
         
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
@@ -997,46 +1090,64 @@ class ControlPageManagerGroup extends Konva.Group {
         this._selectionButtonsGroup = selectionButtonsGroup;
         this._navigationButtonsGroup = navigationButtonsGroup;
 
-        const NAVIGATION_BUTTON_WIDTH = 100;
-        const NAVIGATION_BUTTON_HEIGHT = 50;
+        const NAVIGATION_BUTTON_WIDTH = 230;
+        const NAVIGATION_BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
+        let button;
         // DEBT Might need to make this more generic if we're implementing partial types.
-        this._skipModalityButton = new ControlButtonGroup({
-            size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
+        button = new ControlButtonGroup({
+            size: {width: NAVIGATION_BUTTON_WIDTH - 90, height: NAVIGATION_BUTTON_HEIGHT},
             text: "Skip",
             onClick: () => {
-                this._swapPage(this._temperamentPage)
                 this._hideSkipButton();
-                this._modality = '';
+                this._showBackButton();
+                this._swapPage(this._temperamentPage);
+                this._modality = null;
             }
         });
+        button.offsetX(-DIAGRAM_SIZE / 2 + button.getClientRect().width / 2);
+        button.offsetY(-DIAGRAM_SIZE / 2 - 50);
+        this._skipModalityButton = button;
         
-        this._backButton = new ControlButtonGroup({
+        
+        button = new ControlButtonGroup({
             size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
             text: "⇦ Back",
             onClick: () => {
                 selectionButtonsGroup.removeChildren();
                 this._currentPage = this._previousPages.pop();
+                if (this._previousPages.length === 0) this._hideBackButton();
+                if (this._currentPage instanceof ModalityChoicePageGroup) this._showSkipButton();
                 selectionButtonsGroup.add(this._currentPage);
             }
         });
+        button.offsetX(5);
+        button.offsetY(-DIAGRAM_SIZE + button.getClientRect().height - 8);
+        button.visible(false);
+        this._backButton = button;
         
-        this._clearButton = new ControlButtonGroup({
-            size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
+        
+        button = new ControlButtonGroup({
+            size: {width: NAVIGATION_BUTTON_WIDTH - 30, height: NAVIGATION_BUTTON_HEIGHT},
             text: "Reset",
             onClick: () => {
                 this._clear(true)
             }
         });
+        button.offsetX(-DIAGRAM_SIZE + button.getClientRect().width - 5);
+        button.offsetY(-DIAGRAM_SIZE + button.getClientRect().height - 8);
+        this._clearButton = button;
         
         
         // Modality and Temperament pages are always the same, we don't need builders.
         
         this._modalityPage = new ModalityChoicePageGroup((modality) => {
             this._modality = modality;
-            this._swapPage(this._temperamentPage);
             this._hideSkipButton();
+            this._showBackButton()
+            this._swapPage(this._temperamentPage);
         });
+        this._currentPage = this._modalityPage;
         
         this._temperamentPage = new TemperamentChoicePageGroup((temperament) => {
             this._swapPage(this._buildFirstFunctionPage(temperament));
@@ -1047,7 +1158,7 @@ class ControlPageManagerGroup extends Konva.Group {
         navigationButtonsGroup.add(this._backButton, this._skipModalityButton, this._clearButton);
         
         this.add(selectionButtonsGroup, navigationButtonsGroup);
-    }clearTypeToo
+    }
     
     
     
@@ -1100,18 +1211,11 @@ class ControlPageManagerGroup extends Konva.Group {
     }
     
     _hideSkipButton() {
-        this._skipModalityButton.remove();
-        const xOffset = this._navigationButtonsGroup.width() / 2;
-        
-        this._navigationButtonsGroup.offsetX(xOffset);
+        this._skipModalityButton.visible(false);
     }
     
     _showSkipButton() {
-        this._navigationButtonsGroup.removeChildren();
-        this._navigationButtonsGroup.add(this._backButton, this._skipModalityButton, this._clearButton);
-        const xOffset = this._navigationButtonsGroup.width() / 2;
-        
-        this._navigationButtonsGroup.offsetX(xOffset);
+        this._skipModalityButton.visible(true);
     }
     
     
@@ -1138,8 +1242,17 @@ class ControlPageManagerGroup extends Konva.Group {
         this._demonAnimals = '';
         this._previousPages = [];
         if (clearTypeToo) this._opTypeManager.reset();
-        this._swapPage(this._modalityPage);
         this._showSkipButton();
+        this._hideBackButton();
+        this._swapPage(this._modalityPage);
+    }
+    
+    _hideBackButton() {
+        this._backButton.visible(false);
+    }
+    
+    _showBackButton() {
+        this._backButton.visible(true);
     }
 }
 
@@ -1157,8 +1270,6 @@ class ChoicePageGroup extends Konva.Group {
         console.log(`Right buttons amount: ${rightButtons.length}`);
         // The size of buttons should be the same in the same page, so we can use any one to calculate positions.
         
-        const VERTICAL_OFFSET_GAP = 50;
-        
         let yOffset = 0;
         for (const button of leftButtons) {
             console.log(`Placing button ${button._text}`);
@@ -1166,18 +1277,21 @@ class ChoicePageGroup extends Konva.Group {
             button.offsetY(yOffset);
             this.add(button);
             
-            yOffset -= button.getClientRect().height + VERTICAL_OFFSET_GAP;
-        };
+            yOffset -= button.getClientRect().height + BUTTON_VERTICAL_GAP;
+        }
         
         yOffset = 0;
         for (const button of rightButtons) {
             console.log(`Placing button ${button._text}`);
-            button.offsetX(-button.getClientRect().width - 30);
+            button.offsetX(-button.getClientRect().width - 100);
             button.offsetY(yOffset);
             this.add(button);
             
-            yOffset -= button.getClientRect().height + VERTICAL_OFFSET_GAP;
-        };
+            yOffset -= button.getClientRect().height + BUTTON_VERTICAL_GAP;
+        }
+        
+        this.offsetX(-((DIAGRAM_SIZE - this.getClientRect().width) / 2));
+        this.offsetY(-CHOICE_PAGE_TOP_MARGIN);
     }
 }
 
@@ -1190,8 +1304,8 @@ class ModalityChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(Modality): void}
      */
     constructor(onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 120;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
         const ffButton = new ControlButtonGroup({
             size: {width: BUTTON_WIDTH, height: BUTTON_HEIGHT},
@@ -1234,8 +1348,8 @@ class TemperamentChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(string): void}
      */
     constructor(onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 200;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
         const leftTemperaments = ['IxxP', 'ExxJ'];
         const rightTemperaments = ['IxxJ', 'ExxP'];
@@ -1279,8 +1393,8 @@ class FirstFunctionChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(CognitiveFunction): void}
      */
     constructor(temperament, onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 120;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
         let firstHumanNeed;
         switch (temperament) {
@@ -1337,8 +1451,8 @@ class MiddleAxisChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(CognitiveFunction): void}
      */
     constructor(firstFunction, onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 200;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
         const axis = Axis.opposite(firstFunction);
         const charge = Charge.opposite(firstFunction);
@@ -1389,8 +1503,8 @@ class SaviorAnimalsChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(string): void}
      */
     constructor(firstFunction, onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 120;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT;
         
         
         let saviorAnimalCouples = [];
@@ -1433,8 +1547,8 @@ class LastAnimalChoicePageGroup extends ChoicePageGroup {
      * @param onSelectionConfirmed {function(Animal): void}
      */
     constructor(saviorAnimals, onSelectionConfirmed) {
-        const BUTTON_WIDTH = 100;
-        const BUTTON_HEIGHT = 50;
+        const BUTTON_WIDTH = 130;
+        const BUTTON_HEIGHT = GLOBAL_BUTTON_HEIGHT + 20;
         
         const animalOption1 = Animal.opposite(saviorAnimals[0]);
         const animalOption2 = Animal.opposite(saviorAnimals[1]);
@@ -1482,8 +1596,8 @@ class ControlButtonGroup extends Konva.Group {
         this._text = configs.text;
         
         const bgRect = new Konva.Rect({
-            x: configs.position ?? 0,
-            y: configs.position ?? 0,
+            x: configs.position?.x ?? 0,
+            y: configs.position?.y ?? 0,
             width: configs.size.width,
             height: configs.size.height,
             fill: '#cdd2d3',
@@ -1492,15 +1606,15 @@ class ControlButtonGroup extends Konva.Group {
         });
         
         const text = new Konva.Text({
-            x: configs.position ?? 0,
-            y: configs.position ?? 0,
+            x: configs.position?.x ?? 0,
+            y: configs.position?.y ?? 2.7,
             width: bgRect.width(),
             height: bgRect.height(),
             align: 'center',
             verticalAlign: 'middle',
             fontFamily: 'Arial, sans serif',
             fontStyle: 'bold',
-            fontSize: CONTROL_BUTTON_FONT_SIZE,
+            fontSize: BUTTON_FONT_SIZE,
             fill: 'white',
             stroke: 'black',
             strokeWidth: 1,
