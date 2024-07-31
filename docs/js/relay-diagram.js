@@ -121,6 +121,8 @@ const IMG_DIR_PATH = './assets/img';
 
 // REM Leave "new Image" in case we need to use different types of resources.
 const DiagramResources = {
+    BIG_ANGEL_BG_IMG: new Image(),
+    LITTLE_ANGEL_BG_IMG: new Image(),
     BIG_DEMON_BG_IMG: new Image(),
     LITTLE_DEMON_BG_IMG: new Image(),
     MASCULINE_FUNCTION_BG_IMG: new Image(),
@@ -160,6 +162,8 @@ class ResourceLoader {
         // User previous lambda to load all images concurrently.
         // When all are finished set library as ready. Returns the end Promise.
         return Promise.all([
+            loadImg(DiagramResources.BIG_ANGEL_BG_IMG, `${IMG_DIR_PATH}/angel-wings-1.png`),
+            loadImg(DiagramResources.LITTLE_ANGEL_BG_IMG, `${IMG_DIR_PATH}/small-angel.png`),
             loadImg(DiagramResources.LITTLE_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon3.png`),
             loadImg(DiagramResources.BIG_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon4.png`),
             loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`),
@@ -291,29 +295,32 @@ export class CRDStage extends Konva.Stage {
         
         this._hideControls();
         
-        // HERE Figure out why "Reset" doesn't hide controls and then add the angel thingy.
         opTypeManager.addListener(() => {
             this._hideControls();
         });
     }
     
     
-    _showControls() {
+    _showControls(evt) {
+        if (evt?.target instanceof CRDStage) return;
+        
         this._controlLayer.visible(true);
         // noinspection JSCheckFunctionSignatures || Lies.
         this.off('click tap');
         setTimeout(() => {
             this.on('click tap', this._hideControls);
-        }, 500);
+        }, 400);
     }
     
     _hideControls(evt) {
         if (evt?.target[DENY_DOUBLECLICK_PROPERTY] ?? false) return;
         
-        this._controlLayer.visible(false);
         // noinspection JSCheckFunctionSignatures || Lies.
         this.off('click tap');
-        this.on('click tap', this._showControls);
+        setTimeout(() => {
+            this.on('click tap', this._showControls);
+        }, 400);
+        this._controlLayer.visible(false);
     }
     
     
@@ -443,12 +450,13 @@ class CognitiveFunctionGroup extends Konva.Group {
         
         this.circle = new CognitiveFunctionCircle(configs);
         
+        const saviorBgImg = new SaviorBackgroundImage(configs);
         const demonBgImg = new DemonBackgroundImage(configs);
         const masculineBgImg = new MasculineBackgroundImage(configs);
         const cogFunText = new CognitiveFunctionText(configs);
         // const doubleActivationText = new DoubleActivationText(configs);
         
-        this.add(demonBgImg, masculineBgImg, this.circle, cogFunText/*, doubleActivationText*/);
+        this.add(saviorBgImg, demonBgImg, masculineBgImg, this.circle, cogFunText/*, doubleActivationText*/);
     }
 }
 
@@ -507,6 +515,29 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     }
 }
 
+
+class SaviorBackgroundImage extends CognitiveFunctionBackgroundImage {
+    /**
+     *
+     * @param configs {CognitiveFunctionConfigs}
+     */
+    constructor(configs) {
+        const grantIndex = configs.cogFunData?.grantIndex;
+        const img = grantIndex === 0 ?
+            DiagramResources.BIG_ANGEL_BG_IMG :
+            DiagramResources.LITTLE_ANGEL_BG_IMG;
+        
+        super(img, configs);
+        
+        this.visible(configs.cogFunData?.isSavior ?? false);
+        
+        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
+        const IMG_SCALE_FACTOR = grantIndex === 0 ? 0.4 : 0.42;
+        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
+        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR);
+        this.offsetY(grantIndex === 0 ? 190 : 183);
+    }
+}
 
 
 class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
@@ -1157,7 +1188,7 @@ class ControlPageManagerGroup extends Konva.Group {
     _swapPage(page) {
         this._selectionButtonsGroup.removeChildren();
         this._selectionButtonsGroup.add(page);
-        this._previousPages.push(this._currentPage);
+        if (this._currentPage != null) this._previousPages.push(this._currentPage);
         this._currentPage = page;
     }
     
@@ -1228,6 +1259,7 @@ class ControlPageManagerGroup extends Konva.Group {
         this._saviorAnimals = '';
         this._demonAnimals = '';
         this._previousPages = [];
+        this._currentPage = null;
         if (clearTypeToo) this._opTypeManager.reset();
         this._showSkipButton();
         this._hideBackButton();
