@@ -1,3 +1,10 @@
+/*
+ * Copyright © 2024, The Freezing Chicken
+ * Licensed under CC BY-SA 4.0
+ *
+ * https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1
+ */
+
 import {CRDStage} from "./relay-diagram.js";
 // TODO Add listener for page resize.
 // =============== MAIN ====================================================================================
