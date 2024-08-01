@@ -1,79 +1,183 @@
+<!--
+  ~ Copyright © 2024, The Freezing Chicken
+  ~ Licensed under CC BY-SA 4.0
+  ~
+  ~ https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1
+  -->
+
 <!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://unpkg.com/konva@9.2.0/konva.min.js"></script>
-    <meta charset="utf-8" />
-    <title>Konva Text Demo</title>
+<html xmlns="http://www.w3.org/1999/html" lang="en">
+
+<head>
+    <script src="https://unpkg.com/konva@9.3.13/konva.min.js"></script>
+    <meta charset="utf-8"/>
+    <title>Cognitive Relay Diagram</title>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: #f0f0f0;
-      }
+        @font-face {
+            font-family: 'Fira Code';
+            src: url('assets/fonts/woff2/FiraCode-Bold.woff2') format('woff2'),
+            url("assets/fonts/woff/FiraCode-Bold.woff") format("woff");
+            font-weight: bold;
+            font-style: normal;
+        }
+
+
+        @font-face {
+            font-family: 'Fira Code';
+            src: url('assets/fonts/woff2/FiraCode-Regular.woff2') format('woff2'),
+            url("assets/fonts/woff/FiraCode-Regular.woff") format("woff");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* Center all content vertically and horizontally */
+        body {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-items: start;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, serif;
+        }
+
+        .title-container > h1 {
+            margin-bottom: 2px;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            margin-bottom: 10px;
+        }
+
+        h5 {
+            margin-bottom: 10px;
+        }
+
+        h6 {
+            margin-bottom: 10px;
+        }
+
+        select {
+            font-family: Fira Code, Roboto Mono, Liberation Mono, Consolas, monospace;
+        }
+
+        input::placeholder {
+            text-transform: none;
+        }
+
+        .title-container {
+            align-self: center;
+            text-align: center;
+            color: darkorange;
+            font-family: Arial, serif;
+        }
+
+        /* Style for the "made by username" text */
+        .made-by {
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .space {
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-flow: row wrap;
+            align-self: center;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .selection-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .selection-group-title {
+        }
+
+        .selection-group-items-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            grid-template-rows: auto;
+            column-gap: 5px;
+            row-gap: 10px;
+        }
+
+        .grid-span-2 {
+            grid-column: span 2;
+            justify-self: center;
+        }
+
+        .selection-group-items-grid > label {
+            text-align: right;
+        }
+
+        .selection-group-items-grid > select {
+            text-align: left;
+        }
+
+        .checkbox {
+            grid-column: span 2;
+            display: flex; /* Add flex display */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+        }
+
+
+        /* Style for the boxed section containing the Konva circle */
+        #cognitive-diagram-container {
+            align-self: center;
+            width: fit-content;
+            height: fit-content;
+            border: 2px solid #000;
+            margin: 0 3vw 0 3vw;
+        }
     </style>
-  </head>
-  <body>
-    <div id="container"></div>
-    <script>
-      var stage = new Konva.Stage({
-        container: 'container',
-        width: 340,
-        height: 300,
-      });
+</head>
 
-      var layer = new Konva.Layer();
+<!-- BODY -------------------------------------------------------------------------------------------->
 
-      var simpleText = new Konva.Text({
-        x: stage.width() / 2,
-        y: 15,
-        text: 'Cognitive Relay Diagram',
-        fontSize: 30,
-        fontFamily: 'Calibri',
-        fill: 'green',
-      });
+<body>
+<div class="title-container">
+    <h1>Cognitive Relay Diagram</h1>
+    <p class="made-by">
+        (by <a href="https://www.youtube.com/watch?v=q4RPKVncw50">The Freezing Chicken</a>,
+        and based on the <a href="https://www.objectivepersonality.com/">Objective Personality System</a>) <br>
+        Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a>
+    </p>
+</div>
 
-      // to align text in the middle of the screen, we can set the
-      // shape offset to the center of the text shape after instantiating it
-      simpleText.offsetX(simpleText.width() / 2);
+<div class="space"></div>
 
-      // since this text is inside of a defined area, we can center it using
-      // align: 'center'
-      var complexText = new Konva.Text({
-        x: 20,
-        y: 60,
-        text: "THIS SITE IS UNDER CONSTRUCTION",
-        fontSize: 18,
-        fontFamily: 'Calibri',
-        fill: '#555',
-        width: 300,
-        padding: 20,
-        align: 'center',
-      });
+<p id="help-text" style="display:block;align-self:center">
+    Click/Tap functions to pick the type. Click this text to hide it forever.
+</p>
 
-      var rect = new Konva.Rect({
-        x: 20,
-        y: 60,
-        stroke: '#555',
-        strokeWidth: 5,
-        fill: '#ddd',
-        width: 300,
-        height: complexText.height(),
-        shadowColor: 'black',
-        shadowBlur: 10,
-        shadowOffsetX: 10,
-        shadowOffsetY: 10,
-        shadowOpacity: 0.2,
-        cornerRadius: 10,
-      });
+<div class="main-container">
+    <!-- Container for the diagram. Filled with JS. -->
+    <div id="cognitive-diagram-container"></div>
+</div>
 
-      // add the shapes to the layer
-      layer.add(simpleText);
-      layer.add(rect);
-      layer.add(complexText);
+<script type="module" src="js/index.js"></script>
 
-      // add the layer to the stage
-      stage.add(layer);
-    </script>
-  </body>
+</body>
+
+
 </html>
