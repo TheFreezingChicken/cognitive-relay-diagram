@@ -12,7 +12,8 @@ const devTest = false;
 let isLibraryReady = false;
 
 // Object properties constants.
-const DENY_DOUBLECLICK_PROPERTY = 'denyDoubleClick';
+const DENY_HIDE_CONTROL_PROPERTY = 'denyHideControl';
+const DENY_SHOW_CONTROL_PROPERTY = 'denyShowControl'
 
 
 // Size constants.
@@ -110,10 +111,16 @@ const CogFunStrokeColors = Object.freeze({
 const THIRD_ANIMAL_DASH_PATTERN = [10, 2];
 const LAST_ANIMAL_DASH_PATTERN = [6, 17];
 
-const SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
-const THIRD_ANIMAL_TRIANGLE_COLOR = 'orange';
-const LAST_ANIMAL_TRIANGLE_COLOR = 'red';
+const FIRST_SAVIOR_ANIMAL_TRIANGLE_COLOR = '#e5f2e5';
+const SECOND_SAVIOR_ANIMAL_TRIANGLE_COLOR = '#ebf5eb';
+const THIRD_ANIMAL_TRIANGLE_COLOR = '#fff6e5';
+const LAST_ANIMAL_TRIANGLE_COLOR = '#ffe5e5';
+// const FIRST_SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
+// const SECOND_SAVIOR_ANIMAL_TRIANGLE_COLOR = 'green';
+// const THIRD_ANIMAL_TRIANGLE_COLOR = 'orange';
+// const LAST_ANIMAL_TRIANGLE_COLOR = 'red';
 
+// REM Keep this even if not used, as it's easier to try other colors through transparency.
 const FIRST_ANIMAL_TRIANGLE_OPACITY = 0.1;
 const SECOND_ANIMAL_TRIANGLE_OPACITY = 0.08;
 const THIRD_ANIMAL_TRIANGLE_OPACITY = 0.1;
@@ -261,6 +268,9 @@ class OpTypeManager {
 
 
 export class CRDStage extends Konva.Stage {
+    _controlLayer;
+    _diagramLayer;
+    _hideControlsGlobalCallback;
     /**
      * Simply calls [diagramResources.initializeAsync()]{@linkcode diagramResources#initializeAsync}.
      * @returns {Promise<void>}
@@ -287,11 +297,6 @@ export class CRDStage extends Konva.Stage {
             height: DIAGRAM_SIZE
         });
         
-        this.CenterPoint = {
-            x: this.width() / 2,
-            y: this.height() / 2
-        };
-        
         const opTypeManager = new OpTypeManager(startingOpType);
         
         this._diagramLayer = new DiagramLayer(opTypeManager);
@@ -301,6 +306,12 @@ export class CRDStage extends Konva.Stage {
         this.add(this._controlLayer);
         
         this._hideControls();
+        this._hideControlsGlobalCallback = (evt) => {
+            console.log('Document click.');
+            if (evt?.target instanceof HTMLCanvasElement) return;
+            
+            this._hideControls(evt);
+        };
         
         opTypeManager.addListener(() => {
             this._hideControls();
@@ -309,20 +320,27 @@ export class CRDStage extends Konva.Stage {
     
     
     _showControls(evt) {
+        if (evt?.target[DENY_SHOW_CONTROL_PROPERTY] ?? false) return;
         if (evt?.target instanceof CRDStage) return;
         
         this._controlLayer.visible(true);
         // noinspection JSCheckFunctionSignatures || Lies.
         this.off('click tap');
         setTimeout(() => {
-            this.on('click tap', this._hideControls);
+            console.log('Listening to whole document for clicks.')
+            
+            document.addEventListener('click', this._hideControlsGlobalCallback);
+            this.on('click tap', this._hideControls)
         }, 400);
     }
     
     _hideControls(evt) {
-        if (evt?.target[DENY_DOUBLECLICK_PROPERTY] ?? false) return;
+        console.log("Target:");
+        console.log(evt?.target);
+        if (evt?.target[DENY_HIDE_CONTROL_PROPERTY] ?? false) return;
         
         // noinspection JSCheckFunctionSignatures || Lies.
+        document.removeEventListener('click', this._hideControlsGlobalCallback);
         this.off('click tap');
         setTimeout(() => {
             this.on('click tap', this._showControls);
@@ -360,7 +378,18 @@ class DiagramGroup extends Konva.Group {
         // Create group for the whole stack of functions and then create every single one of them and add them.
         this._cogFunStackGroup = new CogFunStackGroup({opType: opType});
         this._animalStackGroup = new AnimalStackGroup({opType: opType});
-        this.add(this._animalStackGroup, this._cogFunStackGroup);
+        
+        const whiteBg = new Konva.Rect({
+            width: DIAGRAM_SIZE + 10,
+            height: DIAGRAM_SIZE + 10,
+            x: -5,
+            y: -5,
+            fill: 'white'
+        });
+        
+        whiteBg[DENY_SHOW_CONTROL_PROPERTY] = true;
+        
+        this.add(whiteBg, this._animalStackGroup, this._cogFunStackGroup);
     }
 }
 
@@ -797,24 +826,26 @@ class AnimalBackgroundTriangle extends Konva.Line {
         
         switch (configs.animalData?.stackIndex) {
             case 0:
-                this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                // this.opacity(FIRST_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(FIRST_SAVIOR_ANIMAL_TRIANGLE_COLOR);
                 break;
             case 1:
-                this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
-                this.fill(SAVIOR_ANIMAL_TRIANGLE_COLOR);
+                // this.opacity(SECOND_ANIMAL_TRIANGLE_OPACITY);
+                this.fill(SECOND_SAVIOR_ANIMAL_TRIANGLE_COLOR);
                 break;
             case 2:
-                this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
+                // this.opacity(THIRD_ANIMAL_TRIANGLE_OPACITY);
                 this.fill(THIRD_ANIMAL_TRIANGLE_COLOR);
                 break;
             case 3:
-                this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
+                // this.opacity(LAST_ANIMAL_TRIANGLE_OPACITY);
                 this.fill(LAST_ANIMAL_TRIANGLE_COLOR);
                 break;
             default:
                 this.visible(false);
         }
+        
+        this[DENY_SHOW_CONTROL_PROPERTY] = true;
     }
 }
 
@@ -941,6 +972,8 @@ class AnimalText extends Konva.Text {
             //fontStyle: 'bold',
             fill: 'black',
         });
+        
+        this[DENY_SHOW_CONTROL_PROPERTY] = true;
         
         this.position({
             x: DIAGRAM_CENTER,
@@ -1630,7 +1663,7 @@ class ControlButtonGroup extends Konva.Group {
             stroke: 'black',
             strokeWidth: 1
         });
-        bgRect[DENY_DOUBLECLICK_PROPERTY] = true;
+        bgRect[DENY_HIDE_CONTROL_PROPERTY] = true;
         
         const text = new Konva.Text({
             x: configs.position?.x ?? 0,
@@ -1647,10 +1680,10 @@ class ControlButtonGroup extends Konva.Group {
             strokeWidth: 1,
             text: configs.text,
         });
-        text[DENY_DOUBLECLICK_PROPERTY] = true;
+        text[DENY_HIDE_CONTROL_PROPERTY] = true;
         
         this.add(bgRect, text);
         this.on('pointerclick', configs.onClick);
-        this[DENY_DOUBLECLICK_PROPERTY] = true;
+        this[DENY_HIDE_CONTROL_PROPERTY] = true;
     }
 }
