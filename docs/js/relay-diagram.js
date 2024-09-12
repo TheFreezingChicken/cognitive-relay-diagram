@@ -76,7 +76,28 @@ const CogFunCirclePositions = Object.freeze([
         x: DIAGRAM_CENTER,
         y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
     })
-])
+]);
+
+
+const CogFunCircleOffsets = Object.freeze([
+    Object.freeze({
+        x: 0,
+        y: -OPPOSITE_CIRCLE_DISTANCE / 2
+    }),
+    Object.freeze({
+        x: -OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: 0
+    }),
+    Object.freeze({
+        x: OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: 0
+    }),
+    Object.freeze({
+        x: 0,
+        y: OPPOSITE_CIRCLE_DISTANCE / 2
+    })
+]);
+
 
 
 const AnimalCenterOffsets = new Map([
