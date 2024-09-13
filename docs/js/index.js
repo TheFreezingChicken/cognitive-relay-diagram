@@ -16,18 +16,52 @@ function hideMessage() {
     localStorage.setItem('helpTextHidden', 'true');
 }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-    const helpTextParagraph = document.getElementById('help-text');
-    helpTextParagraph.addEventListener('click', hideMessage);
+function whenFontIsLoaded(callback) {
+    const stubCanvas = document.createElement('canvas');
+    const fontContext = stubCanvas.getContext('2d');
     
-    if (localStorage.getItem('helpTextHidden')) {
-        document.getElementById('help-text').style.display = 'none';
+    // Measuge text with monospace and then set actual font (with monospace fallback to match initial measurement).
+    fontContext.font = 'bold 20px monospace';
+    const STUB_TEXT = 'Some test text;';
+    const initialStubTextWidth = fontContext.measureText(STUB_TEXT).width;
+    fontContext.font = 'bold 20px "Fira Code", monospace';
+    
+    console.log("Waiting for font to load...");
+    function checkFontState() {
+        const stubTextWidth = fontContext.measureText(STUB_TEXT).width;
+        console.log(initialStubTextWidth);
+        console.log(stubTextWidth);
+        if (stubTextWidth !== initialStubTextWidth) {
+            console.log("Font loaded!")
+            callback();
+        } else {
+            console.log("Font not loaded yet...")
+            setTimeout(() => {
+                checkFontState()
+            }, 150);
+        }
     }
     
-    CRDStage.initializeResources().then(() => {
-        console.log("Resources were marked ready, drawing diagram...");
-        new CRDStage(document.getElementById('cognitive-diagram-container'));
-    });
+    checkFontState();
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    whenFontIsLoaded(() => {
+        const helpTextParagraph = document.getElementById('help-text');
+        helpTextParagraph.addEventListener('click', hideMessage);
+        
+        if (localStorage.getItem('helpTextHidden')) {
+            document.getElementById('help-text').style.display = 'none';
+        }
+        
+        let startingOpType = undefined;
+        // startingOpType = new OpType('Si', 'Te', 'SCBP', 'FF');
+        
+        CRDStage.initializeResources().then(() => {
+            console.log("Resources were marked ready, drawing diagram...");
+            new CRDStage(document.getElementById('cognitive-diagram-container'), startingOpType);
+        });
+    })
 });
 
