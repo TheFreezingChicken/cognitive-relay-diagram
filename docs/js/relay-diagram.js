@@ -1244,7 +1244,7 @@ class ControlPageManagerGroup extends Konva.Group {
         let button;
         // DEBT Might need to make this more generic if we're implementing partial types.
         button = new ControlButtonGroup({
-            size: {width: NAVIGATION_BUTTON_WIDTH - 90, height: NAVIGATION_BUTTON_HEIGHT},
+            size: {width: NAVIGATION_BUTTON_WIDTH - 80, height: NAVIGATION_BUTTON_HEIGHT},
             text: "Skip",
             onClick: () => {
                 this._hideSkipButton();
@@ -1260,7 +1260,7 @@ class ControlPageManagerGroup extends Konva.Group {
         
         button = new ControlButtonGroup({
             size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
-            text: "⇦ Back",
+            text: "⇦Back",
             onClick: () => {
                 selectionButtonsGroup.removeChildren();
                 this._currentPage = this._previousPages.pop();
@@ -1757,19 +1757,20 @@ class ControlButtonGroup extends Konva.Group {
         
         const text = new Konva.Text({
             x: configs.position?.x ?? 0,
-            y: configs.position?.y ?? 2.7,
+            y: configs.position?.y ?? 4,
             width: bgRect.width(),
             height: bgRect.height(),
             align: 'center',
             verticalAlign: 'middle',
-            fontFamily: 'Arial, sans serif',
+            fontFamily: 'Liberation Mono Custom',
             fontStyle: 'bold',
             fontSize: BUTTON_FONT_SIZE,
             fill: 'white',
             stroke: 'black',
-            strokeWidth: 1,
-            text: configs.text,
+            strokeWidth: 1
         });
+        
+        text.text(configs.text);
         text[DENY_HIDE_CONTROL_PROPERTY] = true;
         
         this.add(bgRect, text);

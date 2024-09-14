@@ -13,10 +13,12 @@
     <meta charset="utf-8"/>
     <title>Cognitive Relay Diagram</title>
     <style>
+
         @font-face {
-            font-family: 'Fira Code';
-            src: url('assets/fonts/woff2/FiraCode-Bold.woff2') format('woff2'),
-            url("assets/fonts/woff/FiraCode-Bold.woff") format("woff");
+            font-family: 'Liberation Mono Custom';
+            src: url("assets/fonts/LiberationMono-Bold.woff2") format("woff2"),
+            url("assets/fonts/LiberationMono-Bold.woff") format("woff"),
+            url("assets/fonts/liberation-mono.bold.ttf") format("truetype");
             font-weight: bold;
             font-style: normal;
         }
@@ -24,11 +26,21 @@
 
         @font-face {
             font-family: 'Fira Code';
-            src: url('assets/fonts/woff2/FiraCode-Regular.woff2') format('woff2'),
-            url("assets/fonts/woff/FiraCode-Regular.woff") format("woff");
+            src: url("assets/fonts/FiraCode-Bold.woff2") format("woff2"),
+            url("assets/fonts/FiraCode-Bold.woff") format("woff");
+            font-weight: bold;
+            font-style: normal;
+        }
+
+
+        @font-face {
+            font-family: 'Fira Code';
+            src: url("assets/fonts/FiraCode-Regular.woff2") format("woff2"),
+            url("assets/fonts/FiraCode-Regular.woff") format("woff");
             font-weight: normal;
             font-style: normal;
         }
+
 
         /* Center all content vertically and horizontally */
         body {
@@ -166,6 +178,7 @@
 
 <div class="space"></div>
 
+<p id="debug-text"></p>
 <p id="help-text" style="display:block;align-self:center">
     Click/Tap functions to pick the type. Click this text to hide it forever.
 </p>
