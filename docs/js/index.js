@@ -16,31 +16,42 @@ function hideMessage() {
     localStorage.setItem('helpTextHidden', 'true');
 }
 
+// Keep this outside to avoid garbage collection.
+let canvases = [];
+
 function whenFontIsLoaded(callback) {
-    const stubCanvas = document.createElement('canvas');
-    const fontContext = stubCanvas.getContext('2d');
-    
-    // Measuge text with monospace and then set actual font (with monospace fallback to match initial measurement).
-    fontContext.font = 'bold 20px monospace';
-    const STUB_TEXT = 'Some test text;';
-    const initialStubTextWidth = fontContext.measureText(STUB_TEXT).width;
     const fonts = [
         'bold 20px "Fira Code", monospace',
-        'bold 20px "Liberation Mono Custom", monospace'
-    ]
+    ];
+    
+    
+    for (const f of fonts) {
+        const currentCanvas = document.createElement('canvas');
+        canvases.push(currentCanvas);
+        const fontContext = currentCanvas.getContext('2d');
+        fontContext.font = f;
+    }
     
     console.log("Waiting for font to load...");
     function checkFontState() {
         let fontsAreLoaded = true;
-        let a = 1;
-        for (const f of fonts) {
-            fontContext.font = f;
+        const debugText = document.getElementById('debug-text');
+        
+        const defaultCanvas = document.createElement('canvas');
+        const defaultFontContext = defaultCanvas.getContext('2d');
+        defaultFontContext.font = 'bold 20px monospace';
+        const STUB_TEXT = 'Some test text;';
+        const initialStubTextWidth = defaultFontContext.measureText(STUB_TEXT).width;
+        
+        for (const c of canvases) {
+            const fontContext = c.getContext('2d');
             const stubTextWidth = fontContext.measureText(STUB_TEXT).width;
             console.log(initialStubTextWidth);
             console.log(stubTextWidth);
             fontsAreLoaded = fontsAreLoaded && stubTextWidth !== initialStubTextWidth;
-            document.getElementById('debug-text').innerText += initialStubTextWidth + " " + stubTextWidth + " a";
+            debugText.innerText += fontContext.font + "\n" + initialStubTextWidth + "\n" + stubTextWidth + "\n" + fontsAreLoaded + "\n";
         }
+        debugText.innerText += "\n" + fontsAreLoaded + "\n";
         
         if (fontsAreLoaded) {
             console.log("Font loaded!");
@@ -58,22 +69,24 @@ function whenFontIsLoaded(callback) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // HERE At first rendering, don't show the diagram and try to re-render to see if the text gets fixed.
-    
-    const helpTextParagraph = document.getElementById('help-text');
-    helpTextParagraph.addEventListener('click', hideMessage);
-    
-    if (localStorage.getItem('helpTextHidden')) {
-        document.getElementById('help-text').style.display = 'none';
-    }
-    
-    let startingOpType = undefined;
-    // startingOpType = new OpType('Si', 'Te', 'SCBP', 'FF');
-    
-    CRDStage.initializeResources().then(() => {
-        console.log("Resources were marked ready, drawing diagram...");
-        new CRDStage(document.getElementById('cognitive-diagram-container'), startingOpType);
+    whenFontIsLoaded(() => {
+        document.getElementById('loading-text').style.display = 'none';
+        // HERE At first rendering, don't show the diagram and try to re-render to see if the text gets fixed.
+        
+        const helpTextParagraph = document.getElementById('help-text');
+        helpTextParagraph.addEventListener('click', hideMessage);
+        
+        if (localStorage.getItem('helpTextHidden')) {
+            document.getElementById('help-text').style.display = 'none';
+        }
+        
+        let startingOpType = undefined;
+        // startingOpType = new OpType('Si', 'Te', 'SCBP', 'FF');
+        
+        CRDStage.initializeResources().then(() => {
+            console.log("Resources were marked ready, drawing diagram...");
+            new CRDStage(document.getElementById('cognitive-diagram-container'), startingOpType);
+        });
     });
 });
 

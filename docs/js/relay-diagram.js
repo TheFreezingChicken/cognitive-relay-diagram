@@ -1718,6 +1718,7 @@ class LastAnimalChoicePageGroup extends ChoicePageGroup {
             }
         });
         
+        
         super([button1], [button2]);
     }
 }
@@ -1762,7 +1763,7 @@ class ControlButtonGroup extends Konva.Group {
             height: bgRect.height(),
             align: 'center',
             verticalAlign: 'middle',
-            fontFamily: 'Liberation Mono Custom',
+            fontFamily: 'monospace',
             fontStyle: 'bold',
             fontSize: BUTTON_FONT_SIZE,
             fill: 'white',
