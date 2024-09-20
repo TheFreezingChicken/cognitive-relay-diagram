@@ -15,8 +15,8 @@
     <style>
         @font-face {
             font-family: 'Fira Code';
-            src: url('assets/fonts/woff2/FiraCode-Bold.woff2') format('woff2'),
-            url("assets/fonts/woff/FiraCode-Bold.woff") format("woff");
+            src: url("assets/fonts/FiraCode-Bold.woff2") format("woff2"),
+            url("assets/fonts/FiraCode-Bold.woff") format("woff");
             font-weight: bold;
             font-style: normal;
         }
@@ -24,26 +24,24 @@
 
         @font-face {
             font-family: 'Fira Code';
-            src: url('assets/fonts/woff2/FiraCode-Regular.woff2') format('woff2'),
-            url("assets/fonts/woff/FiraCode-Regular.woff") format("woff");
+            src: url("assets/fonts/FiraCode-Regular.woff2") format("woff2"),
+            url("assets/fonts/FiraCode-Regular.woff") format("woff");
             font-weight: normal;
             font-style: normal;
         }
+
 
         /* Center all content vertically and horizontally */
         body {
             display: flex;
             flex-direction: column;
             flex-wrap: wrap;
-            align-items: start;
+            align-items: stretch;
             min-height: 100vh;
             margin: 0;
             font-family: Arial, serif;
         }
 
-        .title-container > h1 {
-            margin-bottom: 2px;
-        }
 
         h2 {
             margin-top: 0;
@@ -74,19 +72,13 @@
             text-transform: none;
         }
 
-        .title-container {
-            align-self: center;
-            text-align: center;
-            color: darkorange;
-            font-family: Arial, serif;
-        }
 
-        /* Style for the "made by username" text */
-        .made-by {
-            margin: 0;
-            padding: 0;
-            font-size: 12px;
-            color: #888;
+        .centered-text {
+            display:block;
+            width: 80%;
+            align-self:center;
+            text-align: center;
+            font-size: xx-large;
         }
 
         .space {
@@ -97,7 +89,7 @@
             display: flex;
             flex-flow: row wrap;
             align-self: center;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
             gap: 20px;
         }
@@ -141,6 +133,28 @@
         }
 
 
+
+        #title-container {
+            align-self: stretch;
+            text-align: center;
+            color: darkorange;
+            font-family: Arial, serif;
+            width: 100%;
+            margin: 0 50px;
+        }
+
+
+        #title-container > h1 {
+            margin-bottom: 5px;
+        }
+
+        /* Style for the "made by username" text */
+        #made-by {
+            margin-top: 0;
+            font-size: 12px;
+            color: #888;
+        }
+
         /* Style for the boxed section containing the Konva circle */
         #cognitive-diagram-container {
             align-self: center;
@@ -155,9 +169,9 @@
 <!-- BODY -------------------------------------------------------------------------------------------->
 
 <body>
-<div class="title-container">
+<div id="title-container">
     <h1>Cognitive Relay Diagram</h1>
-    <p class="made-by">
+    <p id="made-by">
         (by <a href="https://www.youtube.com/shorts/0Df2gRx7Fbw">The Freezing Chicken</a>,
         and based on the <a href="https://www.objectivepersonality.com/">Objective Personality System</a>) <br>
         Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a>
@@ -166,8 +180,14 @@
 
 <div class="space"></div>
 
-<p id="help-text" style="display:block;align-self:center">
-    Click/Tap functions to pick the type. Click this text to hide it forever.
+<p id="debug-text" hidden></p>
+<p id="loading-text" class="centered-text" style="font-weight: bold">
+    Loading... <br>
+    (if nothing appears, passive-aggressive complaints are accepted)
+</p>
+<p id="help-text" class="centered-text">
+    Click/Tap functions to pick the type. <br>
+    Click this text to hide it forever.
 </p>
 
 <div class="main-container">

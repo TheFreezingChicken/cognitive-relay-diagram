@@ -76,7 +76,90 @@ const CogFunCirclePositions = Object.freeze([
         x: DIAGRAM_CENTER,
         y: DIAGRAM_CENTER + OPPOSITE_CIRCLE_DISTANCE / 2
     })
-])
+]);
+
+
+const CogFunCircleOffsets = Object.freeze([
+    Object.freeze({
+        x: 0,
+        y: OPPOSITE_CIRCLE_DISTANCE / 2
+    }),
+    Object.freeze({
+        x: OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: 0
+    }),
+    Object.freeze({
+        x: -OPPOSITE_CIRCLE_DISTANCE / 2,
+        y: 0
+    }),
+    Object.freeze({
+        x: 0,
+        y: -OPPOSITE_CIRCLE_DISTANCE / 2
+    })
+]);
+
+const CogFunTextCenterOffsets = Object.freeze({
+    S: Object.freeze({
+        x: 3.9,
+        y: 1
+    }),
+    
+    N: Object.freeze({
+        x: 3,
+        y: 1
+    }),
+    
+    F: Object.freeze({
+        x: 4.2,
+        y: 1
+    }),
+    
+    T: Object.freeze({
+        x: 3.5,
+        y: 0
+    }),
+    
+    Si: Object.freeze({
+        x: 2.3,
+        y: 2.7
+    }),
+    
+    Se: Object.freeze({
+        x: 2.2,
+        y: 3.3
+    }),
+    
+    Ni: Object.freeze({
+        x: 1.89,
+        y: 2.5
+    }),
+    
+    Ne: Object.freeze({
+        x: 2.9,
+        y: 3.2
+    }),
+    
+    Fi: Object.freeze({
+        x: 3.2,
+        y: 2.95
+    }),
+    
+    Fe: Object.freeze({
+        x: 3.5,
+        y: 2
+    }),
+    
+    Ti: Object.freeze({
+        x: 2.5,
+        y: 2
+    }),
+    
+    Te: Object.freeze({
+        x: 2.6,
+        y: 2.5
+    })
+});
+
 
 
 const AnimalCenterOffsets = new Map([
@@ -140,7 +223,6 @@ const DiagramResources = {
     BIG_DEMON_BG_IMG: new Image(),
     LITTLE_DEMON_BG_IMG: new Image(),
     MASCULINE_FUNCTION_BG_IMG: new Image(),
-    FUNCTION_POINTER_GRID_IMG: new Image(),
     FUNCTION_POINTER_ARROW_IMG: new Image()
 };
 
@@ -181,7 +263,6 @@ class ResourceLoader {
             loadImg(DiagramResources.LITTLE_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon3.png`),
             loadImg(DiagramResources.BIG_DEMON_BG_IMG, `${IMG_DIR_PATH}/Demon4.png`),
             loadImg(DiagramResources.MASCULINE_FUNCTION_BG_IMG, `${IMG_DIR_PATH}/Muscles.png`),
-            loadImg(DiagramResources.FUNCTION_POINTER_GRID_IMG, `${IMG_DIR_PATH}/pointer-grid.png`),
             loadImg(DiagramResources.FUNCTION_POINTER_ARROW_IMG, `${IMG_DIR_PATH}/blue-arrow.png`)
         ]).then(() => {
             // REM Add any other resource initialization here.
@@ -492,7 +573,28 @@ class CognitiveFunctionGroup extends Konva.Group {
         const cogFunText = new CognitiveFunctionText(configs);
         // const doubleActivationText = new DoubleActivationText(configs);
         
-        this.add(saviorBgImg, demonBgImg, masculineBgImg, this.circle, cogFunText/*, doubleActivationText*/);
+        // Add everything to a subgroup for scaling. We will offset later.
+        
+        const scaleGroup = new Konva.Group();
+        scaleGroup.add(saviorBgImg, demonBgImg, masculineBgImg, this.circle, cogFunText/*, doubleActivationText*/);
+        
+        const grantIndex = configs?.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex;
+        
+        scaleGroup.offsetX(DIAGRAM_CENTER);
+        scaleGroup.offsetY(DIAGRAM_CENTER);
+        scaleGroup.x(DIAGRAM_CENTER);
+        scaleGroup.y(DIAGRAM_CENTER);
+        
+        const scaleFactor = CogFunCircleScaleFactors[grantIndex];
+        scaleGroup.scaleY(scaleFactor);
+        scaleGroup.scaleX(scaleFactor);
+        
+        this.add(scaleGroup);
+        
+        // Now we can offset the main group.
+        const cogFunOffset = CogFunCircleOffsets[grantIndex]
+        this.offsetX(cogFunOffset.x);
+        this.offsetY(cogFunOffset.y);
     }
 }
 
@@ -509,22 +611,12 @@ class CognitiveFunctionCircle extends Konva.Circle {
         super({
             radius: CIRCLE_BASE_RADIUS,
             strokeWidth: CIRCLE_STROKE_WIDTH,
-            x: CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex].x,
-            y: CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex].y,
+            x: DIAGRAM_CENTER,
+            y: DIAGRAM_CENTER,
             fill: CogFunFillColors[configs.cogFunData?.cogFun[0] ?? configs.cogFunDataOverride.cogFunText],
             stroke: CogFunStrokeColors[configs.cogFunData?.cogFun[0] ?? configs.cogFunDataOverride.cogFunText],
         });
         
-        // DEBT Assuming non-partial diagram, so it's generic only at first rendering.
-        const isGenericDiagram = configs.cogFunData == null;
-        
-        // Making first function slightly bigger for generic because of optical illusion.
-        const genericScaleFactor = configs.cogFunDataOverride?.grantIndex === 0 ? 1.075 : 1;
-        const grantScaleFactor = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
-        
-        // If not generic diagram use scaling, otherwise don't.
-        this.scaleX(isGenericDiagram ? genericScaleFactor : grantScaleFactor);
-        this.scaleY(isGenericDiagram ? genericScaleFactor : grantScaleFactor);
     }
 }
 
@@ -540,12 +632,11 @@ class CognitiveFunctionBackgroundImage extends Konva.Image {
     constructor(img, configs) {
         // Based on how we structured the library, img should always be loaded when reaching this point.
         super({
-            image: img
+            image: img,
+            x: DIAGRAM_CENTER,
+            y: DIAGRAM_CENTER
         });
         
-        const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
-        
-        this.position(pos);
         this.offsetX(this.width() / 2);
         this.offsetY(this.height() / 2);
     }
@@ -567,10 +658,10 @@ class SaviorBackgroundImage extends CognitiveFunctionBackgroundImage {
         
         this.visible(configs.cogFunData?.isSavior ?? false);
         
-        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         const IMG_SCALE_FACTOR = grantIndex === 0 ? 0.4 : 0.42;
-        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
-        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR);
+        this.scaleX(IMG_SCALE_FACTOR);
+        this.scaleY(IMG_SCALE_FACTOR);
+        
         this.offsetY(grantIndex === 0 ? 190 : 183);
     }
 }
@@ -590,10 +681,9 @@ class DemonBackgroundImage extends CognitiveFunctionBackgroundImage {
         
         this.visible(!(configs.cogFunData?.isSavior ?? true));
         
-        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         const IMG_SCALE_FACTOR = 0.35;
-        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
-        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
+        this.scaleX(IMG_SCALE_FACTOR);
+        this.scaleY(IMG_SCALE_FACTOR)
     }
 }
 
@@ -608,54 +698,54 @@ class MasculineBackgroundImage extends CognitiveFunctionBackgroundImage {
         
         this.visible(configs.cogFunData?.isMasculine ?? false);
         
-        const CIRCLE_SCALE = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
         const IMG_SCALE_FACTOR = 0.37;
-        this.scaleX(CIRCLE_SCALE * IMG_SCALE_FACTOR);
-        this.scaleY(CIRCLE_SCALE * IMG_SCALE_FACTOR)
+        this.scaleX(IMG_SCALE_FACTOR);
+        this.scaleY(IMG_SCALE_FACTOR)
     }
 }
 
 
 
-class CognitiveFunctionText extends Konva.Text {
+class CognitiveFunctionText extends Konva.Group {
     /**
      *
      * @param configs {CognitiveFunctionConfigs}
      */
     constructor(configs) {
+        super();
+        
         console.log("Constructing CognitiveFunctionText with:");
         console.log(configs);
         const text = configs.cogFunData?.cogFun ?? configs.cogFunDataOverride.cogFunText;
         console.log(text);
         console.log();
         
-        const pos = CogFunCirclePositions[configs.cogFunData?.grantIndex ?? configs.cogFunDataOverride.grantIndex];
-        const scale = CogFunCircleScaleFactors[configs.cogFunData?.grantIndex ?? 0];
-        
-        super({
-            position: pos,
-            height: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) * 2,
-            width: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) * 2,
+        const konvaText = new Konva.Text({
+            x: DIAGRAM_CENTER,
+            y: DIAGRAM_CENTER,
+            height: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) + 20,
+            width: (CIRCLE_BASE_RADIUS + CIRCLE_STROKE_WIDTH) + 20,
             align: 'center',
             verticalAlign: 'middle',
-            fontFamily: 'Fira Code, monospace',
+            fontFamily: 'Fira Code',
             fontStyle: 'bold',
-            fontSize: COGFUN_BASE_FONT_SIZE * scale,
+            fontSize: text.length > 1 ? COGFUN_BASE_FONT_SIZE : COGFUN_BASE_FONT_SIZE * 1.25,
             fill: 'white',
             stroke: 'black',
             strokeWidth: 2,
+            text: text
         });
         
+        konvaText.offsetX(konvaText.getClientRect().width / 2 - 5);
+        konvaText.offsetY(konvaText.getClientRect().height / 2 - 9.5);
         
-        const baseOffsetX = this.width() / 2;
-        const baseOffsetY = this.height() / 2;
-        // Adding a tiny delta to make the text look more centered.
-        const visualCenterDeltaX = -0.95 * scale;
-        const visualCenterDeltaY = -5 * scale;
+        this.add(konvaText);
         
-        this.text(text);
-        this.offsetX(baseOffsetX + visualCenterDeltaX);
-        this.offsetY(baseOffsetY + visualCenterDeltaY);
+        const visualCenterOffset = CogFunTextCenterOffsets[text];
+
+        // The additional offset is to properly visually center the text. Based on the actual cognitive function.
+        this.offsetX(visualCenterOffset.x);
+        this.offsetY(visualCenterOffset.y);
     }
 }
 
@@ -1154,7 +1244,7 @@ class ControlPageManagerGroup extends Konva.Group {
         let button;
         // DEBT Might need to make this more generic if we're implementing partial types.
         button = new ControlButtonGroup({
-            size: {width: NAVIGATION_BUTTON_WIDTH - 90, height: NAVIGATION_BUTTON_HEIGHT},
+            size: {width: NAVIGATION_BUTTON_WIDTH - 80, height: NAVIGATION_BUTTON_HEIGHT},
             text: "Skip",
             onClick: () => {
                 this._hideSkipButton();
@@ -1170,7 +1260,7 @@ class ControlPageManagerGroup extends Konva.Group {
         
         button = new ControlButtonGroup({
             size: {width: NAVIGATION_BUTTON_WIDTH, height: NAVIGATION_BUTTON_HEIGHT},
-            text: "⇦ Back",
+            text: "⇦Back",
             onClick: () => {
                 selectionButtonsGroup.removeChildren();
                 this._currentPage = this._previousPages.pop();
@@ -1628,6 +1718,7 @@ class LastAnimalChoicePageGroup extends ChoicePageGroup {
             }
         });
         
+        
         super([button1], [button2]);
     }
 }
@@ -1667,19 +1758,20 @@ class ControlButtonGroup extends Konva.Group {
         
         const text = new Konva.Text({
             x: configs.position?.x ?? 0,
-            y: configs.position?.y ?? 2.7,
+            y: configs.position?.y ?? 4,
             width: bgRect.width(),
             height: bgRect.height(),
             align: 'center',
             verticalAlign: 'middle',
-            fontFamily: 'Arial, sans serif',
+            fontFamily: 'monospace',
             fontStyle: 'bold',
             fontSize: BUTTON_FONT_SIZE,
             fill: 'white',
             stroke: 'black',
-            strokeWidth: 1,
-            text: configs.text,
+            strokeWidth: 1
         });
+        
+        text.text(configs.text);
         text[DENY_HIDE_CONTROL_PROPERTY] = true;
         
         this.add(bgRect, text);
